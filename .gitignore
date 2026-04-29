@@ -11,6 +11,7 @@ venv/
 
 config/.HA_VERSION
 config/.cache/
+config/blueprints/
 config/deps/
 config/tts/
 config/.ha_run.lock
