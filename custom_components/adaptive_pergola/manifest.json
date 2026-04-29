@@ -2,8 +2,8 @@
   "domain": "adaptive_pergola",
   "name": "Adaptive Pergola",
   "config_flow": true,
-  "documentation": "https://github.com/jrhubott/adaptive-pergola",
-  "issue_tracker": "https://github.com/jrhubott/adaptive-pergola/issues",
+  "documentation": "https://github.com/B4S71/adaptive-pergola",
+  "issue_tracker": "https://github.com/B4S71/adaptive-pergola/issues",
   "iot_class": "calculated",
   "version": "0.2.0",
   "requirements": []

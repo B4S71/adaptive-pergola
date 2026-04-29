@@ -22,7 +22,7 @@ Das Projekt ist bewusst auf reale Pergola-Mechanik ausgelegt:
 
 1. Oeffne HACS in Home Assistant.
 2. Gehe zu den benutzerdefinierten Repositories.
-3. Fuege `https://github.com/jrhubott/adaptive-pergola` als Repository vom Typ `Integration` hinzu.
+3. Fuege `https://github.com/B4S71/adaptive-pergola` als Repository vom Typ `Integration` hinzu.
 4. Suche nach `Adaptive Pergola` und installiere die Integration.
 5. Starte Home Assistant neu.
 6. Richte die Integration ueber `Einstellungen > Geraete & Dienste > Integration hinzufuegen` ein.
@@ -76,5 +76,5 @@ Start:
 Letzter verifizierter Lauf:
 
 ```bash
-'/Users/sgrebe/ownCloud/Persönlich/Code/adaptive-cover-pro/.venv/bin/python' -m pytest tests/test_config_flow.py tests/test_integration.py -q
+python -m pytest tests/test_config_flow.py tests/test_integration.py -q
 ```
