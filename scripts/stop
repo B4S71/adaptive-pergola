@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if lsof -ti tcp:8125 >/dev/null 2>&1; then
+  lsof -ti tcp:8125 | xargs kill -TERM
+fi

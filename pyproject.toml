@@ -1,0 +1,22 @@
+[project]
+name = "adaptive-pergola"
+version = "0.1.0"
+description = "Pergola sun-tracking core derived from Adaptive Cover Pro concepts"
+requires-python = ">=3.11"
+dependencies = [
+  "homeassistant>=2026.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-homeassistant-custom-component>=0.13",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+markers = [
+  "integration: Home Assistant integration tests",
+]

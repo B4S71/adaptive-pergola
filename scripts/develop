@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ACP_ROOT="/Users/sgrebe/ownCloud/Persönlich/Code/adaptive-cover-pro"
+
+if [[ -x "${ACP_ROOT}/venv/bin/hass" ]]; then
+  HASS_BIN="${ACP_ROOT}/venv/bin/hass"
+elif [[ -x "${ACP_ROOT}/.venv/bin/hass" ]]; then
+  HASS_BIN="${ACP_ROOT}/.venv/bin/hass"
+else
+  echo "No Home Assistant binary found in ${ACP_ROOT}/venv or ${ACP_ROOT}/.venv"
+  exit 1
+fi
+
+export PYTHONPATH="${PYTHONPATH:+${PYTHONPATH}:}${ROOT_DIR}"
+
+"${ROOT_DIR}/scripts/stop"
+echo "Starting Adaptive Pergola demo on http://localhost:8125"
+"${HASS_BIN}" --config "${ROOT_DIR}/config" --debug

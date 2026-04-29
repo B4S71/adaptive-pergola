@@ -1,0 +1,73 @@
+# Default integrations and frontend
+default_config:
+
+http:
+  server_port: 8125
+
+logger:
+  default: warning
+  logs:
+    custom_components.adaptive_pergola: debug
+
+input_number:
+  pergola_tilt_position:
+    name: Pergola Tilt Position
+    min: 0
+    max: 100
+    step: 1
+  pergola_angle_target:
+    name: Pergola Angle Target
+    min: 0
+    max: 135
+    step: 1
+  pergola_vendor_target:
+    name: Pergola Vendor Target
+    min: 0
+    max: 255
+    step: 1
+  pergola_wind_speed:
+    name: Pergola Wind Speed
+    min: 0
+    max: 120
+    step: 0.5
+  pergola_rain_rate:
+    name: Pergola Rain Rate
+    min: 0
+    max: 20
+    step: 0.1
+
+input_boolean:
+  pergola_raining:
+    name: Pergola Raining
+  pergola_windy:
+    name: Pergola Windy
+  pergola_severe:
+    name: Pergola Severe Weather
+
+cover:
+  - platform: template
+    covers:
+      pergola_tilt_demo:
+        friendly_name: Pergola Tilt Demo
+        value_template: "{{ true }}"
+        position_template: "{{ states('input_number.pergola_tilt_position') | int }}"
+        tilt_template: "{{ states('input_number.pergola_tilt_position') | int }}"
+        set_cover_position:
+          service: input_number.set_value
+          data:
+            entity_id: input_number.pergola_tilt_position
+            value: "{{ position }}"
+        set_cover_tilt_position:
+          service: input_number.set_value
+          data:
+            entity_id: input_number.pergola_tilt_position
+            value: "{{ tilt }}"
+
+template:
+  - sensor:
+      - name: Pergola Wind Speed
+        state: "{{ states('input_number.pergola_wind_speed') }}"
+        unit_of_measurement: "km/h"
+      - name: Pergola Rain Rate
+        state: "{{ states('input_number.pergola_rain_rate') }}"
+        unit_of_measurement: "mm/h"
