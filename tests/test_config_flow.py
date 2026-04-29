@@ -21,6 +21,7 @@ from custom_components.adaptive_pergola.const import (
     CONF_COMMAND_VALUE_MIN,
     CONF_HAS_ADDITIONAL_PROTECTED_AREA,
     CONF_HAS_HOUSE_ATTACHMENT,
+    CONF_HAS_SHADOW_CASTING_WALL,
     CONF_HOUSE_EXTENDS_LEFT_M,
     CONF_HOUSE_EXTENDS_RIGHT_M,
     CONF_HOUSE_HEIGHT_M,
@@ -40,6 +41,10 @@ from custom_components.adaptive_pergola.const import (
     CONF_PERGOLA_WIDTH_M,
     CONF_PREOPEN_ACTUATOR_PERCENT,
     CONF_RAIN_THRESHOLD,
+    CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+    CONF_SHADOW_CASTING_WALL_LENGTH_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     CONF_SLAT_AXIS_AZIMUTH_DEG,
     CONF_SLAT_AXIS_HEIGHT_M,
     CONF_SLAT_AXIS_SPACING_M,
@@ -93,6 +98,11 @@ def _user_input() -> dict:
         CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M: 0.0,
         CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_EAST_M: 0.0,
         CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_NORTH_M: 0.0,
+        CONF_HAS_SHADOW_CASTING_WALL: False,
+        CONF_SHADOW_CASTING_WALL_LENGTH_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_HEIGHT_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M: 0.0,
         CONF_MAX_DIRECT_SUN_DEPTH_M: 0.4,
         CONF_OPEN_BEFORE_SUNRISE_MINUTES: 20,
         CONF_PREOPEN_ACTUATOR_PERCENT: 15,
@@ -156,6 +166,25 @@ async def test_user_flow_rejects_invalid_additional_protected_area_size(hass: Ho
     assert result["type"] == "form"
     assert result["errors"][CONF_ADDITIONAL_PROTECTED_AREA_LENGTH_M] == "invalid_protected_area_size"
     assert result["errors"][CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M] == "invalid_protected_area_size"
+
+
+async def test_user_flow_rejects_invalid_shadow_casting_wall_size(hass: HomeAssistant) -> None:
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "user"},
+    )
+    assert result["type"] == "form"
+
+    user_input = _user_input()
+    user_input[CONF_HAS_SHADOW_CASTING_WALL] = True
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input,
+    )
+
+    assert result["type"] == "form"
+    assert result["errors"][CONF_SHADOW_CASTING_WALL_LENGTH_M] == "invalid_shadow_wall_size"
+    assert result["errors"][CONF_SHADOW_CASTING_WALL_HEIGHT_M] == "invalid_shadow_wall_size"
 
 
 async def test_user_flow_rejects_invalid_open_actuator_percent(hass: HomeAssistant) -> None:

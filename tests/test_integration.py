@@ -25,6 +25,7 @@ from custom_components.adaptive_pergola.const import (
     CONF_COMMAND_VALUE_MIN,
     CONF_HAS_ADDITIONAL_PROTECTED_AREA,
     CONF_HAS_HOUSE_ATTACHMENT,
+    CONF_HAS_SHADOW_CASTING_WALL,
     CONF_HOUSE_EXTENDS_LEFT_M,
     CONF_HOUSE_EXTENDS_RIGHT_M,
     CONF_HOUSE_HEIGHT_M,
@@ -44,6 +45,10 @@ from custom_components.adaptive_pergola.const import (
     CONF_PERGOLA_WIDTH_M,
     CONF_PREOPEN_ACTUATOR_PERCENT,
     CONF_RAIN_THRESHOLD,
+    CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+    CONF_SHADOW_CASTING_WALL_LENGTH_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     CONF_SLAT_AXIS_AZIMUTH_DEG,
     CONF_SLAT_AXIS_HEIGHT_M,
     CONF_SLAT_AXIS_SPACING_M,
@@ -104,6 +109,11 @@ def _entry_data(
         CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M: 0.0,
         CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_EAST_M: 0.0,
         CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_NORTH_M: 0.0,
+        CONF_HAS_SHADOW_CASTING_WALL: False,
+        CONF_SHADOW_CASTING_WALL_LENGTH_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_HEIGHT_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M: 0.0,
+        CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M: 0.0,
         CONF_MAX_DIRECT_SUN_DEPTH_M: 0.4,
         CONF_OPEN_BEFORE_SUNRISE_MINUTES: 0,
         CONF_PREOPEN_ACTUATOR_PERCENT: 0,
@@ -233,7 +243,7 @@ async def test_migrate_entry_populates_explicit_geometry_fields(hass: HomeAssist
     entry.add_to_hass(hass)
 
     assert await async_migrate_entry(hass, entry)
-    assert entry.version == 5
+    assert entry.version == 6
     assert entry.data[CONF_SLAT_AXIS_AZIMUTH_DEG] == 0.0
     assert entry.data[CONF_PERGOLA_ORIENTATION_AZIMUTH_DEG] == 90.0
     assert entry.data[CONF_OPENING_AZIMUTH_DEG] == 90.0
@@ -246,6 +256,11 @@ async def test_migrate_entry_populates_explicit_geometry_fields(hass: HomeAssist
     assert entry.data[CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M] == 0.0
     assert entry.data[CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_EAST_M] == 0.0
     assert entry.data[CONF_ADDITIONAL_PROTECTED_AREA_OFFSET_NORTH_M] == 0.0
+    assert entry.data[CONF_HAS_SHADOW_CASTING_WALL] is False
+    assert entry.data[CONF_SHADOW_CASTING_WALL_LENGTH_M] == 0.0
+    assert entry.data[CONF_SHADOW_CASTING_WALL_HEIGHT_M] == 0.0
+    assert entry.data[CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M] == 0.0
+    assert entry.data[CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M] == 0.0
     assert CONF_AXIS_AZIMUTH_DEG not in entry.data
 
 

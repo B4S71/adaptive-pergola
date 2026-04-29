@@ -28,6 +28,7 @@ from custom_components.adaptive_pergola.models import (
     ControlConfig,
     HouseAttachment,
     PergolaGeometry,
+    ShadowCastingWallConfig,
     SunPosition,
     TrackingConfig,
     WeatherConfig,
@@ -69,6 +70,7 @@ def build_config(*, strategy: str = TRACKING_BALANCED) -> ControlConfig:
             rain_threshold=0.8,
         ),
         additional_protected_area=AdditionalProtectedAreaConfig(),
+        shadow_casting_wall=ShadowCastingWallConfig(),
     )
 
 
@@ -269,6 +271,48 @@ def test_additional_protected_area_is_checked_outside_pergola_footprint() -> Non
     assert projection.base_protected_overlap_m2 == 0.0
     assert projection.additional_protected_overlap_m2 > 0.0
     assert projection.protected_zone_breached is True
+
+
+def test_shadow_casting_wall_reduces_effective_overlap() -> None:
+    config = build_config(strategy=TRACKING_BALANCED)
+    config = ControlConfig(
+        geometry=config.geometry,
+        actuator=config.actuator,
+        target=config.target,
+        tracking=config.tracking,
+        weather=config.weather,
+        additional_protected_area=config.additional_protected_area,
+        shadow_casting_wall=ShadowCastingWallConfig(
+            enabled=True,
+            length_m=4.0,
+            height_m=2.5,
+            offset_east_m=-2.0,
+            offset_north_m=-2.0,
+        ),
+    )
+    sun = SunPosition(azimuth_deg=0.0, elevation_deg=45.0)
+
+    without_wall = project_pergola_shadow(
+        config.geometry,
+        config.actuator,
+        sun,
+        45.0,
+        tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
+        additional_protected_area=config.additional_protected_area,
+    )
+    with_wall = project_pergola_shadow(
+        config.geometry,
+        config.actuator,
+        sun,
+        45.0,
+        tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
+        additional_protected_area=config.additional_protected_area,
+        shadow_casting_wall=config.shadow_casting_wall,
+    )
+
+    assert without_wall.protected_zone_breached is True
+    assert with_wall.total_shadow_relief_m2 > 0.2
+    assert with_wall.effective_protected_overlap_m2 < without_wall.effective_protected_overlap_m2
 
 
 def test_weather_override_has_priority() -> None:

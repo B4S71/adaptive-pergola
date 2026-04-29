@@ -26,6 +26,7 @@ from .const import (
     CONF_COMMAND_VALUE_MIN,
     CONF_HAS_ADDITIONAL_PROTECTED_AREA,
     CONF_HAS_HOUSE_ATTACHMENT,
+    CONF_HAS_SHADOW_CASTING_WALL,
     CONF_HOUSE_EXTENDS_LEFT_M,
     CONF_HOUSE_EXTENDS_RIGHT_M,
     CONF_HOUSE_HEIGHT_M,
@@ -47,6 +48,10 @@ from .const import (
     CONF_PREOPEN_ACTUATOR_PERCENT,
     CONF_RAIN_SENSOR,
     CONF_RAIN_THRESHOLD,
+    CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+    CONF_SHADOW_CASTING_WALL_LENGTH_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     CONF_SLAT_AXIS_AZIMUTH_DEG,
     CONF_SEVERE_SENSORS,
     CONF_SLAT_AXIS_HEIGHT_M,
@@ -70,7 +75,12 @@ from .const import (
     DEFAULT_ADDITIONAL_PROTECTED_AREA_OFFSET_EAST_M,
     DEFAULT_ADDITIONAL_PROTECTED_AREA_OFFSET_NORTH_M,
     DEFAULT_ADDITIONAL_PROTECTED_AREA_WIDTH_M,
+    DEFAULT_HAS_SHADOW_CASTING_WALL,
     DEFAULT_UPDATE_INTERVAL_SECONDS,
+    DEFAULT_SHADOW_CASTING_WALL_HEIGHT_M,
+    DEFAULT_SHADOW_CASTING_WALL_LENGTH_M,
+    DEFAULT_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    DEFAULT_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     DOMAIN,
     MANUAL_OVERRIDE_TOLERANCE_PERCENT,
     MANUAL_OVERRIDE_WAIT_FOR_TARGET_SECONDS,
@@ -86,6 +96,7 @@ from .models import (
     ControlConfig,
     HouseAttachment,
     PergolaGeometry,
+    ShadowCastingWallConfig,
     SunPosition,
     TrackingConfig,
     WeatherConfig,
@@ -413,6 +424,35 @@ class AdaptivePergolaCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                 )
             ),
         )
+        shadow_casting_wall = ShadowCastingWallConfig(
+            enabled=bool(
+                config.get(CONF_HAS_SHADOW_CASTING_WALL, DEFAULT_HAS_SHADOW_CASTING_WALL)
+            ),
+            length_m=float(
+                config.get(
+                    CONF_SHADOW_CASTING_WALL_LENGTH_M,
+                    DEFAULT_SHADOW_CASTING_WALL_LENGTH_M,
+                )
+            ),
+            height_m=float(
+                config.get(
+                    CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+                    DEFAULT_SHADOW_CASTING_WALL_HEIGHT_M,
+                )
+            ),
+            offset_east_m=float(
+                config.get(
+                    CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+                    DEFAULT_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+                )
+            ),
+            offset_north_m=float(
+                config.get(
+                    CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
+                    DEFAULT_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
+                )
+            ),
+        )
 
         return ControlConfig(
             geometry=PergolaGeometry(
@@ -452,6 +492,7 @@ class AdaptivePergolaCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             ),
             weather=weather,
             additional_protected_area=additional_protected_area,
+            shadow_casting_wall=shadow_casting_wall,
         )
 
     def _read_weather(self) -> WeatherReadings:

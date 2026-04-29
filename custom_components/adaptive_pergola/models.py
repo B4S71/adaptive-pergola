@@ -153,6 +153,17 @@ class AdditionalProtectedAreaConfig:
 
 
 @dataclass(frozen=True)
+class ShadowCastingWallConfig:
+    """Optional wall segment that can already shade parts of the protected zone."""
+
+    enabled: bool = False
+    length_m: float = 0.0
+    height_m: float = 0.0
+    offset_east_m: float = 0.0
+    offset_north_m: float = 0.0
+
+
+@dataclass(frozen=True)
 class ProjectionResult:
     """3D projection result for the current sun/slat configuration."""
 
@@ -176,6 +187,9 @@ class ProjectionResult:
     house_overlap_end_m: float | None
     base_protected_overlap_m2: float
     additional_protected_overlap_m2: float
+    base_shadow_relief_m2: float
+    additional_shadow_relief_m2: float
+    total_shadow_relief_m2: float
     effective_protected_overlap_m2: float
     protected_zone_breached: bool
 
@@ -190,6 +204,7 @@ class ControlConfig:
     tracking: TrackingConfig
     weather: WeatherConfig | None = None
     additional_protected_area: AdditionalProtectedAreaConfig | None = None
+    shadow_casting_wall: ShadowCastingWallConfig | None = None
 
 
 @dataclass(frozen=True)

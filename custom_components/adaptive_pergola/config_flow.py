@@ -30,6 +30,7 @@ from .const import (
     CONF_COMMAND_VALUE_MIN,
     CONF_HAS_ADDITIONAL_PROTECTED_AREA,
     CONF_HAS_HOUSE_ATTACHMENT,
+    CONF_HAS_SHADOW_CASTING_WALL,
     CONF_HOUSE_EXTENDS_LEFT_M,
     CONF_HOUSE_EXTENDS_RIGHT_M,
     CONF_HOUSE_HEIGHT_M,
@@ -52,6 +53,10 @@ from .const import (
     CONF_PREOPEN_ACTUATOR_PERCENT,
     CONF_RAIN_SENSOR,
     CONF_RAIN_THRESHOLD,
+    CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+    CONF_SHADOW_CASTING_WALL_LENGTH_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     CONF_SLAT_AXIS_AZIMUTH_DEG,
     CONF_SEVERE_SENSORS,
     CONF_SLAT_AXIS_HEIGHT_M,
@@ -79,6 +84,7 @@ from .const import (
     DEFAULT_ADDITIONAL_PROTECTED_AREA_WIDTH_M,
     DEFAULT_HAS_HOUSE_ATTACHMENT,
     DEFAULT_HAS_ADDITIONAL_PROTECTED_AREA,
+    DEFAULT_HAS_SHADOW_CASTING_WALL,
     DEFAULT_HOUSE_EXTENDS_LEFT_M,
     DEFAULT_HOUSE_EXTENDS_RIGHT_M,
     DEFAULT_HOUSE_HEIGHT_M,
@@ -93,6 +99,10 @@ from .const import (
     DEFAULT_PERGOLA_WIDTH_M,
     DEFAULT_PREOPEN_ACTUATOR_PERCENT,
     DEFAULT_RAIN_THRESHOLD,
+    DEFAULT_SHADOW_CASTING_WALL_HEIGHT_M,
+    DEFAULT_SHADOW_CASTING_WALL_LENGTH_M,
+    DEFAULT_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+    DEFAULT_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
     DEFAULT_SLAT_AXIS_AZIMUTH_DEG,
     DEFAULT_SLAT_AXIS_HEIGHT_M,
     DEFAULT_SLAT_AXIS_SPACING_M,
@@ -343,6 +353,49 @@ def _schema(current: dict[str, Any], *, include_name: bool) -> vol.Schema:
             selector.NumberSelectorConfig(min=-20, max=20, step=0.01, unit_of_measurement="m", mode=selector.NumberSelectorMode.BOX)
         ),
         vol.Required(
+            CONF_HAS_SHADOW_CASTING_WALL,
+            default=current.get(
+                CONF_HAS_SHADOW_CASTING_WALL,
+                DEFAULT_HAS_SHADOW_CASTING_WALL,
+            ),
+        ): selector.BooleanSelector(),
+        vol.Optional(
+            CONF_SHADOW_CASTING_WALL_LENGTH_M,
+            default=current.get(
+                CONF_SHADOW_CASTING_WALL_LENGTH_M,
+                DEFAULT_SHADOW_CASTING_WALL_LENGTH_M,
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=20, step=0.01, unit_of_measurement="m", mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Optional(
+            CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+            default=current.get(
+                CONF_SHADOW_CASTING_WALL_HEIGHT_M,
+                DEFAULT_SHADOW_CASTING_WALL_HEIGHT_M,
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=10, step=0.01, unit_of_measurement="m", mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Optional(
+            CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+            default=current.get(
+                CONF_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+                DEFAULT_SHADOW_CASTING_WALL_OFFSET_EAST_M,
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=-20, max=20, step=0.01, unit_of_measurement="m", mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Optional(
+            CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
+            default=current.get(
+                CONF_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
+                DEFAULT_SHADOW_CASTING_WALL_OFFSET_NORTH_M,
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=-20, max=20, step=0.01, unit_of_measurement="m", mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Required(
             CONF_MAX_DIRECT_SUN_DEPTH_M,
             default=current.get(CONF_MAX_DIRECT_SUN_DEPTH_M, DEFAULT_MAX_DIRECT_SUN_DEPTH_M),
         ): selector.NumberSelector(
@@ -453,6 +506,12 @@ def _validate(data: dict[str, Any], *, include_name: bool) -> dict[str, str]:
         if float(data.get(CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M, 0.0)) <= 0:
             errors[CONF_ADDITIONAL_PROTECTED_AREA_WIDTH_M] = "invalid_protected_area_size"
 
+    if data.get(CONF_HAS_SHADOW_CASTING_WALL):
+        if float(data.get(CONF_SHADOW_CASTING_WALL_LENGTH_M, 0.0)) <= 0:
+            errors[CONF_SHADOW_CASTING_WALL_LENGTH_M] = "invalid_shadow_wall_size"
+        if float(data.get(CONF_SHADOW_CASTING_WALL_HEIGHT_M, 0.0)) <= 0:
+            errors[CONF_SHADOW_CASTING_WALL_HEIGHT_M] = "invalid_shadow_wall_size"
+
     if not validate_opening_direction(data):
         errors[CONF_OPENING_AZIMUTH_DEG] = "invalid_opening_direction"
 
@@ -465,7 +524,7 @@ def _validate(data: dict[str, Any], *, include_name: bool) -> dict[str, str]:
 class AdaptivePergolaConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Adaptive Pergola."""
 
-    VERSION = 5
+    VERSION = 6
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the user step."""

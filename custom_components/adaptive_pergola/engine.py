@@ -13,6 +13,7 @@ from .models import (
     ControlConfig,
     PergolaGeometry,
     ProjectionResult,
+    ShadowCastingWallConfig,
     SunPosition,
     TrackingDecision,
     WeatherReadings,
@@ -37,6 +38,19 @@ class _Rect:
     end_x_m: float
     start_y_m: float
     end_y_m: float
+
+
+def _rect_intersection(first: _Rect | None, second: _Rect | None) -> _Rect | None:
+    """Return the overlapping rectangle of two axis-aligned rectangles."""
+    if first is None or second is None:
+        return None
+    start_x = max(first.start_x_m, second.start_x_m)
+    end_x = min(first.end_x_m, second.end_x_m)
+    start_y = max(first.start_y_m, second.start_y_m)
+    end_y = min(first.end_y_m, second.end_y_m)
+    if end_x <= start_x or end_y <= start_y:
+        return None
+    return _Rect(start_x_m=start_x, end_x_m=end_x, start_y_m=start_y, end_y_m=end_y)
 
 
 def actuator_percent_for_angle(actuator: ActuatorConfig, angle_deg: float) -> int:
@@ -138,11 +152,102 @@ def _projected_elevation_magnitude_deg(elevation_deg: float, horizontal_delta_de
 
 def _rect_overlap_area(first: _Rect | None, second: _Rect | None) -> float:
     """Return the overlapping area of two rectangles in square metres."""
-    if first is None or second is None:
+    overlap = _rect_intersection(first, second)
+    if overlap is None:
         return 0.0
-    overlap_x = max(0.0, min(first.end_x_m, second.end_x_m) - max(first.start_x_m, second.start_x_m))
-    overlap_y = max(0.0, min(first.end_y_m, second.end_y_m) - max(first.start_y_m, second.start_y_m))
-    return overlap_x * overlap_y
+    return (overlap.end_x_m - overlap.start_x_m) * (overlap.end_y_m - overlap.start_y_m)
+
+
+def _polygon_area(points: list[tuple[float, float]]) -> float:
+    """Return the polygon area via the shoelace formula."""
+    if len(points) < 3:
+        return 0.0
+    area = 0.0
+    for index, (x1, y1) in enumerate(points):
+        x2, y2 = points[(index + 1) % len(points)]
+        area += (x1 * y2) - (x2 * y1)
+    return abs(area) * 0.5
+
+
+def _clip_polygon_with_boundary(
+    points: list[tuple[float, float]],
+    *,
+    inside,
+    intersect,
+) -> list[tuple[float, float]]:
+    """Clip a polygon against a single boundary half-space."""
+    if not points:
+        return []
+    result: list[tuple[float, float]] = []
+    previous = points[-1]
+    previous_inside = inside(previous)
+    for current in points:
+        current_inside = inside(current)
+        if current_inside:
+            if not previous_inside:
+                result.append(intersect(previous, current))
+            result.append(current)
+        elif previous_inside:
+            result.append(intersect(previous, current))
+        previous = current
+        previous_inside = current_inside
+    return result
+
+
+def _polygon_rect_intersection_area(
+    polygon: list[tuple[float, float]],
+    rect: _Rect | None,
+) -> float:
+    """Return the area of a convex polygon clipped to an axis-aligned rectangle."""
+    if rect is None or len(polygon) < 3:
+        return 0.0
+
+    def intersect_vertical(
+        previous: tuple[float, float],
+        current: tuple[float, float],
+        boundary_x: float,
+    ) -> tuple[float, float]:
+        x1, y1 = previous
+        x2, y2 = current
+        if math.isclose(x1, x2):
+            return (boundary_x, y1)
+        ratio = (boundary_x - x1) / (x2 - x1)
+        return (boundary_x, y1 + ((y2 - y1) * ratio))
+
+    def intersect_horizontal(
+        previous: tuple[float, float],
+        current: tuple[float, float],
+        boundary_y: float,
+    ) -> tuple[float, float]:
+        x1, y1 = previous
+        x2, y2 = current
+        if math.isclose(y1, y2):
+            return (x1, boundary_y)
+        ratio = (boundary_y - y1) / (y2 - y1)
+        return (x1 + ((x2 - x1) * ratio), boundary_y)
+
+    clipped = polygon
+    clipped = _clip_polygon_with_boundary(
+        clipped,
+        inside=lambda point: point[0] >= rect.start_x_m,
+        intersect=lambda previous, current: intersect_vertical(previous, current, rect.start_x_m),
+    )
+    clipped = _clip_polygon_with_boundary(
+        clipped,
+        inside=lambda point: point[0] <= rect.end_x_m,
+        intersect=lambda previous, current: intersect_vertical(previous, current, rect.end_x_m),
+    )
+    clipped = _clip_polygon_with_boundary(
+        clipped,
+        inside=lambda point: point[1] >= rect.start_y_m,
+        intersect=lambda previous, current: intersect_horizontal(previous, current, rect.start_y_m),
+    )
+    clipped = _clip_polygon_with_boundary(
+        clipped,
+        inside=lambda point: point[1] <= rect.end_y_m,
+        intersect=lambda previous, current: intersect_horizontal(previous, current, rect.end_y_m),
+    )
+    return _polygon_area(clipped)
 
 
 def _pergola_footprint_rect(geometry: PergolaGeometry) -> _Rect:
@@ -192,6 +297,41 @@ def _additional_protected_area_rect(
         start_y_m=origin_y,
         end_y_m=origin_y + additional_protected_area.width_m,
     )
+
+
+def _shadow_casting_wall_polygon(
+    geometry: PergolaGeometry,
+    sun: SunPosition,
+    shadow_casting_wall: ShadowCastingWallConfig | None,
+) -> list[tuple[float, float]]:
+    """Project the shadow of a vertical wall segment onto the ground plane."""
+    if (
+        shadow_casting_wall is None
+        or not shadow_casting_wall.enabled
+        or shadow_casting_wall.length_m <= 0
+        or shadow_casting_wall.height_m <= 0
+        or sun.elevation_deg <= 0
+    ):
+        return []
+
+    start_x, start_y = _east_north_offset_to_local(
+        geometry,
+        shadow_casting_wall.offset_east_m,
+        shadow_casting_wall.offset_north_m,
+    )
+    shadow_length = shadow_casting_wall.height_m / math.tan(
+        math.radians(max(sun.elevation_deg, 0.1))
+    )
+    delta_east = -shadow_length * math.sin(math.radians(sun.azimuth_deg))
+    delta_north = -shadow_length * math.cos(math.radians(sun.azimuth_deg))
+    delta_x, delta_y = _east_north_offset_to_local(geometry, delta_east, delta_north)
+    end_x = start_x + shadow_casting_wall.length_m
+    return [
+        (start_x, start_y),
+        (end_x, start_y),
+        (end_x + delta_x, start_y + delta_y),
+        (start_x + delta_x, start_y + delta_y),
+    ]
 
 
 def _sun_patch_rect(
@@ -302,6 +442,7 @@ def project_pergola_shadow(
     *,
     tolerance_depth_m: float,
     additional_protected_area=None,
+    shadow_casting_wall: ShadowCastingWallConfig | None = None,
 ) -> ProjectionResult:
     """Project direct sunlight under the pergola and onto the attached house.
 
@@ -336,6 +477,9 @@ def project_pergola_shadow(
             house_overlap_end_m=None,
             base_protected_overlap_m2=0.0,
             additional_protected_overlap_m2=0.0,
+            base_shadow_relief_m2=0.0,
+            additional_shadow_relief_m2=0.0,
+            total_shadow_relief_m2=0.0,
             effective_protected_overlap_m2=0.0,
             protected_zone_breached=False,
         )
@@ -356,12 +500,32 @@ def project_pergola_shadow(
     direct_depth = max(front_direct_depth, width_direct_depth)
 
     sun_patch = _sun_patch_rect(geometry, sun, front_full_depth, width_full_depth)
-    base_overlap_area = _rect_overlap_area(sun_patch, _pergola_footprint_rect(geometry))
+    base_rect = _pergola_footprint_rect(geometry)
+    additional_rect = _additional_protected_area_rect(geometry, additional_protected_area)
+    base_overlap_rect = _rect_intersection(sun_patch, base_rect)
+    additional_overlap_rect = _rect_intersection(sun_patch, additional_rect)
+    base_overlap_area = _rect_overlap_area(sun_patch, base_rect)
     additional_overlap_area = _rect_overlap_area(
         sun_patch,
-        _additional_protected_area_rect(geometry, additional_protected_area),
+        additional_rect,
     )
-    effective_overlap_area = (base_overlap_area + additional_overlap_area) * openness
+    wall_shadow_polygon = _shadow_casting_wall_polygon(
+        geometry,
+        sun,
+        shadow_casting_wall,
+    )
+    base_shadow_relief_area = _polygon_rect_intersection_area(
+        wall_shadow_polygon,
+        base_overlap_rect,
+    )
+    additional_shadow_relief_area = _polygon_rect_intersection_area(
+        wall_shadow_polygon,
+        additional_overlap_rect,
+    )
+    effective_overlap_area = (
+        max(0.0, base_overlap_area - base_shadow_relief_area)
+        + max(0.0, additional_overlap_area - additional_shadow_relief_area)
+    ) * openness
 
     sun_in_front = sun_in_front_of_pergola(geometry, sun)
     lateral_shift = (
@@ -410,6 +574,9 @@ def project_pergola_shadow(
         house_overlap_end_m=None if overlap_end is None else round(overlap_end, 3),
         base_protected_overlap_m2=round(base_overlap_area, 3),
         additional_protected_overlap_m2=round(additional_overlap_area, 3),
+        base_shadow_relief_m2=round(base_shadow_relief_area, 3),
+        additional_shadow_relief_m2=round(additional_shadow_relief_area, 3),
+        total_shadow_relief_m2=round(base_shadow_relief_area + additional_shadow_relief_area, 3),
         effective_protected_overlap_m2=round(effective_overlap_area, 3),
         protected_zone_breached=protected_zone_breached,
     )
@@ -444,6 +611,7 @@ def optics_for_angle(
     *,
     tolerance_depth_m: float,
     additional_protected_area=None,
+    shadow_casting_wall: ShadowCastingWallConfig | None = None,
 ) -> PergolaOptics:
     """Build optical metrics for a specific slat angle."""
     openness = openness_fraction_for_angle(actuator, angle_deg)
@@ -454,6 +622,7 @@ def optics_for_angle(
         angle_deg,
         tolerance_depth_m=tolerance_depth_m,
         additional_protected_area=additional_protected_area,
+        shadow_casting_wall=shadow_casting_wall,
     )
     return PergolaOptics(openness_fraction=openness, projection=projection)
 
@@ -505,6 +674,7 @@ def compute_tracking_decision(
             target_angle,
             tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
             additional_protected_area=config.additional_protected_area,
+            shadow_casting_wall=config.shadow_casting_wall,
         )
         return TrackingDecision(
             actuator_percent=override_percent,
@@ -526,6 +696,7 @@ def compute_tracking_decision(
             target_angle,
             tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
             additional_protected_area=config.additional_protected_area,
+            shadow_casting_wall=config.shadow_casting_wall,
         )
         return TrackingDecision(
             actuator_percent=target_percent,
@@ -547,6 +718,7 @@ def compute_tracking_decision(
         light_angle,
         tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
         additional_protected_area=config.additional_protected_area,
+        shadow_casting_wall=config.shadow_casting_wall,
     )
     shade_optics = optics_for_angle(
         config.geometry,
@@ -555,6 +727,7 @@ def compute_tracking_decision(
         shade_angle,
         tolerance_depth_m=config.tracking.max_direct_sun_depth_m,
         additional_protected_area=config.additional_protected_area,
+        shadow_casting_wall=config.shadow_casting_wall,
     )
 
     if config.tracking.strategy == TRACKING_MAX_LIGHT:
