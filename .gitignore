@@ -9,10 +9,17 @@ __pycache__/
 venv/
 .mypy_cache/
 
+config/.HA_VERSION
+config/.cache/
+config/deps/
+config/tts/
+config/.ha_run.lock
 config/.storage/
 config/home-assistant.log
+config/home-assistant.log.*
 config/home-assistant_v2.db
 config/home-assistant_v2.db-*
 config/.cloud/
 
 .vscode/
+simulation_exports/
