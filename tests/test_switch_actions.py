@@ -1,0 +1,540 @@
+"""Unit tests for switch.py uncovered branches."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.adaptive_pergola.const import (
+    CONF_CLIMATE_MODE,
+    CONF_CLOUD_SUPPRESSION,
+    CONF_DEFAULT_HEIGHT,
+    CONF_ENABLE_GLARE_ZONES,
+    CONF_ENABLE_SUN_TRACKING,
+    CONF_IRRADIANCE_ENTITY,
+    CONF_LUX_ENTITY,
+    CONF_SENSOR_TYPE,
+    DOMAIN,
+    CoverType,
+)
+from custom_components.adaptive_pergola.switch import (
+    AdaptivePergolaSwitch,
+    _has_irradiance_feature,
+    _has_lux_feature,
+)
+
+
+def _make_config_entry(options: dict | None = None, sensor_type: str = CoverType.BLIND):
+    entry = MagicMock()
+    entry.entry_id = "test_entry"
+    entry.data = {"name": "Test", CONF_SENSOR_TYPE: sensor_type}
+    entry.options = options or {CONF_DEFAULT_HEIGHT: 60}
+    return entry
+
+
+def _make_coordinator(mock_hass=None):
+    coord = MagicMock()
+    coord.hass = mock_hass or MagicMock()
+    coord.logger = MagicMock()
+    coord.async_add_listener = MagicMock(return_value=lambda: None)
+    coord.entities = []
+    coord._cmd_svc = MagicMock()
+    coord._cmd_svc.apply_position = AsyncMock()
+    coord.manager = MagicMock()
+    coord.manager.is_cover_manual = MagicMock(return_value=False)
+    coord.manager.manual_controlled = []
+    coord.check_adaptive_time = True
+    coord._build_position_context = MagicMock(return_value=MagicMock())
+    coord.async_refresh = AsyncMock()
+    coord.async_apply_sun_tracking_update = AsyncMock()
+    coord.state = 50
+    return coord
+
+
+def _make_switch(key: str = "automatic_control", coordinator=None, config_entry=None):
+    coord = coordinator or _make_coordinator()
+    entry = config_entry or _make_config_entry()
+    return AdaptivePergolaSwitch(
+        entry_id="test_entry",
+        hass=coord.hass,
+        config_entry=entry,
+        coordinator=coord,
+        switch_name="Automatic Control",
+        initial_state=True,
+        key=key,
+    )
+
+
+# ---------------------------------------------------------------------------
+# async_turn_on: automatic_control key
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_automatic_control_signals_state_change_and_refreshes():
+    """Turn on automatic_control signals state_change; coordinator owns dispatch.
+
+    Issue #352: the switch must NOT dispatch positions itself — that would
+    send the stale pre-refresh ``coordinator.state``. Instead it sets
+    ``state_change=True`` and lets ``async_refresh`` route through
+    ``async_handle_state_change``, which dispatches the post-pipeline value.
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1", "cover.test_2"]
+    coord.manager.is_cover_manual.side_effect = lambda e: e == "cover.test_2"
+    coord.state_change = False
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_on()
+
+    coord._cmd_svc.apply_position.assert_not_called()
+    assert coord.state_change is True
+    coord.async_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_automatic_control_outside_time_window_still_signals():
+    """Outside the time window the switch still signals; the gate lives downstream.
+
+    Issue #352: the time-window skip now lives in ``async_handle_state_change``
+    (coordinator.py:1329-1337), not in the switch. The switch unconditionally
+    sets ``state_change=True`` so the coordinator gets a chance to evaluate
+    and decide whether to dispatch.
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    coord.manager.is_cover_manual.return_value = False
+    coord.check_adaptive_time = False  # gate enforced inside the refresh
+    coord.state_change = False
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_on()
+
+    coord._cmd_svc.apply_position.assert_not_called()
+    assert coord.state_change is True
+    coord.async_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_with_added_kwarg_skips_position_send():
+    """Restore-from-state (added=True) must NOT signal state_change.
+
+    Startup-restore reconstructs auto_control's last state and must not
+    perturb the coordinator's dispatch flag — the first refresh has its own
+    path (``async_handle_first_refresh``).
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    coord.state_change = False
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_on(added=True)
+
+    coord._cmd_svc.apply_position.assert_not_called()
+    assert coord.state_change is False
+    coord.async_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_non_automatic_control_key_no_position_send():
+    """Turn on a non-automatic_control switch does not trigger position logic."""
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+
+    switch = _make_switch(key="switch_mode", coordinator=coord)
+    await switch.async_turn_on()
+
+    coord._cmd_svc.apply_position.assert_not_called()
+    coord.async_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_automatic_control_clears_venetian_tilt_targets():
+    """Auto Control off→on must clear the venetian sequencer's stored tilt targets.
+
+    Issue #33 defense-in-depth: the min-delta gate now anchors on live actuator
+    reads, but a stale ``_tilt_targets`` cache could still mislead diagnostics
+    or fallback logic. Clearing on auto-on lets the very next cycle resolve
+    cleanly from actuator state.
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    # Wire a venetian-style policy with a sequencer attribute we can spy on.
+    sequencer = MagicMock()
+    sequencer.clear_tilt_targets = MagicMock()
+    coord._policy = MagicMock()
+    coord._policy.sequencer = sequencer
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_on()  # off→on transition (no added kwarg)
+
+    sequencer.clear_tilt_targets.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_automatic_control_no_sequencer_is_noop():
+    """Non-venetian policies have ``sequencer is None`` — must not raise.
+
+    Vertical / horizontal / tilt-only policies don't own a sequencer; the
+    clear-tilt-targets hook must short-circuit cleanly without AttributeError.
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    coord._policy = MagicMock()
+    coord._policy.sequencer = None
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    # Should not raise even though there's no sequencer to clear.
+    await switch.async_turn_on()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_on_automatic_control_with_added_kwarg_does_not_clear():
+    """Restore-from-state (added=True) must not invalidate stored tilt targets.
+
+    The clear-tilt-targets hook is meant for *real* user toggles; startup
+    restore reconstructs auto_control's last state and should not perturb the
+    sequencer.
+    """
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    sequencer = MagicMock()
+    sequencer.clear_tilt_targets = MagicMock()
+    coord._policy = MagicMock()
+    coord._policy.sequencer = sequencer
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_on(added=True)
+
+    sequencer.clear_tilt_targets.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# async_turn_off: automatic_control key
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_off_automatic_control_resets_manual_overrides():
+    """Turn off automatic_control resets all manual override entities."""
+    coord = _make_coordinator()
+    coord.manager.manual_controlled = ["cover.test_1", "cover.test_2"]
+    coord.return_to_default_toggle = False
+
+    switch = _make_switch(key="automatic_control", coordinator=coord)
+    await switch.async_turn_off()
+
+    assert coord.manager.reset.call_count == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_off_automatic_control_sends_default_position_when_toggle_on():
+    """Turn off automatic_control sends default_height position when return_to_default_toggle is True."""
+    coord = _make_coordinator()
+    coord.entities = ["cover.test_1"]
+    coord.manager.manual_controlled = []
+    coord.return_to_default_toggle = True
+    config_entry = _make_config_entry(options={CONF_DEFAULT_HEIGHT: 75})
+    coord.config_entry = config_entry
+
+    switch = _make_switch(
+        key="automatic_control", coordinator=coord, config_entry=config_entry
+    )
+    await switch.async_turn_off()
+
+    coord._cmd_svc.apply_position.assert_called_once()
+    call_args = coord._cmd_svc.apply_position.call_args
+    assert call_args[0][1] == 75  # default_height from options
+    coord.async_refresh.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_turn_off_non_automatic_control_key_no_special_logic():
+    """Turn off a non-automatic_control switch does not reset overrides or send positions."""
+    coord = _make_coordinator()
+    coord.manager.manual_controlled = ["cover.test_1"]
+
+    switch = _make_switch(key="switch_mode", coordinator=coord)
+    await switch.async_turn_off()
+
+    coord.manager.reset.assert_not_called()
+    coord._cmd_svc.apply_position.assert_not_called()
+    coord.async_refresh.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Option-backed Sun Tracking switch
+# ---------------------------------------------------------------------------
+
+
+def _make_sun_tracking_switch(*, enabled: bool) -> AdaptivePergolaSwitch:
+    """Create a Sun Tracking switch wired to mocked options persistence."""
+    coord = _make_coordinator()
+    entry = _make_config_entry(options={CONF_ENABLE_SUN_TRACKING: enabled})
+    coord.config_entry = entry
+    return AdaptivePergolaSwitch(
+        entry_id="test_entry",
+        hass=coord.hass,
+        config_entry=entry,
+        coordinator=coord,
+        switch_name="Sun Tracking",
+        initial_state=enabled,
+        key="sun_tracking",
+        option_key=CONF_ENABLE_SUN_TRACKING,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_sun_tracking_uses_config_option_as_source_of_truth(enabled):
+    """The switch initializes from options instead of stale restored state."""
+    switch = _make_sun_tracking_switch(enabled=enabled)
+    switch.async_get_last_state = AsyncMock()
+
+    await switch.async_added_to_hass()
+
+    assert switch.is_on is enabled
+    switch.async_get_last_state.assert_not_awaited()
+    switch.coordinator.async_add_listener.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("method", "enabled"), [("async_turn_on", True), ("async_turn_off", False)]
+)
+async def test_sun_tracking_persists_option(method, enabled):
+    """Runtime changes persist through the in-place options update path."""
+    switch = _make_sun_tracking_switch(enabled=not enabled)
+    original_options = dict(switch.config_entry.options)
+
+    with (
+        patch(
+            "custom_components.adaptive_pergola.switch.validate_options_patch"
+        ) as mock_validate,
+        patch(
+            "custom_components.adaptive_pergola.switch.apply_options_patch",
+            new_callable=AsyncMock,
+        ) as mock_apply,
+    ):
+        mock_apply.side_effect = lambda _hass, _coordinator, option_patch: setattr(
+            switch.config_entry,
+            "options",
+            {**switch.config_entry.options, **option_patch},
+        )
+        await getattr(switch, method)()
+
+    expected_patch = {CONF_ENABLE_SUN_TRACKING: enabled}
+    mock_validate.assert_called_once_with(
+        expected_patch,
+        original_options,
+        CoverType.BLIND,
+    )
+    mock_apply.assert_awaited_once_with(switch.hass, switch.coordinator, expected_patch)
+    assert switch.is_on is enabled
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("enabled", [True, False])
+def test_sun_tracking_reflects_external_option_updates(enabled):
+    """Service and options-flow changes are visible without entity reload."""
+    switch = _make_sun_tracking_switch(enabled=not enabled)
+
+    switch.config_entry.options = {CONF_ENABLE_SUN_TRACKING: enabled}
+
+    assert switch.is_on is enabled
+
+
+# ---------------------------------------------------------------------------
+# Switch display name — manual_toggle uses "Manual Override Detection"
+# ---------------------------------------------------------------------------
+
+
+def test_manual_toggle_switch_display_name():
+    """manual_toggle switch displays 'Manual Override Detection' but unique_id preserves 'Manual Override'."""
+    coord = _make_coordinator()
+    entry = _make_config_entry()
+    switch = AdaptivePergolaSwitch(
+        entry_id="entry_abc",
+        hass=coord.hass,
+        config_entry=entry,
+        coordinator=coord,
+        switch_name="Manual Override",
+        initial_state=True,
+        key="manual_toggle",
+        display_name="Manual Override Detection",
+    )
+    assert switch.name == "Manual Override Detection"
+    assert switch._attr_unique_id == "entry_abc_Manual Override"
+    assert switch._attr_translation_key == "manual_toggle"
+
+
+def test_switch_without_display_name_uses_switch_name():
+    """A switch without display_name falls back to switch_name for the name property."""
+    coord = _make_coordinator()
+    entry = _make_config_entry()
+    switch = AdaptivePergolaSwitch(
+        entry_id="entry_abc",
+        hass=coord.hass,
+        config_entry=entry,
+        coordinator=coord,
+        switch_name="Automatic Control",
+        initial_state=True,
+        key="automatic_control",
+    )
+    assert switch.name == "Automatic Control"
+    assert switch._attr_unique_id == "entry_abc_Automatic Control"
+
+
+# ---------------------------------------------------------------------------
+# Conditional switch creation — integration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+async def test_glare_zone_switches_created_when_configured(hass) -> None:
+    """Glare zone switches are created for each named zone."""
+    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
+
+    options = dict(VERTICAL_OPTIONS)
+    options[CONF_ENABLE_GLARE_ZONES] = True
+    options["glare_zone_1_name"] = "Zone One"
+    options["glare_zone_2_name"] = "Zone Two"
+    options["glare_zone_3_name"] = ""  # unnamed — skipped
+    options["glare_zone_4_name"] = ""
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={"name": "Glare Switch Test", CONF_SENSOR_TYPE: CoverType.BLIND},
+        options=options,
+        entry_id="glare_sw_01",
+        title="Glare Switch Test",
+    )
+    entry.add_to_hass(hass)
+    with _patch_coordinator_refresh():
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    from homeassistant.helpers import entity_registry as er
+
+    reg = er.async_get(hass)
+    switch_entities = [
+        e
+        for e in reg.entities.values()
+        if e.config_entry_id == entry.entry_id and e.domain == "switch"
+    ]
+    switch_names = [e.unique_id for e in switch_entities]
+    # Should have 2 glare zone switches (2 named zones)
+    glare_switches = [s for s in switch_names if "Glare Zone" in s]
+    assert len(glare_switches) == 2
+
+
+# ---------------------------------------------------------------------------
+# enabled_when predicates — lux/irradiance feature gate (issue #668)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_lux_switch_created_when_cloud_suppression_on_without_climate_mode():
+    """Lux switch must appear when CONF_CLOUD_SUPPRESSION is on, regardless of climate mode.
+
+    Issue #668: cloud suppression is independent of climate mode but the
+    lux gate previously required climate mode ON.
+    """
+    entry = _make_config_entry(
+        options={
+            CONF_CLOUD_SUPPRESSION: True,
+            CONF_LUX_ENTITY: "sensor.lux",
+            CONF_CLIMATE_MODE: False,
+        }
+    )
+    assert _has_lux_feature(entry) is True
+
+
+@pytest.mark.unit
+def test_irradiance_switch_created_when_cloud_suppression_on_without_climate_mode():
+    """Irradiance switch must appear when cloud suppression is on, regardless of climate mode.
+
+    Issue #668: cloud suppression is independent of climate mode but the
+    irradiance gate previously required climate mode ON.
+    """
+    entry = _make_config_entry(
+        options={
+            CONF_CLOUD_SUPPRESSION: True,
+            CONF_IRRADIANCE_ENTITY: "sensor.irradiance",
+            CONF_CLIMATE_MODE: False,
+        }
+    )
+    assert _has_irradiance_feature(entry) is True
+
+
+@pytest.mark.unit
+def test_lux_switch_not_created_without_either_feature():
+    """Lux switch absent when neither climate mode nor cloud suppression is on."""
+    entry = _make_config_entry(
+        options={
+            CONF_CLOUD_SUPPRESSION: False,
+            CONF_LUX_ENTITY: "sensor.lux",
+            CONF_CLIMATE_MODE: False,
+        }
+    )
+    assert _has_lux_feature(entry) is False
+
+
+@pytest.mark.unit
+def test_lux_switch_still_created_with_climate_mode_only():
+    """Regression: climate-mode-only user still gets the lux switch."""
+    entry = _make_config_entry(
+        options={
+            CONF_CLOUD_SUPPRESSION: False,
+            CONF_LUX_ENTITY: "sensor.lux",
+            CONF_CLIMATE_MODE: True,
+        }
+    )
+    assert _has_lux_feature(entry) is True
+
+
+@pytest.mark.integration
+async def test_climate_switches_created_when_climate_mode_with_entities(hass) -> None:
+    """Climate-related switches (temp_switch) created when climate_mode + temp entity."""
+    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
+
+    options = dict(VERTICAL_OPTIONS)
+    options["climate_mode"] = True
+    options["temp_entity"] = "sensor.indoor_temp"
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={"name": "Climate Switch Test", CONF_SENSOR_TYPE: CoverType.BLIND},
+        options=options,
+        entry_id="climate_sw_01",
+        title="Climate Switch Test",
+    )
+    entry.add_to_hass(hass)
+    with _patch_coordinator_refresh():
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    from homeassistant.helpers import entity_registry as er
+
+    reg = er.async_get(hass)
+    switch_entities = [
+        e
+        for e in reg.entities.values()
+        if e.config_entry_id == entry.entry_id and e.domain == "switch"
+    ]
+    # Should have more switches than the base count (temp toggle added)
+    assert len(switch_entities) >= 3

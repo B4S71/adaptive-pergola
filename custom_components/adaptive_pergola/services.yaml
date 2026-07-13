@@ -1,0 +1,1130 @@
+stop:
+  name: Stop cover
+  description: >-
+    Sends stop_cover to the targeted covers via the ACP proxy so the command
+    is recognised as ACP-originated. Engages manual override so the next
+    automatic cycle does not immediately counter-command the cover. Compatible
+    with manual_ignore_external mode — the Lovelace card stop button should
+    call this service instead of cover.stop_cover directly.
+  target:
+    entity:
+      integration: adaptive_pergola
+
+integration_enable:
+  name: Enable integration
+  description: >-
+    Re-enables Adaptive Pergola on the targeted instances. Covers stay where they
+    are; positioning resumes on the next natural update cycle.
+  target:
+    entity:
+      integration: adaptive_pergola
+
+integration_disable:
+  name: Disable integration
+  description: >-
+    Disables Adaptive Pergola on the targeted instances. Any ACP-in-flight cover
+    moves are stopped immediately (cover.stop_cover). Deferred motion and weather
+    timers are cancelled and reconciliation state is cleared.
+  target:
+    entity:
+      integration: adaptive_pergola
+
+emergency_stop:
+  name: Emergency stop
+  description: >-
+    Panic button — sends stop_cover to every configured cover on the targeted
+    instances (capability-checked), regardless of whether the cover is currently
+    moving, then disables the integration. With no target, acts on all ACP
+    instances and all their covers.
+  target:
+    entity:
+      integration: adaptive_pergola
+
+export_config:
+  name: Export configuration
+  description: >-
+    Returns the cover configuration as JSON for use in the simulation notebook.
+    Call from Developer Tools > Services, then copy the response and paste it
+    into the CONFIG variable in notebooks/simulate_cover.ipynb.
+  fields:
+    config_entry_id:
+      name: Cover configuration
+      description: The Adaptive Pergola configuration entry to export.
+      required: true
+      selector:
+        config_entry:
+          integration: adaptive_pergola
+
+set_position:
+  name: Set position
+  description: >-
+    Move the targeted covers to an explicit position. Clamps up to the highest
+    active custom-position minimum-mode floor across all slots. By default the
+    call engages manual override and respects the priority pipeline (so an
+    active force_override or weather override still wins); set force=true to
+    bypass the pipeline check and skip manual-override engagement.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    position:
+      name: Position
+      description: "Target position (0–100%)."
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    force:
+      name: Force
+      description: >-
+        When true, bypass the priority pipeline check and skip manual-override
+        engagement. Default false — service calls respect force_override /
+        weather and engage manual override like a dashboard slider.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+set_tilt:
+  name: Set tilt
+  description: >-
+    Set the slat/tilt axis of the targeted covers. On venetian (dual-axis)
+    covers this drives ONLY the tilt slats and leaves the carriage untouched;
+    on cover types whose primary axis already is the tilt it behaves like a
+    tilt move. By default the call engages manual override; set force=true to
+    skip manual-override engagement (matching set_position's force semantics).
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    tilt:
+      name: Tilt
+      description: "Target tilt (0–100%)."
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    force:
+      name: Force
+      description: >-
+        When true, skip manual-override engagement. Default false — service
+        calls engage manual override like a dashboard slider.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+set_position_limits:
+  name: Set position limits
+  description: >-
+    Update position-limit options (default height, min/max position, open/close
+    threshold, inverse state). Changes are persisted and take effect after reload.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    default_height:
+      name: Default height
+      description: "Default cover position when sun is not visible (0–100%)."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    min_position:
+      name: Minimum position
+      description: "Minimum position the cover may move to (0–99%)."
+      selector:
+        number:
+          min: 0
+          max: 99
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    enable_min_position:
+      name: Enable min position only during sun tracking
+      description: "If true, min_position applies only while sun is tracked."
+      selector:
+        boolean:
+    max_position:
+      name: Maximum position
+      description: "Maximum position the cover may move to (1–100%)."
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    enable_max_position:
+      name: Enable max position only during sun tracking
+      description: "If true, max_position applies only while sun is tracked."
+      selector:
+        boolean:
+    open_close_threshold:
+      name: Open/close threshold
+      description: "Position below which open/close-only covers are closed (1–99%)."
+      selector:
+        number:
+          min: 1
+          max: 99
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    enable_position_matching:
+      name: Enable position matching
+      description: >-
+        If true, the reconciliation pass resends the target until the cover
+        reaches it. If false (the default), the cover is commanded once and a
+        settle past the position tolerance becomes a manual override.
+      selector:
+        boolean:
+    inverse_state:
+      name: Inverse state
+      description: "Invert position (0%=open, 100%=closed) for covers that report state inversely."
+      selector:
+        boolean:
+
+set_sunset_sunrise:
+  name: Set sunset / sunrise positions
+  description: >-
+    Update sunset position and offset settings. Closes issue #129 — use an
+    automation to drive sunset_position from a sensor (e.g. mosquito activity).
+    Pass null to clear an optional field.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    sunset_position:
+      name: Sunset position
+      description: "Position to move to at end of time window. Null = use default_height."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    sunset_offset:
+      name: Sunset offset
+      description: "Minutes to shift the end-of-window trigger relative to sunset (-120–120)."
+      selector:
+        number:
+          min: -120
+          max: 120
+          mode: box
+          unit_of_measurement: minutes
+    sunrise_offset:
+      name: Sunrise offset
+      description: "Minutes to shift the start-of-window trigger relative to sunrise (-120–120)."
+      selector:
+        number:
+          min: -120
+          max: 120
+          mode: box
+          unit_of_measurement: minutes
+    sunset_use_my:
+      name: Use Somfy My position at sunset
+      description: "If true, use my_position_value instead of sunset_position at end of window."
+      selector:
+        boolean:
+    my_position_value:
+      name: Somfy My position
+      description: "The 'My' preset position (1–99%). Required when sunset_use_my or any custom_position_use_my is true."
+      selector:
+        number:
+          min: 1
+          max: 99
+          mode: slider
+          unit_of_measurement: "%"
+
+set_automation_timing:
+  name: Set automation timing
+  description: >-
+    Update delta thresholds, time window start/end, and return_sunset.
+    start_time and start_entity are mutually exclusive; same for end_time/end_entity.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    delta_position:
+      name: Position delta threshold
+      description: "Minimum position change (%) required before sending a cover command (1–90)."
+      selector:
+        number:
+          min: 1
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    delta_time:
+      name: Time delta threshold
+      description: "Minimum time (minutes) between cover commands (2–60)."
+      selector:
+        number:
+          min: 2
+          max: 60
+          mode: box
+          unit_of_measurement: minutes
+    start_time:
+      name: Start time
+      description: "Fixed time to start the tracking window (HH:MM:SS). Mutually exclusive with start_entity."
+      selector:
+        time:
+    start_entity:
+      name: Start entity
+      description: "Entity whose state provides the start time. Mutually exclusive with start_time."
+      selector:
+        entity:
+          domain:
+            - sensor
+            - input_datetime
+    end_time:
+      name: End time
+      description: "Fixed time to end the tracking window (HH:MM:SS). Mutually exclusive with end_entity."
+      selector:
+        time:
+    end_entity:
+      name: End entity
+      description: "Entity whose state provides the end time. Mutually exclusive with end_time."
+      selector:
+        entity:
+          domain:
+            - sensor
+            - input_datetime
+    return_sunset:
+      name: Return to sunset position at end time
+      description: "If true, force-send sunset_position when the time window ends."
+      selector:
+        boolean:
+
+set_manual_override:
+  name: Set manual override settings
+  description: Update manual override duration, reset behavior, and detection threshold.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    manual_override_duration:
+      name: Override duration
+      description: "How long a manual override lasts before automatic control resumes."
+      selector:
+        duration:
+    manual_override_reset:
+      name: Reset override on time window start
+      description: "If true, clear any active manual override when the time window starts."
+      selector:
+        boolean:
+    manual_threshold:
+      name: Manual detection threshold
+      description: "Position change (%) that triggers manual override detection (0–99). Null = any change."
+      selector:
+        number:
+          min: 0
+          max: 99
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    manual_ignore_intermediate:
+      name: Ignore intermediate states
+      description: "If true, ignore opening/closing transitional states for manual override detection."
+      selector:
+        boolean:
+    manual_ignore_external:
+      name: Only engage from ACP commands
+      description: "If true, only commands routed through the ACP proxy entity or the adaptive_pergola.set_position service engage manual override; all other position changes are ignored."
+      selector:
+        boolean:
+
+set_force_override:
+  name: Set force override (DEPRECATED)
+  description: >-
+    DEPRECATED (issue #563): force override merged into custom-position slot 5.
+    This service now writes slot 5 at safety priority (100) and will be removed
+    in a future release — use set_custom_position with slot: 5 instead.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    force_override_sensors:
+      name: Force override sensors
+      description: "Binary sensors that trigger the override (written to slot 5). Empty list = disable."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    force_override_position:
+      name: Force override position
+      description: "Position to move to when a sensor is active (0–100%, written to slot 5)."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    force_override_min_mode:
+      name: Minimum position mode
+      description: "If true, treat the position as a minimum floor rather than a fixed target (written to slot 5)."
+      selector:
+        boolean:
+
+set_custom_position:
+  name: Set custom position slot
+  description: >-
+    Update one custom position slot (1–10). A slot is active when it has a
+    trigger (sensors and/or template) and a position. Pass an empty list and
+    null position to clear the slot. Priority 100 gives the slot safety
+    semantics: it acts outside the time window and bypasses delta gates.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    slot:
+      name: Slot
+      description: "Which custom position slot to update (1–5)."
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 5
+          step: 1
+          mode: slider
+    sensors:
+      name: Trigger sensors
+      description: "Binary sensors that activate this custom position (OR logic). Empty list = clear."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    sensor:
+      name: Trigger sensor (deprecated)
+      description: "DEPRECATED single-sensor alias — use 'sensors'. Ignored when 'sensors' is supplied."
+      selector:
+        entity:
+          domain: binary_sensor
+    template:
+      name: Condition template
+      description: "Optional Jinja2 template; when truthy it activates the slot (combined with the sensors per template_mode)."
+      selector:
+        template:
+    template_mode:
+      name: Template combine mode
+      description: "'or' (default): template OR sensors activate the slot. 'and': template must be truthy AND a sensor on."
+      selector:
+        select:
+          options:
+            - "or"
+            - "and"
+    position:
+      name: Position
+      description: "Target position (0–100%) when the trigger is active. Null = clear slot."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    priority:
+      name: Priority
+      description: "Pipeline priority (1–100, default 77). Higher = evaluated earlier; 100 = safety semantics."
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          mode: slider
+    min_mode:
+      name: Minimum position mode
+      description: "If true, treat position as a minimum floor."
+      selector:
+        boolean:
+    use_my:
+      name: Use Somfy My position
+      description: "If true, use my_position_value instead of position when the trigger is active."
+      selector:
+        boolean:
+
+set_motion:
+  name: Set motion settings
+  description: Update motion sensors and no-motion timeout. Pass an empty list to disable motion control.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    motion_sensors:
+      name: Motion sensors
+      description: "Binary sensors (motion/occupancy/presence) that indicate occupancy. Empty list = disable."
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class:
+            - motion
+            - occupancy
+            - presence
+          multiple: true
+    motion_timeout:
+      name: No-motion timeout
+      description: "Seconds to wait after last motion before applying the motion-timeout position (30–3600)."
+      selector:
+        number:
+          min: 30
+          max: 3600
+          step: 30
+          mode: slider
+          unit_of_measurement: seconds
+
+set_light_cloud:
+  name: Set light & cloud settings
+  description: >-
+    Update weather entity, sunny-state filter, lux/irradiance thresholds,
+    cloud coverage threshold, and the cloud suppression toggle.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    weather_entity:
+      name: Weather entity
+      description: "Weather entity used to read conditions (domain: weather). Null = none."
+      selector:
+        entity:
+          domain: weather
+    weather_state:
+      name: Sunny weather states
+      description: "Weather condition states considered 'sunny' for sun-tracking purposes."
+      selector:
+        select:
+          multiple: true
+          options:
+            - clear-night
+            - clear
+            - cloudy
+            - fog
+            - hail
+            - lightning
+            - lightning-rainy
+            - partlycloudy
+            - pouring
+            - rainy
+            - snowy
+            - snowy-rainy
+            - sunny
+            - windy
+            - windy-variant
+            - exceptional
+    lux_entity:
+      name: Lux sensor
+      description: "Illuminance sensor entity. Null = none."
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+    lux_threshold:
+      name: Lux threshold
+      description: "Lux value above which the cover is considered in direct sunlight."
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box
+          unit_of_measurement: lux
+    irradiance_entity:
+      name: Irradiance sensor
+      description: "Solar irradiance sensor entity. Null = none."
+      selector:
+        entity:
+          domain: sensor
+          device_class: irradiance
+    irradiance_threshold:
+      name: Irradiance threshold
+      description: "W/m² above which the cover is considered in direct sunlight."
+      selector:
+        number:
+          min: 0
+          max: 2000
+          mode: box
+          unit_of_measurement: W/m²
+    cloud_coverage_entity:
+      name: Cloud coverage sensor
+      description: "Sensor reporting cloud coverage percentage. Null = none."
+      selector:
+        entity:
+          domain: sensor
+    cloud_coverage_threshold:
+      name: Cloud coverage threshold
+      description: "Cloud coverage percentage above which the sky is considered overcast."
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
+          unit_of_measurement: "%"
+    cloud_suppression:
+      name: Enable cloud suppression
+      description: "If true, suppress solar positioning when cloud coverage exceeds the threshold."
+      selector:
+        boolean:
+
+set_climate:
+  name: Set climate settings
+  description: >-
+    Update climate mode and related temperature/presence options.
+    Enforces temp_low < temp_high.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    climate_mode:
+      name: Enable climate mode
+      description: "Master toggle for temperature-aware positioning."
+      selector:
+        boolean:
+    temp_entity:
+      name: Indoor temperature entity
+      description: "Climate or sensor entity for indoor temperature. Null = none."
+      selector:
+        entity:
+          domain:
+            - climate
+            - sensor
+    temp_low:
+      name: Low temperature threshold
+      description: "Below this temperature (°), winter strategy applies (0–90)."
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    temp_high:
+      name: High temperature threshold
+      description: "Above this temperature (°), summer strategy applies (0–90)."
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    outside_temp:
+      name: Outdoor temperature entity
+      description: "Sensor entity for outdoor temperature. Null = none."
+      selector:
+        entity:
+          domain: sensor
+    outside_threshold:
+      name: Outdoor temperature threshold
+      description: "Outdoor temperature (°) above which summer strategy is forced (0–100)."
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: slider
+          unit_of_measurement: "°"
+    presence_entity:
+      name: Presence entity
+      description: "Entity indicating occupancy (device_tracker, zone, binary_sensor, input_boolean). Null = none."
+      selector:
+        entity:
+          domain:
+            - device_tracker
+            - zone
+            - binary_sensor
+            - input_boolean
+    transparent_blind:
+      name: Transparent blind
+      description: "If true, treat the blind as semi-transparent for climate calculations."
+      selector:
+        boolean:
+    winter_close_insulation:
+      name: Close for winter insulation
+      description: "If true, fully close the cover on cold days to improve insulation."
+      selector:
+        boolean:
+    summer_close_bypass_sun_floor:
+      name: Full close in summer heat
+      description: "If true, summer climate-close ignores the sun-in-FOV minimum floor and reaches the global minimum position."
+      selector:
+        boolean:
+
+set_weather_safety:
+  name: Set weather safety settings
+  description: >-
+    Update wind, rain, and severe-weather override settings. The weather handler
+    priority-overrides automatic control to protect covers from damage.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    weather_bypass_auto_control:
+      name: Bypass automatic control
+      description: "If true, weather override ignores the Automatic Control toggle."
+      selector:
+        boolean:
+    weather_wind_speed_sensor:
+      name: Wind speed sensor
+      description: "Sensor entity for wind speed. Null = none."
+      selector:
+        entity:
+          domain: sensor
+    weather_wind_direction_sensor:
+      name: Wind direction sensor
+      description: "Sensor entity for wind direction (degrees). Null = none."
+      selector:
+        entity:
+          domain: sensor
+    weather_wind_speed_threshold:
+      name: Wind speed threshold
+      description: "Wind speed above which the cover is retracted (units must match sensor)."
+      selector:
+        number:
+          min: 0
+          max: 200
+          step: 1
+          mode: slider
+    weather_wind_direction_tolerance:
+      name: Wind direction tolerance
+      description: "Degrees either side of the window azimuth within which wind is considered a threat (5–180°)."
+      selector:
+        number:
+          min: 5
+          max: 180
+          step: 5
+          mode: slider
+          unit_of_measurement: "°"
+    weather_rain_sensor:
+      name: Rain sensor
+      description: "Sensor entity for rain accumulation. Null = none."
+      selector:
+        entity:
+          domain: sensor
+    weather_rain_threshold:
+      name: Rain threshold
+      description: "Rain accumulation above which the cover is retracted."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 0.5
+          mode: slider
+    weather_is_raining_sensor:
+      name: Is raining sensor
+      description: "Binary sensor indicating active rain. Null = none."
+      selector:
+        entity:
+          domain: binary_sensor
+    weather_is_windy_sensor:
+      name: Is windy sensor
+      description: "Binary sensor indicating dangerous wind. Null = none."
+      selector:
+        entity:
+          domain: binary_sensor
+    weather_severe_sensors:
+      name: Severe weather sensors
+      description: "Binary sensors that indicate severe weather conditions (OR logic). Empty list = none."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    weather_override_position:
+      name: Weather override position
+      description: "Position to move to when a weather condition is triggered (0–100%)."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    weather_override_min_mode:
+      name: Minimum position mode
+      description: "If true, treat weather_override_position as a minimum floor."
+      selector:
+        boolean:
+    weather_timeout:
+      name: Weather clear timeout
+      description: "Seconds to wait after conditions clear before resuming automatic control (0–3600)."
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 30
+          mode: slider
+          unit_of_measurement: seconds
+
+set_sun_tracking:
+  name: Set sun tracking settings
+  description: Update azimuth, field-of-view, elevation limits, and sun-tracking toggle.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    enable_sun_tracking:
+      name: Enable sun tracking
+      description: "Master toggle for solar-position-based cover control."
+      selector:
+        boolean:
+    minimize_movements:
+      name: Minimize movements
+      description: "If true, quantize the sun-tracked position into discrete coverage levels (rounding toward more coverage) to reduce motor movements."
+      selector:
+        boolean:
+    max_coverage_steps:
+      name: Maximum coverage steps
+      description: "Number of distinct positions used to reach full coverage when minimize_movements is on (1–10). 1 = jump straight to full coverage."
+      selector:
+        number:
+          min: 1
+          max: 10
+          step: 1
+          mode: slider
+    set_azimuth:
+      name: Window azimuth
+      description: "Compass direction the window faces (0–359°)."
+      selector:
+        number:
+          min: 0
+          max: 359
+          mode: slider
+          unit_of_measurement: "°"
+    fov_left:
+      name: Field of view left
+      description: "Degrees to the left of the azimuth within which the sun affects this cover (0–180°)."
+      selector:
+        number:
+          min: 0
+          max: 180
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    fov_right:
+      name: Field of view right
+      description: "Degrees to the right of the azimuth within which the sun affects this cover (0–180°)."
+      selector:
+        number:
+          min: 0
+          max: 180
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    min_elevation:
+      name: Minimum sun elevation
+      description: "Sun elevation (°) below which the cover is not moved. Null = no minimum."
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    max_elevation:
+      name: Maximum sun elevation
+      description: "Sun elevation (°) above which the cover is fully opened. Null = no maximum."
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    distance_shaded_area:
+      name: Distance to shaded area
+      description: "Distance from the window to the edge of the shaded area in metres (0.1–50 m, canonical metric regardless of HA locale)."
+      selector:
+        number:
+          min: 0.1
+          max: 50
+          step: 0.1
+          mode: box
+          unit_of_measurement: m
+
+set_blind_spot:
+  name: Set blind spot
+  description: >-
+    Update blind spot zone angles. Angles are measured inward from your FOV
+    left boundary (not from window azimuth). blind_spot_right must be greater
+    than blind_spot_left. Enforced at validation time.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    blind_spot:
+      name: Enable blind spot
+      description: "If true, the blind spot zone is active."
+      selector:
+        boolean:
+    blind_spot_left:
+      name: Blind spot left edge
+      description: "Left edge of the blind spot zone in degrees inward from your FOV left boundary (0 = at the FOV left edge, range 0–359°)."
+      selector:
+        number:
+          min: 0
+          max: 359
+          mode: slider
+          unit_of_measurement: "°"
+    blind_spot_right:
+      name: Blind spot right edge
+      description: "Right edge of the blind spot zone in degrees inward from your FOV left boundary. Must be greater than left edge (range 1–360°)."
+      selector:
+        number:
+          min: 0
+          max: 360
+          mode: slider
+          unit_of_measurement: "°"
+    blind_spot_elevation:
+      name: Blind spot elevation
+      description: "Sun elevation (°) threshold for the blind spot. Null = always apply."
+      selector:
+        number:
+          min: 0
+          max: 90
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
+    blind_spot_elevation_mode:
+      name: Blind spot elevation mode
+      description: >-
+        Which side of the elevation threshold the blind spot covers. 'below'
+        (default) blocks LOW sun (sol_elev ≤ threshold) — a tree or roof
+        overhang. 'above' blocks HIGH sun (sol_elev ≥ threshold) — an overhead
+        obstacle like a balcony or deep recess.
+      selector:
+        select:
+          options:
+            - below
+            - above
+
+set_interpolation:
+  name: Set interpolation
+  description: Enable position interpolation and configure the start/end range and lookup table.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    interp:
+      name: Enable interpolation
+      description: "If true, apply interpolation mapping to the calculated position."
+      selector:
+        boolean:
+    interp_start:
+      name: Interpolation start
+      description: "Calculated position (%) at which interpolation begins. Null = none."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    interp_end:
+      name: Interpolation end
+      description: "Calculated position (%) at which interpolation ends. Null = none."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    interp_list:
+      name: Interpolation input list
+      description: "List of input positions (strings) for the interpolation lookup table."
+      selector:
+        text:
+    interp_list_new:
+      name: Interpolation output list
+      description: "List of output positions (strings) mapped from interp_list."
+      selector:
+        text:
+
+set_geometry:
+  name: Set geometry
+  description: >-
+    Update cover geometry dimensions. Supply only the fields applicable to your
+    cover type (vertical blind, awning, or tilt). Invalid cross-type fields are
+    rejected with an error message.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    window_height:
+      name: Window height
+      description: "Window height in metres (0.1–50 m, canonical metric regardless of HA locale). Vertical blind and awning only."
+      selector:
+        number:
+          min: 0.1
+          max: 50
+          step: 0.01
+          mode: box
+          unit_of_measurement: m
+    window_width:
+      name: Window width
+      description: "Window width in metres (0.1–50 m, canonical metric regardless of HA locale). Vertical blind only."
+      selector:
+        number:
+          min: 0.1
+          max: 50
+          step: 0.01
+          mode: box
+          unit_of_measurement: m
+    window_depth:
+      name: Window depth
+      description: "Window reveal depth in metres (0–5 m, canonical metric regardless of HA locale). Vertical blind only."
+      selector:
+        number:
+          min: 0
+          max: 5.0
+          step: 0.01
+          mode: slider
+          unit_of_measurement: m
+    sill_height:
+      name: Sill height
+      description: "Window sill height from floor in metres (0–50 m, canonical metric regardless of HA locale). Vertical blind only."
+      selector:
+        number:
+          min: 0
+          max: 50
+          step: 0.01
+          mode: box
+          unit_of_measurement: m
+    length_awning:
+      name: Awning length
+      description: "Awning projection length in metres (0.3–6 m, canonical metric regardless of HA locale). Awning only."
+      selector:
+        number:
+          min: 0.3
+          max: 6
+          step: 0.01
+          mode: slider
+          unit_of_measurement: m
+    angle:
+      name: Awning angle
+      description: "Awning tilt angle in degrees (0–45°). Awning only."
+      selector:
+        number:
+          min: 0
+          max: 45
+          mode: slider
+          unit_of_measurement: "°"
+    slat_depth:
+      name: Slat depth
+      description: "Venetian slat depth in centimetres (0.1–15 cm, canonical metric regardless of HA locale). Tilt only."
+      selector:
+        number:
+          min: 0.1
+          max: 15
+          step: 0.1
+          mode: slider
+          unit_of_measurement: cm
+    slat_distance:
+      name: Slat distance
+      description: "Distance between venetian slats in centimetres (0.1–15 cm, canonical metric regardless of HA locale). Tilt only."
+      selector:
+        number:
+          min: 0.1
+          max: 15
+          step: 0.1
+          mode: slider
+          unit_of_measurement: cm
+    tilt_mode:
+      name: Tilt mode
+      description: "Slat angle calculation mode (mode1 or mode2). Tilt only."
+      selector:
+        select:
+          options:
+            - mode1
+            - mode2
+
+set_venetian:
+  name: Set venetian options
+  description: >-
+    Update venetian-blind specific options: operating mode, tilt skip threshold,
+    and post-settle hold. Applicable to venetian cover types only.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    venetian_mode:
+      name: Venetian mode
+      description: "Operating mode: 'position_and_tilt' (move carriage then tilt) or 'tilt_only' (tilt only, no carriage movement)."
+      selector:
+        select:
+          options:
+            - position_and_tilt
+            - tilt_only
+    venetian_tilt_skip_above:
+      name: Tilt skip above (%)
+      description: "Skip tilt commands when carriage position exceeds this value (0–100%). Set to 100 to always tilt."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: slider
+          unit_of_measurement: "%"
+    venetian_post_settle_hold:
+      name: Post-settle hold (s)
+      description: "Seconds to wait after carriage stops before sending the tilt command (0.0–10.0 s). Raise to 4–6 s for KNX FGR223 firmware."
+      selector:
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.1
+          mode: slider
+          unit_of_measurement: s
+
+set_option:
+  name: Set option (generic)
+  description: >-
+    Generic escape hatch — update any single supported option by key name.
+    Identity keys (name, mode, group, linked_device_id) are rejected.
+    See the integration documentation for the full list of supported option keys.
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    option:
+      name: Option key
+      description: "The internal option key to update (e.g. 'default_percentage', 'sunset_position')."
+      required: true
+      selector:
+        text:
+    value:
+      name: Value
+      description: "New value for the option. Pass null to clear an optional field."
+      required: true
+      selector:
+        text:
+
+get_diagnostics:
+  name: Get diagnostics
+  description: >-
+    Returns the live diagnostics snapshot for the targeted Adaptive Pergola
+    instances — pipeline decision trace, cover positions, climate readings, sun
+    data, and coordinator health. Designed to be called from the ACP Lovelace
+    card via hass.callService(..., { return_response: true }).
+  target:
+    entity:
+      integration: adaptive_pergola
+  fields:
+    config_entry_id:
+      name: Config entry
+      description: >-
+        Explicit config entry id(s) to query. When omitted, standard target
+        (entity / device / area) selection applies. No target at all returns
+        all ACP instances.
+      selector:
+        config_entry:
+          integration: adaptive_pergola

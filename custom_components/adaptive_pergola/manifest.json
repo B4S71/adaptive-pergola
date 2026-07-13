@@ -1,10 +1,24 @@
 {
   "domain": "adaptive_pergola",
   "name": "Adaptive Pergola",
+  "codeowners": [
+    "@B4S71"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "sun",
+    "device_tracker",
+    "zone",
+    "climate",
+    "sensor",
+    "weather"
+  ],
   "documentation": "https://github.com/B4S71/adaptive-pergola",
-  "issue_tracker": "https://github.com/B4S71/adaptive-pergola/issues",
   "iot_class": "calculated",
-  "version": "0.2.0",
-  "requirements": []
+  "issue_tracker": "https://github.com/B4S71/adaptive-pergola/issues",
+  "requirements": [
+    "astral",
+    "pandas"
+  ],
+  "version": "0.3.0-beta1"
 }

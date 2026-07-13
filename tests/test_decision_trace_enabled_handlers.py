@@ -1,0 +1,359 @@
+"""Tests for the `enabled_handlers` attribute on the decision_trace sensor.
+
+The card's decision-strip reads this attribute as the sole source of truth for
+which pipeline handlers to render. Handlers not in the list are hidden by the
+card. The attribute is configuration-driven — it answers "is this handler
+configured to ever fire?", not "did it fire this tick?".
+"""
+
+from __future__ import annotations
+
+from unittest.mock import MagicMock
+
+
+from custom_components.adaptive_pergola.const import (
+    CONF_CLIMATE_MODE,
+    CONF_CLOUD_COVERAGE_ENTITY,
+    CONF_CLOUD_SUPPRESSION,
+    CONF_CUSTOM_POSITION_1,
+    CONF_CUSTOM_POSITION_SENSOR_1,
+    CONF_ENABLE_GLARE_ZONES,
+    CONF_ENABLE_SUN_TRACKING,
+    CONF_FORCE_OVERRIDE_SENSORS,
+    CONF_IRRADIANCE_ENTITY,
+    CONF_IS_SUNNY_SENSOR,
+    CONF_LUX_ENTITY,
+    CONF_MOTION_SENSORS,
+    CONF_SENSOR_TYPE,
+    CONF_WEATHER_ENTITY,
+    CoverType,
+)
+from custom_components.adaptive_pergola.const import ControlMethod
+from custom_components.adaptive_pergola.sensor import AdaptivePergolaDecisionTraceSensor
+
+
+def _make_hass():
+    hass = MagicMock()
+    hass.config.units.temperature_unit = "°C"
+    return hass
+
+
+def _make_config_entry(options: dict | None = None):
+    entry = MagicMock()
+    entry.entry_id = "test_enabled_handlers_entry"
+    entry.data = {"name": "Test", CONF_SENSOR_TYPE: CoverType.BLIND}
+    entry.options = options or {}
+    return entry
+
+
+def _make_coordinator():
+    coord = MagicMock()
+    coord.data = None
+    coord._pipeline_result = None
+    coord.logger = MagicMock()
+    coord.hass = _make_hass()
+    coord.check_adaptive_time = True
+    return coord
+
+
+def _make_sensor(options: dict | None = None) -> AdaptivePergolaDecisionTraceSensor:
+    return AdaptivePergolaDecisionTraceSensor(
+        "test_enabled_handlers_entry",
+        _make_hass(),
+        _make_config_entry(options),
+        "Test",
+        _make_coordinator(),
+    )
+
+
+def _enabled(options: dict | None = None) -> set[str]:
+    sensor = _make_sensor(options)
+    attrs = sensor.extra_state_attributes or {}
+    return set(attrs.get("enabled_handlers", []))
+
+
+# ---------------------------------------------------------------------------
+# Always-on handlers
+# ---------------------------------------------------------------------------
+
+
+def test_enabled_handlers_attribute_present():
+    """Even with empty options, the attribute is emitted."""
+    sensor = _make_sensor({})
+    attrs = sensor.extra_state_attributes
+    assert attrs is not None
+    assert "enabled_handlers" in attrs
+    assert isinstance(attrs["enabled_handlers"], list)
+
+
+def test_manual_and_default_always_enabled():
+    enabled = _enabled({})
+    assert "manual" in enabled
+    assert "default" in enabled
+
+
+def test_solar_enabled_by_default():
+    """CONF_ENABLE_SUN_TRACKING defaults to True — solar should be enabled."""
+    enabled = _enabled({})
+    assert "solar" in enabled
+
+
+def test_solar_disabled_when_sun_tracking_off():
+    enabled = _enabled({CONF_ENABLE_SUN_TRACKING: False})
+    assert "solar" not in enabled
+
+
+# ---------------------------------------------------------------------------
+# Configuration-gated handlers
+# ---------------------------------------------------------------------------
+
+
+def test_force_disabled_when_no_sensors_configured():
+    enabled = _enabled({})
+    assert "force" not in enabled
+
+
+def test_force_chip_never_emitted():
+    # Force override merged into custom positions (#563): legacy force keys no
+    # longer surface a "force" handler chip.
+    enabled = _enabled({CONF_FORCE_OVERRIDE_SENSORS: ["binary_sensor.x"]})
+    assert "force" not in enabled
+
+
+def test_safety_slot_surfaces_as_custom_position():
+    enabled = _enabled(
+        {
+            "custom_position_sensors_5": ["binary_sensor.x"],
+            "custom_position_5": 100,
+            "custom_position_priority_5": 100,
+        }
+    )
+    assert "custom_position" in enabled
+
+
+def test_motion_disabled_when_no_sensors_configured():
+    enabled = _enabled({})
+    assert "motion" not in enabled
+
+
+def test_motion_enabled_when_sensors_configured():
+    enabled = _enabled({CONF_MOTION_SENSORS: ["binary_sensor.m"]})
+    assert "motion" in enabled
+
+
+def test_climate_disabled_by_default():
+    enabled = _enabled({})
+    assert "climate" not in enabled
+
+
+def test_climate_enabled_when_climate_mode_on():
+    enabled = _enabled({CONF_CLIMATE_MODE: True})
+    assert "climate" in enabled
+
+
+def test_weather_disabled_when_no_weather_config():
+    enabled = _enabled({})
+    assert "weather" not in enabled
+
+
+def test_weather_enabled_when_weather_entity_set():
+    enabled = _enabled({CONF_WEATHER_ENTITY: "weather.home"})
+    assert "weather" in enabled
+
+
+def test_glare_zone_disabled_by_default():
+    enabled = _enabled({})
+    assert "glare_zone" not in enabled
+
+
+def test_glare_zone_enabled_when_flag_on():
+    enabled = _enabled({CONF_ENABLE_GLARE_ZONES: True})
+    assert "glare_zone" in enabled
+
+
+def test_cloud_disabled_when_only_flag_on():
+    """Cloud requires BOTH suppression flag AND coverage entity."""
+    enabled = _enabled({CONF_CLOUD_SUPPRESSION: True})
+    assert "cloud" not in enabled
+
+
+def test_cloud_disabled_when_only_entity_set():
+    enabled = _enabled({CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud"})
+    assert "cloud" not in enabled
+
+
+def test_cloud_enabled_when_both_set():
+    enabled = _enabled(
+        {CONF_CLOUD_SUPPRESSION: True, CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud"}
+    )
+    assert "cloud" in enabled
+
+
+def test_cloud_enabled_when_is_sunny_sensor_configured():
+    enabled = _enabled(
+        {CONF_CLOUD_SUPPRESSION: True, CONF_IS_SUNNY_SENSOR: "binary_sensor.ensoleille"}
+    )
+    assert "cloud" in enabled
+
+
+def test_cloud_enabled_when_lux_entity_configured():
+    enabled = _enabled({CONF_CLOUD_SUPPRESSION: True, CONF_LUX_ENTITY: "sensor.lux"})
+    assert "cloud" in enabled
+
+
+def test_cloud_enabled_when_irradiance_entity_configured():
+    enabled = _enabled(
+        {CONF_CLOUD_SUPPRESSION: True, CONF_IRRADIANCE_ENTITY: "sensor.irradiance"}
+    )
+    assert "cloud" in enabled
+
+
+def test_custom_position_disabled_by_default():
+    enabled = _enabled({})
+    assert "custom_position" not in enabled
+
+
+def test_custom_position_enabled_when_pair_configured():
+    enabled = _enabled(
+        {CONF_CUSTOM_POSITION_SENSOR_1: "binary_sensor.cp1", CONF_CUSTOM_POSITION_1: 50}
+    )
+    assert "custom_position" in enabled
+
+
+def test_custom_position_disabled_when_only_sensor_set():
+    enabled = _enabled({CONF_CUSTOM_POSITION_SENSOR_1: "binary_sensor.cp1"})
+    assert "custom_position" not in enabled
+
+
+# ---------------------------------------------------------------------------
+# Composition / completeness
+# ---------------------------------------------------------------------------
+
+
+def test_full_configuration_enables_everything():
+    enabled = _enabled(
+        {
+            CONF_MOTION_SENSORS: ["binary_sensor.m"],
+            CONF_CLIMATE_MODE: True,
+            CONF_WEATHER_ENTITY: "weather.home",
+            CONF_ENABLE_GLARE_ZONES: True,
+            CONF_CLOUD_SUPPRESSION: True,
+            CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud",
+            CONF_CUSTOM_POSITION_SENSOR_1: "binary_sensor.cp1",
+            CONF_CUSTOM_POSITION_1: 50,
+            CONF_ENABLE_SUN_TRACKING: True,
+        }
+    )
+    assert enabled == {
+        "weather",
+        "manual",
+        "custom_position",
+        "motion",
+        "cloud",
+        "climate",
+        "glare_zone",
+        "solar",
+        "default",
+    }
+
+
+def test_minimal_configuration_enables_only_always_on():
+    enabled = _enabled({CONF_ENABLE_SUN_TRACKING: False})
+    assert enabled == {"manual", "default"}
+
+
+# ---------------------------------------------------------------------------
+# weather_active_conditions / weather_in_clear_delay attrs
+# ---------------------------------------------------------------------------
+
+
+def _make_pipeline_result(control_method: ControlMethod):
+    """Return a minimal mock pipeline result with the given control_method."""
+    result = MagicMock()
+    result.control_method = control_method
+    result.decision_trace = []
+    result.reason = "test"
+    result.bypass_auto_control = False
+    result.default_position = 0
+    result.is_sunset_active = False
+    result.configured_default = 0
+    result.configured_sunset_pos = None
+    result.tilt = None
+    return result
+
+
+def test_weather_active_conditions_present_when_weather_override():
+    """weather_active_conditions and weather_in_clear_delay present when WEATHER."""
+    coordinator = _make_coordinator()
+    coordinator._pipeline_result = _make_pipeline_result(ControlMethod.WEATHER)
+    coordinator._weather_mgr = MagicMock()
+    coordinator._weather_mgr.active_conditions = ["wind_speed"]
+    coordinator._weather_mgr.in_clear_delay = False
+
+    sensor = AdaptivePergolaDecisionTraceSensor(
+        "test_enabled_handlers_entry",
+        _make_hass(),
+        _make_config_entry(),
+        "Test",
+        coordinator,
+    )
+    attrs = sensor.extra_state_attributes or {}
+    assert attrs["weather_active_conditions"] == ["wind_speed"]
+    assert attrs["weather_in_clear_delay"] is False
+
+
+def test_weather_in_clear_delay_true_when_timeout_running():
+    """weather_in_clear_delay is True when timeout task pending."""
+    coordinator = _make_coordinator()
+    coordinator._pipeline_result = _make_pipeline_result(ControlMethod.WEATHER)
+    coordinator._weather_mgr = MagicMock()
+    coordinator._weather_mgr.active_conditions = []
+    coordinator._weather_mgr.in_clear_delay = True
+
+    sensor = AdaptivePergolaDecisionTraceSensor(
+        "test_enabled_handlers_entry",
+        _make_hass(),
+        _make_config_entry(),
+        "Test",
+        coordinator,
+    )
+    attrs = sensor.extra_state_attributes or {}
+    assert attrs["weather_active_conditions"] == []
+    assert attrs["weather_in_clear_delay"] is True
+
+
+def test_weather_keys_absent_when_not_weather_override():
+    """weather_active_conditions and weather_in_clear_delay absent for non-WEATHER override."""
+    coordinator = _make_coordinator()
+    coordinator._pipeline_result = _make_pipeline_result(ControlMethod.SOLAR)
+    coordinator._weather_mgr = MagicMock()
+
+    sensor = AdaptivePergolaDecisionTraceSensor(
+        "test_enabled_handlers_entry",
+        _make_hass(),
+        _make_config_entry(),
+        "Test",
+        coordinator,
+    )
+    attrs = sensor.extra_state_attributes or {}
+    assert "weather_active_conditions" not in attrs
+    assert "weather_in_clear_delay" not in attrs
+
+
+def test_handler_names_match_card_normalized_form():
+    """Card uses 'manual', 'motion', 'cloud' — not the pipeline names
+    'manual_override', 'motion_timeout', 'cloud_suppression'.
+    """
+    enabled = _enabled(
+        {
+            CONF_MOTION_SENSORS: ["binary_sensor.m"],
+            CONF_CLOUD_SUPPRESSION: True,
+            CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud",
+        }
+    )
+    assert "manual_override" not in enabled
+    assert "motion_timeout" not in enabled
+    assert "cloud_suppression" not in enabled
+    assert "manual" in enabled
+    assert "motion" in enabled
+    assert "cloud" in enabled

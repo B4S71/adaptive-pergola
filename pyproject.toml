@@ -1,22 +1,32 @@
 [project]
 name = "adaptive-pergola"
-version = "0.1.0"
-description = "Pergola sun-tracking core derived from Adaptive Cover Pro concepts"
-requires-python = ">=3.11"
+version = "0.3.0b1"
+description = "Adaptive louvered-roof (pergola) automation for Home Assistant — pergola-only split of Adaptive Cover Pro"
+requires-python = ">=3.13"
 dependencies = [
   "homeassistant>=2026.4.0",
+  "astral",
+  "pandas",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.0",
-  "pytest-homeassistant-custom-component>=0.13",
+  "pytest>=9.0.3",
+  "pytest-homeassistant-custom-component",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
 asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+]
 markers = [
-  "integration: Home Assistant integration tests",
+    "unit: Unit tests (fast, no I/O)",
+    "integration: Integration tests (slower, may require Home Assistant)",
+    "perf: Wall-clock performance-budget tests (flaky on loaded hosts; skip with -m 'not perf')",
 ]
