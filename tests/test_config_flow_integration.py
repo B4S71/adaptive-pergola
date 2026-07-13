@@ -2361,3 +2361,49 @@ async def test_create_flow_sun_tracking_rerender_keeps_typed_azimuth() -> None:
         f"got {suggested_azimuth!r}. "
         "Defect B: create-flow _show_sun_tracking_form discards typed input."
     )
+
+
+async def test_create_flow_ignores_stale_unknown_type_entry(hass: HomeAssistant) -> None:
+    """A leftover entry with an unregistered cover type must not break the create menu.
+
+    Regression for the pergola split: the pre-split Adaptive Pergola 0.2.x
+    integration stored a different config schema (no known ``sensor_type``).
+    With such a stale entry present, opening the create flow enumerated it via
+    ``profile_link._cover_entries`` → ``get_policy`` → ValueError → HTTP 500.
+    """
+    stale = MockConfigEntry(
+        domain=DOMAIN,
+        title="Old Pergola (0.2.x)",
+        data={"name": "Old Pergola"},  # no sensor_type at all
+        options={"target_entity": "cover.pergola", "mode": "tilt"},
+        entry_id="stale_pre_split",
+    )
+    stale.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    # Menu renders; the stale entry contributes no duplicate_existing option.
+    assert result["type"] == "menu"
+    assert "create_new" in result["menu_options"]
+    assert "duplicate_existing" not in result["menu_options"]
+
+
+async def test_stale_unknown_type_entry_setup_fails_cleanly(hass: HomeAssistant) -> None:
+    """Setting up a stale unknown-type entry fails with ConfigEntryError, not a crash."""
+    from homeassistant.config_entries import ConfigEntryState
+
+    stale = MockConfigEntry(
+        domain=DOMAIN,
+        title="Old Pergola (0.2.x)",
+        data={"name": "Old Pergola"},
+        entry_id="stale_pre_split_setup",
+    )
+    stale.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(stale.entry_id)
+    await hass.async_block_till_done()
+    assert stale.state is ConfigEntryState.SETUP_ERROR
+
+    # Deleting the stale entry must succeed (async_remove_entry tolerates it).
+    assert await hass.config_entries.async_remove(stale.entry_id)

@@ -7,7 +7,7 @@ from collections.abc import Callable
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_CALL_SERVICE, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import TemplateError
+from homeassistant.exceptions import ConfigEntryError, TemplateError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import (
     TrackTemplate,
@@ -56,7 +56,7 @@ from .const import (
     _LOGGER,
 )
 from .coordinator import AdaptiveConfigEntry, AdaptiveDataUpdateCoordinator
-from .cover_types import get_policy
+from .cover_types import POLICY_REGISTRY, get_policy
 from .helpers import (
     copy_legacy_slot_sensors_to_list,
     custom_position_slot_sensors,
@@ -125,6 +125,19 @@ def _register_template_tracker(
 
 async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> bool:
     """Set up Adaptive Pergola from a config entry."""
+
+    # Entries whose stored cover type has no registered policy cannot work —
+    # typically leftovers from the pre-split Adaptive Pergola 0.2.x integration
+    # (incompatible config schema). Fail with a clear message instead of a
+    # ValueError traceback from get_policy; the entry must be deleted and
+    # re-created.
+    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
+        raise ConfigEntryError(
+            f"Config entry '{entry.title}' has an unsupported cover type "
+            f"({entry.data.get(CONF_SENSOR_TYPE)!r}). It was created by an "
+            "incompatible Adaptive Pergola version — delete it and set the "
+            "pergola up again."
+        )
 
     await async_setup_services(hass)
 
@@ -371,6 +384,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
 
 async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> bool:
     """Unload a config entry."""
+    # Entries with an unregistered cover type never set up (see the guard in
+    # async_setup_entry) — nothing to unload.
+    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
+        return True
     # Virtual entry types (Building Profile, controls_cover == False) forwarded
     # no platforms in async_setup_entry, so unloading platforms would raise
     # "Config entry was never loaded!". Mirror the setup short-circuit.
@@ -395,6 +412,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     (written each update cycle, kept across reloads) so it does not leak.
     """
     hass.data.get(DIAG_CACHE_KEY, {}).pop(entry.entry_id, None)
+    # Unknown cover type (stale pre-split entry): nothing was linked, nothing
+    # to sweep — and get_policy would raise, blocking the deletion cleanup.
+    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
+        return
     if get_policy(entry.data.get(CONF_SENSOR_TYPE)).controls_cover:
         return
     for cover in _covers_linked_to(hass, entry):
@@ -563,7 +584,10 @@ async def _async_profile_propagate(hass: HomeAssistant, entry: ConfigEntry) -> N
     the changed sensor IDs immediately.
     """
     # Guard: only profiles (virtual, controls_cover == False) propagate. A real
-    # cover reaching here would be a wiring bug — its own listener handles reloads.
+    # cover reaching here would be a wiring bug — its own listener handles
+    # reloads. Unknown types (stale pre-split entries) never propagate.
+    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
+        return
     if get_policy(entry.data.get(CONF_SENSOR_TYPE)).controls_cover:
         return
     for cover in _covers_linked_to(hass, entry):

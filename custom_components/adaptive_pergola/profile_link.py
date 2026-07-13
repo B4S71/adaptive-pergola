@@ -21,7 +21,19 @@ from .const import (
     CONF_SENSOR_TYPE,
     DOMAIN,
 )
-from .cover_types import get_policy
+from .cover_types import POLICY_REGISTRY, get_policy
+
+
+def _known_cover_type(entry: ConfigEntry) -> bool:
+    """Return True when the entry's stored cover type has a registered policy.
+
+    Entries whose ``sensor_type`` is unknown are skipped by the enumeration
+    helpers below instead of crashing ``get_policy``. This happens for stale
+    entries left behind by the pre-split Adaptive Pergola 0.2.x integration
+    (different config schema, no ``sensor_type``) and would otherwise 500 the
+    create flow before the user can even add a new cover.
+    """
+    return entry.data.get(CONF_SENSOR_TYPE) in POLICY_REGISTRY
 
 
 def _is_set(value: Any) -> bool:
@@ -79,7 +91,8 @@ def _building_profile_entries(hass: HomeAssistant) -> list[ConfigEntry]:
     return [
         e
         for e in hass.config_entries.async_entries(DOMAIN)
-        if not get_policy(e.data.get(CONF_SENSOR_TYPE)).controls_cover
+        if _known_cover_type(e)
+        and not get_policy(e.data.get(CONF_SENSOR_TYPE)).controls_cover
     ]
 
 
@@ -88,7 +101,8 @@ def _cover_entries(hass: HomeAssistant) -> list[ConfigEntry]:
     return [
         e
         for e in hass.config_entries.async_entries(DOMAIN)
-        if get_policy(e.data.get(CONF_SENSOR_TYPE)).controls_cover
+        if _known_cover_type(e)
+        and get_policy(e.data.get(CONF_SENSOR_TYPE)).controls_cover
     ]
 
 
