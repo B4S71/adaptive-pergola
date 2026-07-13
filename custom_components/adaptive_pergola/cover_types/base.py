@@ -666,6 +666,20 @@ class CoverTypePolicy(ABC):
         """
         return None
 
+    def cloud_suppression_position(self, snapshot) -> int | None:
+        """Position to hold while cloud/low-light suppression is active.
+
+        Consulted by ``CloudSuppressionHandler`` after its triggers fire (not
+        sunny / lux / irradiance / cloud coverage). Default ``None`` keeps the
+        legacy behavior: the configured cloudy position, else the effective
+        default position. A cover type whose "no direct sun" pose is computed
+        rather than fixed overrides this — the louvered roof returns its
+        no-shade pose (fixed ``lr_max_light_position`` or the max-sunlight
+        curve), because thick clouds mean there is nothing to shade and a
+        fixed cloudy position would fight the light-maximising geometry.
+        """
+        return None
+
     def disallowed_geometry_fields(
         self,
         *,

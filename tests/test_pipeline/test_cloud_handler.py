@@ -398,3 +398,87 @@ class TestCloudHandlerFOVGate:
         assert (
             "fov" in reason.lower()
         ), f"Expected 'fov' in describe_skip reason but got: {reason!r}"
+
+
+class TestCloudSuppressionPolicyHook:
+    """The policy's ``cloud_suppression_position`` hook overrides the fixed pose."""
+
+    handler = CloudSuppressionHandler()
+
+    @staticmethod
+    def _with_policy(snap, position):
+        from dataclasses import replace
+
+        policy = MagicMock()
+        policy.cloud_suppression_position.return_value = position
+        return replace(snap, policy=policy)
+
+    def test_policy_position_wins_over_cloudy_position(self) -> None:
+        """A policy-supplied no-shade pose replaces the configured cloudy position."""
+        from dataclasses import replace as dc_replace
+
+        options = _make_options(enabled=True)
+        options = dc_replace(options, cloudy_position=75)
+        snap = self._with_policy(
+            make_snapshot(
+                direct_sun_valid=True,
+                climate_readings=_make_readings(cloud_coverage_above_threshold=True),
+                climate_options=options,
+            ),
+            47,
+        )
+        result = self.handler.evaluate(snap)
+        assert result is not None
+        assert result.position == 47
+        assert "no-shade (max-light) position" in result.reason
+
+    def test_policy_none_falls_back_to_cloudy_position(self) -> None:
+        """Hook returning None keeps the legacy fixed cloudy-position path."""
+        from dataclasses import replace as dc_replace
+
+        options = _make_options(enabled=True)
+        options = dc_replace(options, cloudy_position=75)
+        snap = self._with_policy(
+            make_snapshot(
+                direct_sun_valid=True,
+                climate_readings=_make_readings(cloud_coverage_above_threshold=True),
+                climate_options=options,
+            ),
+            None,
+        )
+        result = self.handler.evaluate(snap)
+        assert result is not None
+        assert result.position == 75
+        assert "cloudy position" in result.reason
+
+    def test_no_policy_keeps_legacy_behavior(self) -> None:
+        """Snapshots without a policy (older fixtures) use the legacy path."""
+        from dataclasses import replace as dc_replace
+
+        options = _make_options(enabled=True)
+        options = dc_replace(options, cloudy_position=75)
+        snap = make_snapshot(
+            direct_sun_valid=True,
+            climate_readings=_make_readings(cloud_coverage_above_threshold=True),
+            climate_options=options,
+        )
+        result = self.handler.evaluate(snap)
+        assert result is not None
+        assert result.position == 75
+
+    def test_sunset_outranks_policy_position(self) -> None:
+        """During the sunset window the sunset/default position still wins."""
+        snap = self._with_policy(
+            make_snapshot(
+                direct_sun_valid=True,
+                is_sunset_active=True,
+                climate_readings=_make_readings(is_sunny=False),
+                climate_options=_make_options(enabled=True),
+                default_position=0,
+            ),
+            47,
+        )
+        result = self.handler.evaluate(snap)
+        assert result is not None
+        assert result.position == 0
+        assert "sunset position" in result.reason

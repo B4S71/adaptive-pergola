@@ -1050,3 +1050,60 @@ def test_every_option_backed_switch_key_is_settable():
     assert (
         not missing
     ), f"option-backed switch keys missing from FIELD_VALIDATORS: {missing}"
+
+
+class TestCloudSuppressionPositionHook:
+    """``cloud_suppression_position`` returns the roof's no-shade pose."""
+
+    @staticmethod
+    def _snapshot_with(cover):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(cover=cover)
+
+    def test_returns_max_light_curve(self) -> None:
+        """Without a fixed light position, the max-sunlight curve pose is used."""
+        from unittest.mock import MagicMock
+
+        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
+            LouveredRoofPolicy,
+        )
+        from custom_components.adaptive_pergola.engine.covers import (
+            AdaptiveLouveredRoofCover,
+        )
+
+        cover = MagicMock(spec=AdaptiveLouveredRoofCover)
+        cover.lr_config.max_light_position = None
+        cover.max_light_percentage.return_value = 44
+        pos = LouveredRoofPolicy().cloud_suppression_position(self._snapshot_with(cover))
+        assert pos == 44
+
+    def test_returns_fixed_light_position_when_configured(self) -> None:
+        """A configured ``lr_max_light_position`` wins over the curve."""
+        from unittest.mock import MagicMock
+
+        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
+            LouveredRoofPolicy,
+        )
+        from custom_components.adaptive_pergola.engine.covers import (
+            AdaptiveLouveredRoofCover,
+        )
+
+        cover = MagicMock(spec=AdaptiveLouveredRoofCover)
+        cover.lr_config.max_light_position = 62.4
+        pos = LouveredRoofPolicy().cloud_suppression_position(self._snapshot_with(cover))
+        assert pos == 62
+        cover.max_light_percentage.assert_not_called()
+
+    def test_returns_none_for_foreign_engine(self) -> None:
+        """A non-louvered calc engine falls back to the legacy fixed path."""
+        from unittest.mock import MagicMock
+
+        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
+            LouveredRoofPolicy,
+        )
+
+        pos = LouveredRoofPolicy().cloud_suppression_position(
+            self._snapshot_with(MagicMock())
+        )
+        assert pos is None

@@ -54,9 +54,20 @@ class CloudSuppressionHandler(OverrideHandler):
             return None
 
         cloudy = snapshot.climate_options.cloudy_position
+        policy_pos = (
+            snapshot.policy.cloud_suppression_position(snapshot)
+            if snapshot.policy is not None
+            else None
+        )
         if snapshot.is_sunset_active:
             position = compute_default_position(snapshot)
             pos_label = "sunset position"
+        elif policy_pos is not None:
+            # Cover types with a computed "no direct sun" pose (louvered roof:
+            # max-light curve) supply it via the policy hook — a fixed cloudy
+            # position would fight their geometry.
+            position = apply_snapshot_limits(snapshot, policy_pos, sun_valid=True)
+            pos_label = "no-shade (max-light) position"
         elif cloudy is not None:
             position = apply_snapshot_limits(snapshot, cloudy, sun_valid=False)
             pos_label = "cloudy position"
