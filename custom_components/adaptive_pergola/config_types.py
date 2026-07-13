@@ -482,6 +482,10 @@ class LouveredRoofConfig:
     # Fixed tilt % to hold when no shading is needed, instead of the sun-tracking
     # max-light curve. None = track the sun (max-light). Replaces park_at_default.
     max_light_position: int | None = None
+    # Rest position (%) while a far-side sun is too low to aim at (the unclamped
+    # max-light angle overshoots theta_max — no direct light can enter through
+    # the slats). None = legacy: pin fully tipped at theta_max (100 %).
+    low_sun_position: int | None = None
     # Angle→% (and %→angle) calibration as sorted ``(angle_deg, pct)`` anchor
     # points, interpolated piecewise-linearly by the engine. Empty tuple means
     # the plain linear ``theta_min↔0 % … theta_max↔100 %`` map. Built by
@@ -502,7 +506,8 @@ class LouveredRoofConfig:
             CONF_LR_AXIS_AZIMUTH,
             CONF_LR_FOOTPRINT_X,
             CONF_LR_FOOTPRINT_Y,
-            CONF_LR_MAX_LIGHT_POSITION,
+            CONF_LR_LOW_SUN_POSITION,
+    CONF_LR_MAX_LIGHT_POSITION,
             CONF_LR_PLANE_PITCH,
             CONF_LR_PROTECTED_HEIGHT,
             CONF_LR_ROOF_HEIGHT,
@@ -548,6 +553,11 @@ class LouveredRoofConfig:
             max_light_position=(
                 int(options[CONF_LR_MAX_LIGHT_POSITION])
                 if options.get(CONF_LR_MAX_LIGHT_POSITION) is not None
+                else None
+            ),
+            low_sun_position=(
+                int(options[CONF_LR_LOW_SUN_POSITION])
+                if options.get(CONF_LR_LOW_SUN_POSITION) is not None
                 else None
             ),
             tilt_calibration=_build_tilt_calibration(

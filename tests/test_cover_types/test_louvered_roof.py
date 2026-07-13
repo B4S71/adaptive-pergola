@@ -93,6 +93,7 @@ def _build(
     plane_pitch: float = 0.0,
     blind_spot_on: bool = False,
     max_light_position: int | None = None,
+    low_sun_position: int | None = None,
     slat_chord: float = 21.0,
     slat_thickness: float = 3.0,
     slat_spacing: float = 20.0,
@@ -115,6 +116,7 @@ def _build(
         theta_max=theta_max,
         shade_airflow=shade_airflow,
         max_light_position=max_light_position,
+        low_sun_position=low_sun_position,
         tilt_calibration=tilt_calibration,
         shade_extensions=shade_extensions,
     )
@@ -1107,3 +1109,42 @@ class TestCloudSuppressionPositionHook:
             self._snapshot_with(MagicMock())
         )
         assert pos is None
+
+
+class TestLowSunPosition:
+    """``lr_low_sun_position`` replaces the far-side travel-cap pin (100 %)."""
+
+    def test_far_side_low_sun_holds_designated_position(self) -> None:
+        """Far-side sun below the reachable arc → the designated rest pose."""
+        # Axis 90 (E-W), sun due north (az 0) ⇒ |gamma| > 90 (far side);
+        # elevation 10 ⇒ unclamped theta = 170 > theta_max 135 (uncapturable).
+        cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
+        assert cover.max_light_percentage() == 35
+
+    def test_far_side_low_sun_without_option_pins_at_cap(self) -> None:
+        """Blank option keeps the legacy behavior: pin fully tipped (100 %)."""
+        cover = _build(sol_azi=0.0, sol_elev=10.0)
+        assert cover.max_light_percentage() == 100
+
+    def test_far_side_reachable_sun_still_tracks(self) -> None:
+        """A far-side sun the travel CAN aim at keeps the tracking curve."""
+        # elevation 50 ⇒ unclamped theta = 130 ≤ theta_max 135 → still aimed.
+        cover = _build(sol_azi=0.0, sol_elev=50.0, low_sun_position=35)
+        assert cover.max_light_percentage() != 35
+        assert cover.max_light_percentage() == pytest.approx(130 / 135 * 100, abs=1)
+
+    def test_near_side_unaffected(self) -> None:
+        """The near-side elevation curve ignores the low-sun option."""
+        low = _build(sol_azi=180.0, sol_elev=20.0, low_sun_position=35)
+        ref = _build(sol_azi=180.0, sol_elev=20.0)
+        assert low.max_light_percentage() == ref.max_light_percentage()
+
+    def test_low_sun_position_respects_tilt_calibration(self) -> None:
+        """The designated pose runs through the angle↔% calibration map."""
+        # Nonlinear calibration: 75 % ↔ vertical (90°), like the live site.
+        cal = ((0.0, 0.0), (90.0, 75.0), (135.0, 100.0))
+        cover = _build(
+            sol_azi=0.0, sol_elev=10.0, low_sun_position=35, tilt_calibration=cal
+        )
+        # 35 % maps below vertical; converting back must return ~35 %.
+        assert cover.max_light_percentage() == pytest.approx(35, abs=1)

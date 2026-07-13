@@ -308,7 +308,19 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         far = the NE/NW wings.) Pitch-corrected; clamped to travel.
         """
         elev = self.sol_elev - self.lr_config.plane_pitch
-        theta = elev if abs(self.gamma_roof) <= 90.0 else 180.0 - elev
+        if abs(self.gamma_roof) <= 90.0:
+            theta = elev
+        else:
+            theta = 180.0 - elev
+            low_sun = self.lr_config.low_sun_position
+            if low_sun is not None and theta > self.lr_config.theta_max:
+                # The unclamped far-side pose overshoots the travel: the slats
+                # cannot aim at a sun this low past the axis end, so no direct
+                # light can enter through them regardless of pose. Hold the
+                # designated low-sun rest position instead of pinning fully
+                # tipped at theta_max (100 %).
+                pct = max(0.0, min(100.0, float(low_sun)))
+                return self._pct_to_angle(pct)
         return max(self.lr_config.theta_min, min(self.lr_config.theta_max, theta))
 
     def _delta_eff(self) -> float:

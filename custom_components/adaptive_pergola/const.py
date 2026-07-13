@@ -136,6 +136,12 @@ CONF_LR_SHADE_AIRFLOW = "lr_shade_airflow"  # True = shade pose keeps a vent gap
 # max-light curve. Blank/None = track the sun (max-light). Replaces the old
 # park-at-default switch (which parked at the default position).
 CONF_LR_MAX_LIGHT_POSITION = "lr_max_light_position"
+# Rest position (%) for the max-light pose while the sun sits past an axis end
+# TOO LOW to aim the slat opening at (the unclamped far-side angle overshoots
+# theta_max): no direct light can enter through the slats anyway, so instead of
+# pinning fully tipped at theta_max (100 %) hold this designated pose.
+# Blank/None = legacy behavior (pin at the travel cap).
+CONF_LR_LOW_SUN_POSITION = "lr_low_sun_position"
 CONF_LR_AIRFLOW_BY_TEMP = (
     "lr_airflow_by_temp"  # drive airflow flavor from climate temps
 )
@@ -1256,6 +1262,7 @@ _RANGE_LR_SLAT_THICKNESS = (0.1, 15.0)  # CONF_LR_SLAT_THICKNESS, cm
 _RANGE_LR_THETA = (-90, 180)  # CONF_LR_THETA_MIN/MAX, signed degrees
 _RANGE_LR_TILT_VERTICAL_PCT = (1, 99)  # CONF_LR_TILT_VERTICAL_PCT, % (blank=linear)
 _RANGE_LR_MAX_LIGHT_POSITION = (0, 100)  # CONF_LR_MAX_LIGHT_POSITION, % (blank=track)
+_RANGE_LR_LOW_SUN_POSITION = (0, 100)  # CONF_LR_LOW_SUN_POSITION, % (blank=pin at cap)
 _RANGE_LR_SHADE_EXT_AZIMUTH = (0, 359)  # CONF_LR_SHADE_EXT_AZIMUTH_*, degrees
 _RANGE_LR_SHADE_EXT_DISTANCE = (0.0, 30.0)  # CONF_LR_SHADE_EXT_DISTANCE_*, m (0=off)
 

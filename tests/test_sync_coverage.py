@@ -62,6 +62,7 @@ _DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
         "lr_axis_azimuth",
         "lr_footprint_x",
         "lr_footprint_y",
+        "lr_low_sun_position",
         "lr_max_light_position",
         "lr_plane_pitch",
         "lr_protected_height",

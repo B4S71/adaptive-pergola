@@ -27,6 +27,7 @@ from ..const import (
     CONF_LR_AXIS_AZIMUTH,
     CONF_LR_FOOTPRINT_X,
     CONF_LR_FOOTPRINT_Y,
+    CONF_LR_LOW_SUN_POSITION,
     CONF_LR_MAX_LIGHT_POSITION,
     CONF_LR_PLANE_PITCH,
     CONF_LR_PROTECTED_HEIGHT,
@@ -62,6 +63,7 @@ from ..const import (
     DEFAULT_LR_THETA_MAX,
     DEFAULT_LR_THETA_MIN,
     _RANGE_LR_AXIS_AZIMUTH,
+    _RANGE_LR_LOW_SUN_POSITION,
     _RANGE_LR_MAX_LIGHT_POSITION,
     _RANGE_LR_SHADE_EXT_AZIMUTH,
     _RANGE_LR_SHADE_EXT_DISTANCE,
@@ -284,6 +286,19 @@ def geometry_louvered_roof_schema(hass: HomeAssistant | None = None) -> vol.Sche
                 selector.NumberSelectorConfig(
                     min=_RANGE_LR_MAX_LIGHT_POSITION[0],
                     max=_RANGE_LR_MAX_LIGHT_POSITION[1],
+                    step=1,
+                    mode=selector.NumberSelectorMode.SLIDER,
+                    unit_of_measurement="%",
+                )
+            ),
+            # Rest pose (%) while a far-side sun is too low to aim the opening
+            # at (the unclamped max-light angle overshoots theta_max): no
+            # direct light can enter through the slats anyway, so hold this
+            # instead of pinning fully tipped at 100 %. Blank = legacy (pin).
+            vol.Optional(CONF_LR_LOW_SUN_POSITION): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=_RANGE_LR_LOW_SUN_POSITION[0],
+                    max=_RANGE_LR_LOW_SUN_POSITION[1],
                     step=1,
                     mode=selector.NumberSelectorMode.SLIDER,
                     unit_of_measurement="%",
