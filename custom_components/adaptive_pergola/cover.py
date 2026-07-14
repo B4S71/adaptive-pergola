@@ -220,31 +220,18 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
 
     @property
     def supported_features(self) -> CoverEntityFeature:
-        """Advertised features, remapped for tilt-only sources.
+        """Mirror source supported_features verbatim.
 
-        A bioclimatic-pergola source is tilt-only (``open/close/stop_cover_tilt``
-        + ``set_cover_tilt_position``, no position axis). Home Assistant's cover
-        card then issues ``cover.open_cover`` / ``close_cover`` / ``stop_cover``
-        for the main buttons — which such a source rejects as unsupported, so the
-        open/close/stop buttons do nothing. Present those position buttons (they
-        route onto the slat/tilt axis via the policy) plus the tilt slider, so
-        the standard controls all operate the slats. Position-capable sources are
-        mirrored verbatim.
+        A bioclimatic-pergola source is tilt-only, so the proxy is a faithful
+        tilt cover: its tilt open/close/stop/set buttons are implemented in the
+        ``*_cover_tilt`` handlers below, which forward onto the slat axis. The
+        proxy must NOT masquerade as a position cover — that renders the wrong
+        (carriage up/down) controls and icons for a slat device.
         """
         state = self._source_state()
         if state is None:
             return CoverEntityFeature(0)
-        raw = CoverEntityFeature(int(state.attributes.get("supported_features", 0)))
-        if raw & CoverEntityFeature.SET_TILT_POSITION and not (
-            raw & CoverEntityFeature.SET_POSITION
-        ):
-            return (
-                CoverEntityFeature.OPEN
-                | CoverEntityFeature.CLOSE
-                | CoverEntityFeature.STOP
-                | CoverEntityFeature.SET_TILT_POSITION
-            )
-        return raw
+        return CoverEntityFeature(int(state.attributes.get("supported_features", 0)))
 
     @property
     def is_closed(self) -> bool | None:
@@ -452,6 +439,50 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
         )
         self._end_move_if_skipped(result)
 
+    async def async_open_cover_tilt(self, **kwargs: Any) -> None:
+        """Open the slats fully (tilt = 100) on the dedicated tilt axis."""
+        await self._drive_tilt_endpoint(100, "open_cover_tilt")
+
+    async def async_close_cover_tilt(self, **kwargs: Any) -> None:
+        """Close the slats fully (tilt = 0) on the dedicated tilt axis."""
+        await self._drive_tilt_endpoint(0, "close_cover_tilt")
+
+    async def _drive_tilt_endpoint(self, target: int, source_service: str) -> None:
+        """Drive a tilt endpoint to ``target``.
+
+        When the source exposes ``set_tilt_position`` (the bioclimatic pergola),
+        route through the policy so min-mode floors and manual override apply,
+        exactly like the tilt slider. Otherwise forward the source's own tilt
+        open/close service verbatim.
+        """
+        if not self._source_available():
+            return
+        self._begin_move(target)
+        if caps_get(self._source_caps(), CAP_HAS_SET_TILT_POSITION):
+            result = await self.coordinator.async_apply_user_tilt(
+                self._source_entity_id, target, trigger=TRIGGER_PROXY_TILT
+            )
+            self._end_move_if_skipped(result)
+        else:
+            await self.hass.services.async_call(
+                "cover",
+                source_service,
+                {ATTR_ENTITY_ID: self._source_entity_id},
+                blocking=False,
+            )
+
+    async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
+        """Stop slat movement — forward ``stop_cover_tilt`` to the source."""
+        if not self._source_available():
+            return
+        self._end_move()
+        await self.hass.services.async_call(
+            "cover",
+            "stop_cover_tilt",
+            {ATTR_ENTITY_ID: self._source_entity_id},
+            blocking=False,
+        )
+
     def _end_move_if_skipped(self, result: Any) -> None:
         """Back out the movement indicator when the pipeline preempted the move.
 
@@ -463,26 +494,13 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
             self._end_move()
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
-        """Stop forwards directly to the source (no clamp).
-
-        Uses whichever stop the source actually exposes: ``stop_cover`` on a
-        position-capable source, else ``stop_cover_tilt`` on a tilt-only
-        bioclimatic pergola (which has no ``stop_cover``).
-        """
-        state = self._source_state()
-        if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+        """Stop forwards directly to the source (no clamp)."""
+        if not self._source_available():
             return
         self._end_move()
-        raw = int(state.attributes.get("supported_features", 0))
-        if raw & CoverEntityFeature.STOP:
-            service = "stop_cover"
-        elif raw & CoverEntityFeature.STOP_TILT:
-            service = "stop_cover_tilt"
-        else:
-            return
         await self.hass.services.async_call(
             "cover",
-            service,
+            "stop_cover",
             {ATTR_ENTITY_ID: self._source_entity_id},
             blocking=False,
         )
