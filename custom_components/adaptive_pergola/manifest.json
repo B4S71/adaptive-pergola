@@ -11,7 +11,9 @@
     "zone",
     "climate",
     "sensor",
-    "weather"
+    "weather",
+    "http",
+    "frontend"
   ],
   "documentation": "https://github.com/B4S71/adaptive-pergola",
   "iot_class": "calculated",
@@ -20,5 +22,5 @@
     "astral",
     "pandas"
   ],
-  "version": "0.4.0-beta2"
+  "version": "0.4.0-beta3"
 }

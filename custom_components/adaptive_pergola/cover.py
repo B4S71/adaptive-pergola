@@ -50,6 +50,18 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Position-driven slat icons served by frontend.py. Each stop is a tilt
+# percentage whose glyph is drawn at the matching louvred-roof angle along the
+# pergola's non-linear travel curve (0/15/50/75/100 % -> 0/18/60/90/135 deg).
+# The mirrored tilt position snaps to the nearest stop.
+_SLAT_ICON_STOPS = (0, 15, 50, 75, 100)
+
+
+def _slat_icon_for_tilt(tilt: int) -> str:
+    """Return the ``acp`` iconset name for the nearest slat-position stop."""
+    nearest = min(_SLAT_ICON_STOPS, key=lambda stop: abs(stop - tilt))
+    return f"acp:pergola-slats-{nearest}"
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -170,6 +182,20 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
             return None
         value = state.attributes.get(STATE_ATTR_TILT_POSITION)
         return int(value) if value is not None else None
+
+    @property
+    def icon(self) -> str | None:
+        """Position-aware slat icon for tilt-capable (louvred-roof) sources.
+
+        A source that reports a tilt axis is a bioclimatic-pergola slat set
+        (``io:SimpleBioclimaticPergolaIOComponent`` and kin), so map the
+        mirrored tilt onto one of five custom ``acp:pergola-slats-*`` glyphs.
+        Non-tilt covers return None and keep Home Assistant's default icon.
+        """
+        tilt = self.current_cover_tilt_position
+        if tilt is None:
+            return None
+        return _slat_icon_for_tilt(tilt)
 
     @property
     def supported_features(self) -> CoverEntityFeature:
