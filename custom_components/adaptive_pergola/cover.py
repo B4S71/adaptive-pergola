@@ -220,11 +220,31 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
 
     @property
     def supported_features(self) -> CoverEntityFeature:
-        """Mirror source supported_features."""
+        """Advertised features, remapped for tilt-only sources.
+
+        A bioclimatic-pergola source is tilt-only (``open/close/stop_cover_tilt``
+        + ``set_cover_tilt_position``, no position axis). Home Assistant's cover
+        card then issues ``cover.open_cover`` / ``close_cover`` / ``stop_cover``
+        for the main buttons — which such a source rejects as unsupported, so the
+        open/close/stop buttons do nothing. Present those position buttons (they
+        route onto the slat/tilt axis via the policy) plus the tilt slider, so
+        the standard controls all operate the slats. Position-capable sources are
+        mirrored verbatim.
+        """
         state = self._source_state()
         if state is None:
             return CoverEntityFeature(0)
-        return CoverEntityFeature(int(state.attributes.get("supported_features", 0)))
+        raw = CoverEntityFeature(int(state.attributes.get("supported_features", 0)))
+        if raw & CoverEntityFeature.SET_TILT_POSITION and not (
+            raw & CoverEntityFeature.SET_POSITION
+        ):
+            return (
+                CoverEntityFeature.OPEN
+                | CoverEntityFeature.CLOSE
+                | CoverEntityFeature.STOP
+                | CoverEntityFeature.SET_TILT_POSITION
+            )
+        return raw
 
     @property
     def is_closed(self) -> bool | None:
@@ -443,13 +463,26 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
             self._end_move()
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
-        """Stop forwards directly to the source (no clamp)."""
-        if not self._source_available():
+        """Stop forwards directly to the source (no clamp).
+
+        Uses whichever stop the source actually exposes: ``stop_cover`` on a
+        position-capable source, else ``stop_cover_tilt`` on a tilt-only
+        bioclimatic pergola (which has no ``stop_cover``).
+        """
+        state = self._source_state()
+        if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
             return
         self._end_move()
+        raw = int(state.attributes.get("supported_features", 0))
+        if raw & CoverEntityFeature.STOP:
+            service = "stop_cover"
+        elif raw & CoverEntityFeature.STOP_TILT:
+            service = "stop_cover_tilt"
+        else:
+            return
         await self.hass.services.async_call(
             "cover",
-            "stop_cover",
+            service,
             {ATTR_ENTITY_ID: self._source_entity_id},
             blocking=False,
         )
