@@ -642,6 +642,59 @@ def _position_verification_attrs(s: _ACPDiagnosticSensor) -> Mapping[str, Any] |
     return attrs
 
 
+def _endstop_resync_value(s: _ACPDiagnosticSensor) -> dt.datetime | None:
+    """Most recent end-stop reference across the entry's covers (or None)."""
+    cmd_svc = s.coordinator._cmd_svc  # noqa: SLF001
+    times = [
+        t
+        for e in s.coordinator.entities
+        if (t := cmd_svc.resync_diagnostics(e)["last_resync_time"]) is not None
+    ]
+    return max(times) if times else None
+
+
+def _resync_per_entity(s: _ACPDiagnosticSensor) -> dict[str, Any]:
+    cmd_svc = s.coordinator._cmd_svc  # noqa: SLF001
+    out: dict[str, Any] = {}
+    for e in s.coordinator.entities:
+        d = cmd_svc.resync_diagnostics(e)
+        t = d["last_resync_time"]
+        out[e] = {
+            "travel_since_resync": d["travel_since_resync"],
+            "last_resync_time": t.isoformat() if t else None,
+        }
+    return out
+
+
+def _endstop_resync_attrs(s: _ACPDiagnosticSensor) -> Mapping[str, Any] | None:
+    return {"per_entity": _resync_per_entity(s)}
+
+
+def _resync_remaining_value(s: _ACPDiagnosticSensor) -> float | None:
+    """Travel budget left before the next end-stop detour (None = disabled)."""
+    threshold = getattr(s.coordinator, "resync_travel_threshold", None)
+    if not threshold:
+        return None
+    cmd_svc = s.coordinator._cmd_svc  # noqa: SLF001
+    travel = max(
+        (
+            cmd_svc.resync_diagnostics(e)["travel_since_resync"]
+            for e in s.coordinator.entities
+        ),
+        default=0.0,
+    )
+    return round(max(0.0, float(threshold) - travel), 1)
+
+
+def _resync_remaining_attrs(s: _ACPDiagnosticSensor) -> Mapping[str, Any] | None:
+    threshold = getattr(s.coordinator, "resync_travel_threshold", None)
+    return {
+        "enabled": bool(threshold),
+        "threshold": threshold,
+        "per_entity": _resync_per_entity(s),
+    }
+
+
 def _motion_status_value(s: _ACPDiagnosticSensor) -> str:
     if not motion_entities(s.config_entry.options):
         return "not_configured"
@@ -1201,6 +1254,26 @@ _DIAGNOSTIC_SPECS: tuple[_SensorSpec, ...] = (
         should_poll=False,
         value_fn=_position_verification_value,
         attrs_fn=_position_verification_attrs,
+        unrecorded_attributes=frozenset({"per_entity"}),
+    ),
+    _SensorSpec(
+        suffix="endstop_resync",
+        display_name="Last End-Stop Re-Sync",
+        icon="mdi:sync",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_endstop_resync_value,
+        attrs_fn=_endstop_resync_attrs,
+        unrecorded_attributes=frozenset({"per_entity"}),
+    ),
+    _SensorSpec(
+        suffix="resync_travel_remaining",
+        display_name="Travel Until Re-Sync",
+        icon="mdi:map-marker-distance",
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        suggested_display_precision=0,
+        value_fn=_resync_remaining_value,
+        attrs_fn=_resync_remaining_attrs,
         unrecorded_attributes=frozenset({"per_entity"}),
     ),
     _SensorSpec(

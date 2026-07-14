@@ -210,3 +210,42 @@ async def test_snapshot_exposes_travel_counter(svc, mock_hass):
     assert outcome == "sent"
     snap = svc.get_entity_state_snapshot("cover.test")
     assert snap["travel_since_resync"] == 10
+
+
+# --- last_resync_at timestamp / diagnostics accessor --------------------------
+
+
+@pytest.mark.asyncio
+async def test_endpoint_command_stamps_last_resync(svc, mock_hass):
+    """Landing on an end stop records the reference time."""
+    assert svc.resync_diagnostics("cover.test")["last_resync_time"] is None
+    await _apply(svc, mock_hass, current=40, target=100, threshold=None)
+    d = svc.resync_diagnostics("cover.test")
+    assert d["last_resync_time"] is not None
+    assert d["travel_since_resync"] == 0
+
+
+@pytest.mark.asyncio
+async def test_detour_stamps_last_resync(svc, mock_hass):
+    """A re-sync detour records the reference time."""
+    svc.state("cover.test").travel_since_resync = 25
+    with patch.object(svc, "_at_target", return_value=True):
+        await _apply(svc, mock_hass, current=90, target=92, threshold=20)
+    assert svc.resync_diagnostics("cover.test")["last_resync_time"] is not None
+
+
+@pytest.mark.asyncio
+async def test_midrange_move_does_not_stamp_last_resync(svc, mock_hass):
+    """A plain mid-range move is not an end-stop reference."""
+    await _apply(svc, mock_hass, current=40, target=50, threshold=None)
+    d = svc.resync_diagnostics("cover.test")
+    assert d["last_resync_time"] is None
+    assert d["travel_since_resync"] == 10
+
+
+@pytest.mark.asyncio
+async def test_snapshot_exposes_last_resync_time(svc, mock_hass):
+    """Diagnostics snapshot carries the iso-formatted reference time."""
+    await _apply(svc, mock_hass, current=40, target=100, threshold=None)
+    snap = svc.get_entity_state_snapshot("cover.test")
+    assert snap["last_resync_time"] is not None

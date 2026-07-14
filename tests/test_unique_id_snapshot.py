@@ -91,6 +91,8 @@ EXPECTED_UNIQUE_ID_SUFFIXES = sorted(
         "last_cover_action",
         "manual_override_end_time",
         "position_verification",
+        "endstop_resync",
+        "resync_travel_remaining",
         "motion_status",
         "climate_status",
         "position_forecast",

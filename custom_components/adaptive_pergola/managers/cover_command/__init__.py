@@ -314,6 +314,18 @@ class CoverCommandService:
         """
         return self._state.get(entity_id) or PerEntityState()
 
+    def resync_diagnostics(self, entity_id: str) -> dict[str, Any]:
+        """Travel counter + last end-stop reference time (diagnostics sensors).
+
+        Read-only: returns the raw values (datetime, not isoformat) so the
+        timestamp sensor can hand HA a tz-aware datetime directly.
+        """
+        s = self._get(entity_id)
+        return {
+            "travel_since_resync": round(s.travel_since_resync, 1),
+            "last_resync_time": s.last_resync_at,
+        }
+
     def has_target(self, entity_id: str) -> bool:
         """Return True if a target is currently recorded for ``entity_id``."""
         s = self._state.get(entity_id)
@@ -498,6 +510,9 @@ class CoverCommandService:
                 s.last_reconcile_at.isoformat() if s.last_reconcile_at else None
             ),
             "travel_since_resync": round(s.travel_since_resync, 1),
+            "last_resync_time": (
+                s.last_resync_at.isoformat() if s.last_resync_at else None
+            ),
         }
 
     def get_all_entity_state_snapshots(self) -> dict[str, dict]:
@@ -1207,9 +1222,11 @@ class CoverCommandService:
             "close_cover",
         ):
             _st.travel_since_resync = 0.0
+            _st.last_resync_at = dt.datetime.now(dt.UTC)
         elif supports_position and _origin is not None:
             if _origin in (POSITION_CLOSED, POSITION_OPEN):
                 _st.travel_since_resync = 0.0
+                _st.last_resync_at = dt.datetime.now(dt.UTC)
             else:
                 _st.travel_since_resync += abs(position - _origin)
 
@@ -1304,6 +1321,7 @@ class CoverCommandService:
         # Counter resets on the *attempt*: even a partial detour must not
         # re-trigger a cycle on every subsequent move.
         st.travel_since_resync = 0.0
+        st.last_resync_at = dt.datetime.now(dt.UTC)
 
         deadline = monotonic() + max(self.transit_timeout_seconds, 5)
         while monotonic() < deadline:

@@ -49,6 +49,11 @@ class PerEntityState:
     # detour (CONF_RESYNC_TRAVEL_THRESHOLD); reset whenever a command lands
     # on an end stop.
     travel_since_resync: float = 0.0
+    # When the travel counter last reset — i.e. the last time the cover was
+    # referenced at an end stop (endpoint command, endpoint-origin leg, or a
+    # re-sync detour). Surfaced by the diagnostics sensors; None until the
+    # first reference after startup (in-memory only).
+    last_resync_at: dt.datetime | None = None
 
 
 @dataclasses.dataclass
