@@ -281,7 +281,7 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
             return max(lo, min(hi, _interp(pct, pcts, angles)))
         return lo + max(0.0, min(100.0, pct)) / 100.0 * (hi - lo)
 
-    def _max_light_angle(self) -> float:
+    def _max_light_angle(self, *, low_sun_rest: bool = True) -> float:
         """Max-sunlight pose — opening pointed at the sun's height, on its side.
 
         Fully axis-relative (no hardcoded compass): the rotation-axis azimuth the
@@ -306,6 +306,14 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         opening. The regime flips at the axis ends (``|γ| = 90``), a deliberate
         step. (For the reporting site, axis 92° → near = the south arc 92–272°,
         far = the NE/NW wings.) Pitch-corrected; clamped to travel.
+
+        ``low_sun_rest`` (default True) controls the low-sun rest substitution:
+        the solar-tracking path (``_target`` → ``calculate_percentage``) keeps
+        it, while :meth:`max_light_percentage` — consumed by the
+        higher-priority cloud-suppression and climate-winter paths — passes
+        False to get the pure geometric pose. The rest position ranks one step
+        above plain sun tracking only; it must never override what a
+        higher-priority handler decides.
         """
         elev = self.sol_elev - self.lr_config.plane_pitch
         if abs(self.gamma_roof) <= 90.0:
@@ -313,7 +321,11 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         else:
             theta = 180.0 - elev
             low_sun = self.lr_config.low_sun_position
-            if low_sun is not None and theta > self.lr_config.theta_max:
+            if (
+                low_sun_rest
+                and low_sun is not None
+                and theta > self.lr_config.theta_max
+            ):
                 # The unclamped far-side pose overshoots the travel: the slats
                 # cannot aim at a sun this low past the axis end, so no direct
                 # light can enter through them regardless of pose. Hold the
@@ -509,8 +521,16 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         return self._map_to_pct(self.calculate_position())
 
     def max_light_percentage(self) -> int:
-        """Tilt % for the edge-on max-sunlight pose (climate winter heating)."""
-        return int(round(self._map_to_pct(self._max_light_angle())))
+        """Tilt % for the edge-on max-sunlight pose (climate winter heating,
+        cloud-suppression no-shade pose).
+
+        Deliberately EXCLUDES the low-sun rest substitution: this entry point
+        feeds the cloud-suppression (priority 60) and climate (50) paths, and
+        the rest position ranks one step above plain solar tracking (40) only
+        — a far-side low sun here returns the pure geometric pose pinned at
+        ``theta_max``, never the configured rest.
+        """
+        return int(round(self._map_to_pct(self._max_light_angle(low_sun_rest=False))))
 
     def closed_percentage(self) -> int:
         """Tilt % for the fully-closed (θ=0, overlapping) pose (summer cooling)."""

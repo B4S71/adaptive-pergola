@@ -1112,19 +1112,46 @@ class TestCloudSuppressionPositionHook:
 
 
 class TestLowSunPosition:
-    """``lr_low_sun_position`` replaces the far-side travel-cap pin (100 %)."""
+    """``lr_low_sun_position`` replaces the far-side travel-cap pin (100 %).
+
+    Priority contract: the rest position ranks ONE step above plain solar
+    tracking only. It applies on the solar path (``calculate_percentage``)
+    but never through ``max_light_percentage`` — the entry point consumed by
+    the higher-priority cloud-suppression (60) and climate-winter (50) paths.
+    """
 
     def test_far_side_low_sun_holds_designated_position(self) -> None:
-        """Far-side sun below the reachable arc → the designated rest pose."""
+        """Far-side sun below the reachable arc → the rest pose (solar path)."""
         # Axis 90 (E-W), sun due north (az 0) ⇒ |gamma| > 90 (far side);
         # elevation 10 ⇒ unclamped theta = 170 > theta_max 135 (uncapturable).
+        # needs_shade is False here (side-lit) → max-light mode → rest pose.
         cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
-        assert cover.max_light_percentage() == 35
+        assert round(cover.calculate_percentage()) == 35
 
     def test_far_side_low_sun_without_option_pins_at_cap(self) -> None:
         """Blank option keeps the legacy behavior: pin fully tipped (100 %)."""
         cover = _build(sol_azi=0.0, sol_elev=10.0)
+        assert round(cover.calculate_percentage()) == 100
+
+    def test_max_light_percentage_ignores_low_sun_rest(self) -> None:
+        """Higher-priority consumers get the PURE pose, never the rest.
+
+        ``max_light_percentage`` feeds cloud suppression and climate winter
+        mode; the low-sun rest must not override their decisions, so the same
+        uncapturable far-side sun returns the theta_max pin (100 %).
+        """
+        cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
         assert cover.max_light_percentage() == 100
+
+    def test_cloud_suppression_pose_unaffected_by_low_sun(self) -> None:
+        """The cloud-suppression policy hook path returns the pure pose."""
+        from custom_components.adaptive_pergola.cover_types import get_policy
+
+        cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
+        snapshot = MagicMock()
+        snapshot.cover = cover
+        pos = get_policy("cover_louvered_roof").cloud_suppression_position(snapshot)
+        assert pos == 100
 
     def test_far_side_reachable_sun_still_tracks(self) -> None:
         """A far-side sun the travel CAN aim at keeps the tracking curve."""
@@ -1147,4 +1174,4 @@ class TestLowSunPosition:
             sol_azi=0.0, sol_elev=10.0, low_sun_position=35, tilt_calibration=cal
         )
         # 35 % maps below vertical; converting back must return ~35 %.
-        assert cover.max_light_percentage() == pytest.approx(35, abs=1)
+        assert round(cover.calculate_percentage()) == pytest.approx(35, abs=1)
