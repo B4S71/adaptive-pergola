@@ -122,6 +122,7 @@ from .const import (
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
     CONF_PRESENCE_TEMPLATE_MODE,
+    CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SILL_HEIGHT,
     CONF_START_ENTITY,
@@ -774,6 +775,20 @@ _AUTOMATION_SPECS = _spec(
         default=2,
         make_selector=_number(
             minimum=2, maximum=60, mode=selector.NumberSelectorMode.BOX, unit="minutes"
+        ),
+    ),
+    FieldSpec(
+        CONF_RESYNC_TRAVEL_THRESHOLD,
+        SECTION_AUTOMATION,
+        ValidatorKind.RANGE,
+        rng=const._RANGE_RESYNC_TRAVEL_THRESHOLD,
+        clearable=True,
+        make_selector=_number(
+            minimum=0,
+            maximum=1000,
+            step=5,
+            mode=selector.NumberSelectorMode.BOX,
+            unit="%",
         ),
     ),
     FieldSpec(

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 from collections.abc import Iterator
+from time import monotonic
 from typing import Any
 
 from homeassistant.components.cover.const import DOMAIN as COVER_DOMAIN
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_interval
@@ -17,6 +19,8 @@ from ...const import (
     DEFAULT_TRANSIT_TIMEOUT_SECONDS,
     MAX_POSITION_RETRIES,
     POSITION_CHECK_INTERVAL_MINUTES,
+    POSITION_CLOSED,
+    POSITION_OPEN,
     POSITION_TOLERANCE_PERCENT,
 )
 from ...cover_types.base import (
@@ -493,6 +497,7 @@ class CoverCommandService:
             "last_reconcile_time": (
                 s.last_reconcile_at.isoformat() if s.last_reconcile_at else None
             ),
+            "travel_since_resync": round(s.travel_since_resync, 1),
         }
 
     def get_all_entity_state_snapshots(self) -> dict[str, dict]:
@@ -1129,6 +1134,24 @@ class CoverCommandService:
             position,
         )
 
+        # Accumulated-travel end-stop re-sync: motors that execute many small
+        # tracking steps drift (reported position inches away from the physical
+        # one). Once the cumulative commanded travel since the last end-stop
+        # visit exceeds the configured threshold, detour via the nearest
+        # mechanical end stop to re-reference the actuator, then continue to
+        # the target below. Position-capable services only — open/close/stop
+        # routes land on an end stop anyway.
+        resynced_from: int | None = None
+        if supports_position and context.resync_travel_threshold:
+            resynced_from = await self._maybe_resync_at_endstop(
+                entity_id,
+                service,
+                service_data,
+                threshold=context.resync_travel_threshold,
+                current=_current,
+                reason=reason,
+            )
+
         # Cover-type policy hook: dual-axis covers (venetian) pre-send tilt
         # on opening transitions so the actuator's slats are at the target
         # angle before the carriage starts moving (issue #33). Default
@@ -1170,6 +1193,26 @@ class CoverCommandService:
             entity_id, service, position, supports_position, context.inverse_state
         )
 
+        # Travel accounting for the end-stop re-sync feature. A command landing
+        # on an end stop re-references the actuator (the nightly close is a
+        # free re-sync), and so does a leg *departing* from one (single
+        # accurate move from a hard reference — this also covers the
+        # end-stop → target leg right after a re-sync detour; counting it
+        # would re-trigger a detour on every following move). Only mid-range
+        # to mid-range moves accumulate.
+        _st = self.state(entity_id)
+        _origin = resynced_from if resynced_from is not None else _current
+        if position in (POSITION_CLOSED, POSITION_OPEN) or service in (
+            "open_cover",
+            "close_cover",
+        ):
+            _st.travel_since_resync = 0.0
+        elif supports_position and _origin is not None:
+            if _origin in (POSITION_CLOSED, POSITION_OPEN):
+                _st.travel_since_resync = 0.0
+            else:
+                _st.travel_since_resync += abs(position - _origin)
+
         # Cover-type policy hook: dual-axis covers (venetian) run their
         # settle+tilt sequence here. Default policies are no-ops, so vertical /
         # awning / tilt covers carry zero overhead.
@@ -1184,6 +1227,98 @@ class CoverCommandService:
             )
 
         return "sent", service
+
+    # ------------------------------------------------------------------ #
+    # Accumulated-travel end-stop re-sync
+    # ------------------------------------------------------------------ #
+
+    async def _maybe_resync_at_endstop(
+        self,
+        entity_id: str,
+        service: str,
+        service_data: dict,
+        *,
+        threshold: int,
+        current: int | None,
+        reason: str,
+    ) -> int | None:
+        """Detour via the nearest mechanical end stop when travel accumulated.
+
+        Called from :meth:`apply_position` right before a positional command is
+        sent. When the cover's cumulative commanded travel since its last
+        end-stop visit (plus the upcoming move) exceeds ``threshold``, command
+        the end stop nearest the target first, wait for the cover to report it
+        (bounded by ``transit_timeout_seconds``), and let the caller continue
+        with the real move — now starting from a freshly re-referenced
+        actuator.
+
+        Returns the end-stop position when a detour ran (the caller uses it as
+        the travel origin of the follow-up move), else ``None``. The wire-space
+        target inside ``service_data`` decides which end stop is nearest, so
+        inverse-state covers detour correctly.
+        """
+        st = self.state(entity_id)
+        target_val = next(
+            (v for k, v in service_data.items() if k != ATTR_ENTITY_ID), None
+        )
+        if target_val is None or target_val in (POSITION_CLOSED, POSITION_OPEN):
+            # Endpoint moves reset the counter in apply_position; no detour.
+            return None
+        if current is not None and current in (POSITION_CLOSED, POSITION_OPEN):
+            # Departing from a hard stop — the actuator is freshly referenced;
+            # apply_position resets the counter for this leg.
+            return None
+        planned = abs(target_val - current) if current is not None else 0
+        if st.travel_since_resync + planned < threshold:
+            return None
+
+        endstop = POSITION_OPEN if target_val >= 50 else POSITION_CLOSED
+        self._logger.info(
+            "[%s] %s accumulated %.0f%% travel since last end-stop (threshold %s%%) "
+            "— re-syncing at %s%% before moving to %s%%",
+            reason,
+            entity_id,
+            st.travel_since_resync + planned,
+            threshold,
+            endstop,
+            target_val,
+        )
+        data = {
+            k: (v if k == ATTR_ENTITY_ID else endstop) for k, v in service_data.items()
+        }
+        ctx = Context()
+        self._position_context_tracker.record(ctx.id)
+        try:
+            await self._hass.services.async_call(
+                COVER_DOMAIN, service, data, context=ctx
+            )
+        except HomeAssistantError as err:
+            self._logger.warning(
+                "End-stop re-sync call failed for %s: %s — continuing with the "
+                "direct move",
+                entity_id,
+                err,
+            )
+            return None
+
+        # Counter resets on the *attempt*: even a partial detour must not
+        # re-trigger a cycle on every subsequent move.
+        st.travel_since_resync = 0.0
+
+        deadline = monotonic() + max(self.transit_timeout_seconds, 5)
+        while monotonic() < deadline:
+            await asyncio.sleep(2)
+            cur = self._get_current_position(entity_id)
+            if cur is not None and self._at_target(cur, endstop):
+                return endstop
+        self._logger.warning(
+            "End-stop re-sync: %s did not report %s%% within %ss — sending the "
+            "target move anyway",
+            entity_id,
+            endstop,
+            self.transit_timeout_seconds,
+        )
+        return endstop
 
     # ------------------------------------------------------------------ #
     # Position-tolerance helpers

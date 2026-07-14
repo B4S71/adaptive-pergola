@@ -780,6 +780,16 @@ CONF_POSITION_TOLERANCE = "position_tolerance"
 # landing-delta then surfaces as a manual override instead of a retry
 # (issue #591). Default is DEFAULT_ENABLE_POSITION_MATCHING (section 20).
 CONF_ENABLE_POSITION_MATCHING = "enable_position_matching"
+# Accumulated-travel end-stop re-sync. Motors that execute many small tracking
+# steps drift: the reported position inches away from the physical one until
+# precision poses (louvered-roof shading) leak. When set, the cumulative
+# commanded travel (sum of |target − current| across sent commands) is tracked
+# per cover; once it exceeds this threshold (percent of travel), the next
+# mid-range move detours via the mechanical end stop nearest the target —
+# re-referencing the actuator — and continues from there. Commanding 0/100
+# directly also resets the counter (the nightly close is a free re-sync).
+# Unset/0 = disabled.
+CONF_RESYNC_TRAVEL_THRESHOLD = "resync_travel_threshold"
 CONF_START_TIME = "start_time"  # active-window start "HH:MM:SS"
 CONF_START_ENTITY = "start_entity"  # input_datetime overriding start_time
 CONF_END_TIME = "end_time"  # active-window end "HH:MM:SS"
@@ -1307,6 +1317,7 @@ _RANGE_MAX_COVERAGE_STEPS = (1, 10)  # CONF_MAX_COVERAGE_STEPS, discrete levels
 _RANGE_DELTA_POSITION = (1, 90)  # CONF_DELTA_POSITION, percent
 _RANGE_DELTA_TIME = (2, 60)  # CONF_DELTA_TIME, minutes
 _RANGE_POSITION_TOLERANCE = (0, 20)  # CONF_POSITION_TOLERANCE, percent
+_RANGE_RESYNC_TRAVEL_THRESHOLD = (0, 1000)  # CONF_RESYNC_TRAVEL_THRESHOLD, percent of travel
 
 # Manual override.
 _RANGE_MANUAL_THRESHOLD = (0, 99)  # CONF_MANUAL_THRESHOLD, percent

@@ -1539,6 +1539,10 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             sun_just_appeared=sun_just_appeared,
             min_change=self.min_change,
             time_threshold=self.time_threshold,
+            # getattr: partially-constructed coordinators (spec'd test mocks
+            # that bind _build_position_context directly) may lack the
+            # attribute — absent means the re-sync feature is off.
+            resync_travel_threshold=getattr(self, "resync_travel_threshold", None),
             special_positions=build_special_positions(options),
             inverse_state=self._inverse_state,
             force=force,
@@ -2030,6 +2034,7 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         self.entities = rc.entities
         self.min_change = rc.tracking.min_change
         self.time_threshold = rc.tracking.time_threshold
+        self.resync_travel_threshold = rc.tracking.resync_travel_threshold
         self.manual_reset = rc.manual_override.reset
         self.manual_duration = rc.manual_override.duration
         self.manual_ignore_external = rc.manual_override.ignore_external

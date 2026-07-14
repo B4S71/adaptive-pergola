@@ -697,6 +697,9 @@ class TrackingSlice:
     # instead of set_cover_position(100/0). Falls back to set_cover_position
     # when the cover lacks open/close; never applies to a tilt-only axis.
     endpoint_use_open_close: bool = True
+    # Accumulated-travel end-stop re-sync threshold (percent of travel);
+    # None/0 = disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
+    resync_travel_threshold: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -771,6 +774,7 @@ class RuntimeConfig:
             CONF_MOTION_TIMEOUT,
             CONF_OPEN_CLOSE_THRESHOLD,
             CONF_POSITION_TOLERANCE,
+            CONF_RESYNC_TRAVEL_THRESHOLD,
             CONF_START_ENTITY,
             CONF_START_TIME,
             CONF_VENETIAN_BACKROTATE_PUBLISH_LAG,
@@ -847,6 +851,9 @@ class RuntimeConfig:
                 endpoint_use_open_close=options.get(
                     CONF_ENDPOINT_USE_OPEN_CLOSE,
                     DEFAULT_ENDPOINT_USE_OPEN_CLOSE,
+                ),
+                resync_travel_threshold=(
+                    int(options.get(CONF_RESYNC_TRAVEL_THRESHOLD) or 0) or None
                 ),
             ),
             manual_override=ManualOverrideSlice(

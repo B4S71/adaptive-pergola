@@ -276,6 +276,21 @@ set_automation_timing:
           max: 60
           mode: box
           unit_of_measurement: minutes
+    resync_travel_threshold:
+      name: End-stop re-sync travel threshold
+      description: >-
+        Accumulated commanded travel (%) after which the next mid-range move
+        detours via the nearest mechanical end stop (0/100) to re-reference a
+        drifting actuator before continuing to the target (0–1000, 0/unset =
+        disabled). Useful for slat motors that lose calibration over many
+        small tracking steps.
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 5
+          mode: box
+          unit_of_measurement: "%"
     start_time:
       name: Start time
       description: "Fixed time to start the tracking window (HH:MM:SS). Mutually exclusive with start_entity."

@@ -44,6 +44,11 @@ class PerEntityState:
     gave_up: bool = False
     is_safety: bool = False
     last_reconcile_at: dt.datetime | None = None
+    # Cumulative commanded travel (percent) since the cover last visited a
+    # mechanical end stop (0/100). Drives the accumulated-travel re-sync
+    # detour (CONF_RESYNC_TRAVEL_THRESHOLD); reset whenever a command lands
+    # on an end stop.
+    travel_since_resync: float = 0.0
 
 
 @dataclasses.dataclass
@@ -63,6 +68,9 @@ class PositionContext:
     min_change: int
     time_threshold: int
     special_positions: list[int]
+    # Accumulated-travel end-stop re-sync threshold (percent of travel);
+    # None/0 = feature disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
+    resync_travel_threshold: int | None = None
     inverse_state: bool = False
     force: bool = False  # Skip delta/time/manual_override gates (NOT auto_control)
     is_safety: bool = (

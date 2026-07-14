@@ -93,6 +93,7 @@ Everything is configured through the **config flow** (and later editable via the
 4. **Climate** — inside/outside temperature sensors, thresholds, and the summer/winter climate mode.
 5. **Weather** — wind/rain/lockout sensors or templates, cloud coverage, and solar-forecast gating.
 6. **Behaviour** — max-light and rest poses, shade-airflow, morning position, manual-override hold window, and optional debug categories.
+7. **Movement** — delta thresholds between commands, the active time window, and an optional **end-stop re-sync** (`resync_travel_threshold`): after the configured amount of accumulated commanded travel, the next move detours via the nearest mechanical end stop to re-reference a drifting slat motor before continuing to the target. Recommended for actuators that execute small tracking steps imprecisely.
 
 Sensible defaults are provided throughout; at minimum you need the target cover and the roof geometry.
 

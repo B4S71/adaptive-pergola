@@ -124,6 +124,7 @@ from .const import (
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
     CONF_PRESENCE_TEMPLATE_MODE,
+    CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SENSOR_TYPE,
     CONF_SILL_HEIGHT,
@@ -581,6 +582,17 @@ AUTOMATION_SCHEMA = vol.Schema(
                 max=60,
                 mode=selector.NumberSelectorMode.BOX,
                 unit_of_measurement="minutes",
+            )
+        ),
+        # Accumulated-travel end-stop re-sync (drift compensation). Cleared =
+        # disabled; both flow handlers strip the key via optional_entities().
+        vol.Optional(CONF_RESYNC_TRAVEL_THRESHOLD): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=1000,
+                step=5,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="%",
             )
         ),
         vol.Optional(
@@ -2630,6 +2642,7 @@ SYNC_CATEGORIES: dict[str, frozenset[str]] = {
         {
             CONF_DELTA_POSITION,
             CONF_DELTA_TIME,
+            CONF_RESYNC_TRAVEL_THRESHOLD,
             CONF_START_TIME,
             CONF_START_ENTITY,
             CONF_END_TIME,
@@ -3521,7 +3534,10 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     async def async_step_automation(self, user_input: dict[str, Any] | None = None):
         """Manage automation options."""
         if user_input is not None:
-            self.optional_entities([CONF_START_ENTITY, CONF_END_ENTITY], user_input)
+            self.optional_entities(
+                [CONF_START_ENTITY, CONF_END_ENTITY, CONF_RESYNC_TRAVEL_THRESHOLD],
+                user_input,
+            )
             self.config.update(user_input)
             # L4 global motion constraints are the final config step → summary.
             return await self.async_step_summary()
@@ -4135,7 +4151,10 @@ class OptionsFlowHandler(OptionsFlow):
     async def async_step_automation(self, user_input: dict[str, Any] | None = None):
         """Manage automation options."""
         if user_input is not None:
-            self.optional_entities([CONF_START_ENTITY, CONF_END_ENTITY], user_input)
+            self.optional_entities(
+                [CONF_START_ENTITY, CONF_END_ENTITY, CONF_RESYNC_TRAVEL_THRESHOLD],
+                user_input,
+            )
             # A cleared TimeSelector either omits the key or coerces to the blank
             # sentinel "00:00:00". Treat both as "unset": drop the key from the
             # submission and from any previously-stored option so it never

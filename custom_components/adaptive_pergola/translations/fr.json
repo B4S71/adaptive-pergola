@@ -204,6 +204,7 @@
         "data": {
           "delta_position": "Ajustement minimum de position",
           "delta_time": "Intervalle minimum entre les changements de position",
+          "resync_travel_threshold": "Seuil de course pour resynchronisation en butée",
           "start_time": "Heure de début",
           "start_entity": "Entité indiquant l'heure de début",
           "end_time": "Heure de fin",
@@ -214,6 +215,7 @@
         "data_description": {
           "delta_position": "Changement de position minimum (%) requis avant d'ajuster le store. Empêche les minuscules ajustements tandis que le soleil se déplace lentement. Valeurs typiques : 1-2% (très réactif, peut ajuster fréquemment), 5% (équilibré, recommandé pour la plupart), 10% (moins fréquent, mouvements plus importants). Exemple : Si le store est à 30% et le soleil se déplace légèrement, n'ajustez que si la nouvelle position est 35% ou plus (avec un seuil de 5%). Réduit l'usure du moteur et le bruit des minuscules ajustements constants.",
           "delta_time": "Temps minimum (minutes) entre les ajustements du store. Empêche les changements rapides de position. Valeurs typiques : 2-3 min (très réactif, peut être bruyant), 5-10 min (équilibré, recommandé), 15-20 min (lent, ajustements doux). Si le soleil change rapidement (nuages, ombres), l'intégration attend ce temps avant d'ajuster à nouveau. Réduit l'usure du moteur et fournit un fonctionnement plus fluide. Le minimum est de 2 minutes.",
+          "resync_travel_threshold": "Course commandée cumulée (%) au-delà de laquelle le prochain mouvement passe d'abord par la butée mécanique la plus proche (0/100) pour re-référencer le moteur, puis continue vers la cible. Compense la dérive de position des actionneurs exécutant imprécisément de nombreux petits pas de suivi (p. ex. lames de pergola). Exemple : 20 % — après environ dix ajustements de 2 %, le mouvement suivant passe par la butée. Vide ou 0 = désactivé.",
           "start_time": "Ne commencez pas le contrôle automatique avant cette heure (format 24 heures). Utilisez ceci pour rester endormi sans stores du matin (réglez sur 08:00 ou plus tard), correspondez à votre routine (réglez sur l'heure du réveil), ou laissez vide pour commencer au lever du soleil. Exemple : '07:30' signifie que le contrôle automatique commence à 7:30 AM. Le contrôle manuel fonctionne toujours avant cette heure.",
           "start_entity": "Entité représentant l'état de l'heure de début, remplaçant l'heure de début fixe définie ci-dessus. Utile pour automatiser l'heure de début avec une entité (par ex., un capteur qui fournit l'heure du réveil en fonction du calendrier ou du suivi du sommeil).",
           "end_time": "Arrêtez le contrôle automatique après cette heure (format 24 heures). Utilisez ceci pour garder l'intimité du soir (réglez sur 18:00 ou 19:00), retournez à la valeur par défaut avant le coucher, ou laissez vide pour continuer jusqu'au coucher du soleil. Exemple : '20:00' signifie que le contrôle automatique s'arrête à 20:00. Le contrôle manuel fonctionne toujours après cette heure.",
@@ -834,6 +836,7 @@
         "data": {
           "delta_position": "Ajustement minimum de position",
           "delta_time": "Intervalle minimum entre les changements de position",
+          "resync_travel_threshold": "Seuil de course pour resynchronisation en butée",
           "start_time": "Heure de début",
           "start_entity": "Entité indiquant l'heure de début",
           "end_time": "Heure de fin",
@@ -844,6 +847,7 @@
         "data_description": {
           "delta_position": "Changement de position minimum (%) requis avant d'ajuster le store. Empêche les minuscules ajustements tandis que le soleil se déplace lentement. Valeurs typiques : 1-2% (très réactif, peut ajuster fréquemment), 5% (équilibré, recommandé pour la plupart), 10% (moins fréquent, mouvements plus importants). Exemple : Si le store est à 30% et le soleil se déplace légèrement, n'ajustez que si la nouvelle position est 35% ou plus (avec un seuil de 5%). Réduit l'usure du moteur et le bruit des minuscules ajustements constants.",
           "delta_time": "Temps minimum (minutes) entre les ajustements du store. Empêche les changements rapides de position. Valeurs typiques : 2-3 min (très réactif, peut être bruyant), 5-10 min (équilibré, recommandé), 15-20 min (lent, ajustements doux). Si le soleil change rapidement (nuages, ombres), l'intégration attend ce temps avant d'ajuster à nouveau. Réduit l'usure du moteur et fournit un fonctionnement plus fluide. Le minimum est de 2 minutes.",
+          "resync_travel_threshold": "Course commandée cumulée (%) au-delà de laquelle le prochain mouvement passe d'abord par la butée mécanique la plus proche (0/100) pour re-référencer le moteur, puis continue vers la cible. Compense la dérive de position des actionneurs exécutant imprécisément de nombreux petits pas de suivi (p. ex. lames de pergola). Exemple : 20 % — après environ dix ajustements de 2 %, le mouvement suivant passe par la butée. Vide ou 0 = désactivé.",
           "start_time": "Ne commencez pas le contrôle automatique avant cette heure (format 24 heures). Utilisez ceci pour rester endormi sans stores du matin (réglez sur 08:00 ou plus tard), correspondez à votre routine (réglez sur l'heure du réveil), ou laissez vide pour commencer au lever du soleil. Exemple : '07:30' signifie que le contrôle automatique commence à 7:30 AM. Le contrôle manuel fonctionne toujours avant cette heure.",
           "start_entity": "Entité représentant l'état de l'heure de début, remplaçant l'heure de début fixe définie ci-dessus. Utile pour automatiser l'heure de début avec une entité (par ex., un capteur qui fournit l'heure du réveil en fonction du calendrier ou du suivi du sommeil).",
           "end_time": "Arrêtez le contrôle automatique après cette heure (format 24 heures). Utilisez ceci pour garder l'intimité du soir (réglez sur 18:00 ou 19:00), retournez à la valeur par défaut avant le coucher, ou laissez vide pour continuer jusqu'au coucher du soleil. Exemple : '20:00' signifie que le contrôle automatique s'arrête à 20:00. Le contrôle manuel fonctionne toujours après cette heure.",
@@ -1872,6 +1876,10 @@
         "delta_time": {
           "description": "Temps minimum (minutes) entre les commandes de protection (2–60).",
           "name": "Seuil de delta de temps"
+        },
+        "resync_travel_threshold": {
+          "name": "Seuil de course pour resynchronisation en butée",
+          "description": "Course cumulée (%) au-delà de laquelle le prochain mouvement passe par la butée mécanique la plus proche (0/100) pour re-référencer un actionneur dérivant (0–1000, 0/vide = désactivé)."
         },
         "end_entity": {
           "description": "Entité dont l'état fournit l'heure de fin. Mutuellement exclusif avec end_time.",
