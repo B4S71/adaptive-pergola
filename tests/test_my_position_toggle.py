@@ -48,7 +48,8 @@ async def test_my_position_button_not_created_when_toggle_default_false():
     assert (
         len(reset) == 1
     ), "Reset Manual Override button must remain always-on regardless of toggle"
-    assert len(added) == 1
+    # Reset Manual Override + Re-Sync are the two always-on buttons.
+    assert len(added) == 2
 
 
 @pytest.mark.asyncio

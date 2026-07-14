@@ -249,3 +249,127 @@ async def test_snapshot_exposes_last_resync_time(svc, mock_hass):
     await _apply(svc, mock_hass, current=40, target=100, threshold=None)
     snap = svc.get_entity_state_snapshot("cover.test")
     assert snap["last_resync_time"] is not None
+
+
+# --- manual-override protection of the detour legs -----------------------------
+
+
+@pytest.mark.asyncio
+async def test_detour_records_endstop_target_and_grace(svc, mock_hass, monkeypatch):
+    """During the detour the live target is the END STOP (not the final pose).
+
+    Without this, the classifier sees the cover moving away from the recorded
+    final target once the 5 s grace expires and engages manual override.
+    After the detour, the target points back at the final pose with a fresh
+    grace period.
+    """
+    svc.state("cover.test").travel_since_resync = 25
+    seen_targets: list[int | None] = []
+
+    async def _fake_wait(entity_id, target, *, timeout=None):
+        seen_targets.append(svc.state("cover.test").target)
+        return True
+
+    monkeypatch.setattr(svc, "wait_for_position", _fake_wait)
+    outcome, _ = await _apply(svc, mock_hass, current=90, target=92, threshold=20)
+
+    assert outcome == "sent"
+    assert seen_targets == [100]  # end stop was the live target during the wait
+    assert svc.state("cover.test").target == 92  # restored for the return leg
+    assert svc.state("cover.test").waiting is True
+    # detour leg + final-leg restore each (re)started a grace period
+    assert svc._grace_mgr.start_command_grace_period.call_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_wait_for_position_reached(svc, mock_hass):
+    """wait_for_position returns True once the cover reports the target."""
+    with (
+        patch.object(svc, "_get_current_position", side_effect=[50, 98]),
+        patch(f"{MOD}.asyncio.sleep", new=AsyncMock()),
+    ):
+        assert await svc.wait_for_position("cover.test", 100) is True
+
+
+@pytest.mark.asyncio
+async def test_wait_for_position_timeout(svc, mock_hass):
+    """wait_for_position returns False when the deadline passes."""
+    with (
+        patch.object(svc, "_get_current_position", return_value=50),
+        patch(f"{MOD}.asyncio.sleep", new=AsyncMock()),
+        patch(f"{MOD}.monotonic", side_effect=[0, 100, 200]),
+    ):
+        assert await svc.wait_for_position("cover.test", 100) is False
+
+
+# --- manual re-sync cycle (button) ---------------------------------------------
+
+
+def _make_cycle_coordinator(current_position=93):
+    """MagicMock coordinator with the real async_run_resync_cycle bound."""
+    from custom_components.adaptive_pergola.coordinator import (
+        AdaptiveDataUpdateCoordinator,
+    )
+
+    coord = MagicMock()
+    coord.entities = ["cover.test"]
+    coord.config_entry.options = {}
+    coord._cmd_svc.get_current_position.return_value = current_position
+    coord._cmd_svc.apply_position = AsyncMock(return_value=("sent", "svc"))
+    coord._cmd_svc.wait_for_position = AsyncMock(return_value=True)
+    coord._build_position_context.return_value = _ctx(None)
+    coord.async_run_resync_cycle = (
+        AdaptiveDataUpdateCoordinator.async_run_resync_cycle.__get__(coord)
+    )
+    return coord
+
+
+@pytest.mark.asyncio
+async def test_resync_cycle_closes_then_returns():
+    """The cycle sends 0 first, waits, then restores the captured pose."""
+    coord = _make_cycle_coordinator(current_position=93)
+    cycled = await coord.async_run_resync_cycle()
+
+    assert cycled == ["cover.test"]
+    calls = coord._cmd_svc.apply_position.await_args_list
+    assert [c.args[1] for c in calls] == [0, 93]
+    assert all(c.args[2] == "resync_button" for c in calls)
+    coord._cmd_svc.wait_for_position.assert_awaited_once_with("cover.test", 0)
+    # both legs bypass gates so the cycle works during manual override too
+    assert coord._build_position_context.call_count == 2
+    for kwargs in (c.kwargs for c in coord._build_position_context.call_args_list):
+        assert kwargs["force"] is True
+        assert kwargs["bypass_auto_control"] is True
+
+
+@pytest.mark.asyncio
+async def test_resync_cycle_skips_unreadable_cover():
+    """No readable position → cover skipped, nothing sent."""
+    coord = _make_cycle_coordinator(current_position=None)
+    cycled = await coord.async_run_resync_cycle()
+    assert cycled == []
+    coord._cmd_svc.apply_position.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resync_cycle_already_closed_counts_as_referenced():
+    """Cover already at 0: close leg skips as same_position, no return leg."""
+    coord = _make_cycle_coordinator(current_position=0)
+    coord._cmd_svc.apply_position = AsyncMock(return_value=("skipped", "same_position"))
+    cycled = await coord.async_run_resync_cycle()
+    assert cycled == ["cover.test"]
+    assert coord._cmd_svc.apply_position.await_count == 1
+    coord._cmd_svc.wait_for_position.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resync_button_delegates_to_cycle():
+    """The button press runs the coordinator cycle."""
+    from custom_components.adaptive_pergola.button import AdaptivePergolaResyncButton
+
+    coord = MagicMock()
+    coord.async_run_resync_cycle = AsyncMock(return_value=["cover.test"])
+    button = AdaptivePergolaResyncButton.__new__(AdaptivePergolaResyncButton)
+    button.coordinator = coord
+    await button.async_press()
+    coord.async_run_resync_cycle.assert_awaited_once()

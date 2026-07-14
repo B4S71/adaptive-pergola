@@ -70,6 +70,7 @@ from custom_components.adaptive_pergola.switch import AdaptivePergolaSwitch
 from custom_components.adaptive_pergola.button import (
     AdaptivePergolaButton,
     AdaptivePergolaMyPositionButton,
+    AdaptivePergolaResyncButton,
 )
 from custom_components.adaptive_pergola.cover import AdaptiveProxyCover
 from custom_components.adaptive_pergola.number import AdaptivePergolaMyPositionNumber
@@ -223,6 +224,12 @@ ENTITY_FACTORIES: dict[type, object] = {
         coordinator=_make_coordinator(),
     ),
     AdaptivePergolaMyPositionButton: lambda: AdaptivePergolaMyPositionButton(
+        entry_id="test_avail_entry",
+        hass=_make_hass(),
+        config_entry=_make_config_entry(),
+        coordinator=_make_coordinator(),
+    ),
+    AdaptivePergolaResyncButton: lambda: AdaptivePergolaResyncButton(
         entry_id="test_avail_entry",
         hass=_make_hass(),
         config_entry=_make_config_entry(),

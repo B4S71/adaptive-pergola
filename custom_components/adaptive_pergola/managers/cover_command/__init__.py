@@ -1303,6 +1303,17 @@ class CoverCommandService:
         data = {
             k: (v if k == ATTR_ENTITY_ID else endstop) for k, v in service_data.items()
         }
+        # The detour is a first-class command for the manual-override
+        # machinery: record the END STOP as the live target and restart the
+        # grace period, so the classifier sees a cover moving toward its
+        # commanded position — NOT a cover walking away from the final target
+        # (which would engage manual override once the 5 s grace expires).
+        now = dt.datetime.now(dt.UTC)
+        st.target = endstop
+        st.waiting = True
+        st.sent_at = now
+        st.last_progress_at = None
+        self._grace_mgr.start_command_grace_period(entity_id)
         ctx = Context()
         self._position_context_tracker.record(ctx.id)
         try:
@@ -1316,6 +1327,7 @@ class CoverCommandService:
                 entity_id,
                 err,
             )
+            self._restore_final_leg_bookkeeping(entity_id, target_val)
             return None
 
         # Counter resets on the *attempt*: even a partial detour must not
@@ -1323,20 +1335,51 @@ class CoverCommandService:
         st.travel_since_resync = 0.0
         st.last_resync_at = dt.datetime.now(dt.UTC)
 
-        deadline = monotonic() + max(self.transit_timeout_seconds, 5)
+        if not await self.wait_for_position(entity_id, endstop):
+            self._logger.warning(
+                "End-stop re-sync: %s did not report %s%% within %ss — sending "
+                "the target move anyway",
+                entity_id,
+                endstop,
+                self.transit_timeout_seconds,
+            )
+        # Hand the bookkeeping back to the final leg (fresh grace period) so
+        # the return move is likewise never classified as manual.
+        self._restore_final_leg_bookkeeping(entity_id, target_val)
+        return endstop
+
+    def _restore_final_leg_bookkeeping(self, entity_id: str, target: int) -> None:
+        """Point the live target back at the final position after a detour.
+
+        ``_prepare_service_call`` recorded the final target before the detour
+        replaced it with the end stop; restore it with a fresh ``sent_at`` and
+        grace period so the return leg gets the same manual-override
+        protection as a regular command.
+        """
+        st = self.state(entity_id)
+        st.target = target
+        st.waiting = True
+        st.sent_at = dt.datetime.now(dt.UTC)
+        st.last_progress_at = None
+        self._grace_mgr.start_command_grace_period(entity_id)
+
+    async def wait_for_position(
+        self, entity_id: str, target: int, *, timeout: float | None = None
+    ) -> bool:
+        """Poll until ``entity_id`` reports ``target`` (within tolerance).
+
+        Returns True when reached, False on timeout (default: the transit
+        timeout). Used by the re-sync detour and the manual Re-Sync cycle.
+        """
+        deadline = monotonic() + (
+            timeout if timeout is not None else max(self.transit_timeout_seconds, 5)
+        )
         while monotonic() < deadline:
             await asyncio.sleep(2)
             cur = self._get_current_position(entity_id)
-            if cur is not None and self._at_target(cur, endstop):
-                return endstop
-        self._logger.warning(
-            "End-stop re-sync: %s did not report %s%% within %ss — sending the "
-            "target move anyway",
-            entity_id,
-            endstop,
-            self.transit_timeout_seconds,
-        )
-        return endstop
+            if cur is not None and self._at_target(cur, target):
+                return True
+        return False
 
     # ------------------------------------------------------------------ #
     # Position-tolerance helpers

@@ -406,6 +406,16 @@ async def _trigger_async_apply_user_position(coord):
         )
 
 
+async def _trigger_resync_cycle(coord):
+    """Trigger: manual Re-Sync button — close to the end stop, restore pose."""
+    coord.config_entry = MagicMock()
+    coord.config_entry.options = {}
+    coord.entities = ["cover.test"]
+    coord._cmd_svc.get_current_position = MagicMock(return_value=93)
+    coord._cmd_svc.wait_for_position = AsyncMock(return_value=True)
+    await coord.async_run_resync_cycle()
+
+
 CONTROL_GATE_MATRIX: list[MatrixCase] = [
     MatrixCase(
         id="manual_override_expiry",
@@ -478,6 +488,16 @@ CONTROL_GATE_MATRIX: list[MatrixCase] = [
         is_safety_target=False,
         setup=lambda _: None,
         trigger=_trigger_async_apply_user_position,
+    ),
+    MatrixCase(
+        # Manual Re-Sync button: user-pressed close-and-return cycle. Bypasses
+        # gates (works with auto control off and during manual override) but
+        # is a one-shot — the targets must NOT persist as safety targets.
+        id="resync_cycle",
+        is_safety_bypass=True,
+        is_safety_target=False,
+        setup=lambda _: None,
+        trigger=_trigger_resync_cycle,
     ),
 ]
 

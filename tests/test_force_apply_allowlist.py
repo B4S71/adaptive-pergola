@@ -78,6 +78,11 @@ ALLOWED_LITERAL_FORCE_TRUE_SITES: frozenset[str] = frozenset(
         # proxy cover entity). Bypasses delta/time/manual_override gates so
         # an explicit slider move always lands.
         "async_apply_user_position",
+        # Manual Re-Sync button: close to the end stop, then restore the
+        # captured pose. force + bypass_auto_control so the user-pressed
+        # cycle works regardless of gates (including during manual override,
+        # whose held pose it restores). Not a safety target.
+        "async_run_resync_cycle",
     }
 )
 

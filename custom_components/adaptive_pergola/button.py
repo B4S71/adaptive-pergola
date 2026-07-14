@@ -41,6 +41,11 @@ async def async_setup_entry(
                     config_entry.entry_id, hass, config_entry, coordinator
                 )
             )
+        buttons.append(
+            AdaptivePergolaResyncButton(
+                config_entry.entry_id, hass, config_entry, coordinator
+            )
+        )
 
     async_add_entities(buttons)
 
@@ -152,3 +157,37 @@ class AdaptivePergolaMyPositionButton(AdaptivePergolaBaseEntity, ButtonEntity):
                 force=False,
                 use_my_position=True,
             )
+
+
+class AdaptivePergolaResyncButton(AdaptivePergolaBaseEntity, ButtonEntity):
+    """Manual end-stop re-sync: close fully, then restore the current pose.
+
+    Re-references a drifted actuator on demand (the automated variant is the
+    accumulated-travel detour, ``resync_travel_threshold``). Both legs run
+    through ``apply_position`` so the cycle never engages manual override —
+    and it also works *while* an override is active, restoring the held pose.
+    """
+
+    _attr_icon = "mdi:sync"
+
+    def __init__(
+        self,
+        entry_id: str,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        coordinator: AdaptiveDataUpdateCoordinator,
+    ) -> None:
+        """Initialize the button."""
+        super().__init__(entry_id, hass, config_entry, coordinator)
+        self._attr_unique_id = f"{entry_id}_Re-Sync"
+        self._button_name = "Re-Sync"
+
+    @property
+    def name(self):
+        """Name of the entity."""
+        return self._button_name
+
+    async def async_press(self) -> None:
+        """Run the full close-and-return re-sync cycle."""
+        cycled = await self.coordinator.async_run_resync_cycle()
+        _LOGGER.info("Manual re-sync cycle completed for: %s", cycled or "no covers")

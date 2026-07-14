@@ -88,6 +88,7 @@ from .const import (
     DIAG_CACHE_KEY,
     DOMAIN,
     LOGGER,
+    POSITION_CLOSED,
     POSITION_TOLERANCE_PERCENT,
     STARTUP_GRACE_PERIOD_SECONDS,
 )
@@ -2331,6 +2332,66 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             use_my_position=use_my_position,
         )
         return await self._cmd_svc.apply_position(entity_id, clamped, trigger, ctx)
+
+    async def async_run_resync_cycle(
+        self, *, trigger: str = "resync_button"
+    ) -> list[str]:
+        """Manual end-stop re-sync cycle: close fully, then restore the pose.
+
+        For each managed cover: capture the current position, drive to the
+        closed end stop (0 — re-referencing a drifted actuator), wait for
+        arrival, then return to the captured position in one accurate move.
+        Both legs go through ``apply_position`` (tracked HA contexts, target
+        bookkeeping, grace periods), so neither can be classified as a manual
+        override. ``force`` + ``bypass_auto_control`` make the button work
+        regardless of gates — including while a manual override is active,
+        whose held pose is simply restored.
+
+        Returns the covers that were actually cycled.
+        """
+        cycled: list[str] = []
+        options = self.config_entry.options
+        for entity in self.entities:
+            return_to = self._cmd_svc.get_current_position(entity)
+            if return_to is None:
+                _LOGGER.warning(
+                    "Re-sync cycle: %s has no readable position — skipped", entity
+                )
+                continue
+            ctx = self._build_position_context(
+                entity, options, force=True, bypass_auto_control=True
+            )
+            outcome, detail = await self._cmd_svc.apply_position(
+                entity, POSITION_CLOSED, trigger, ctx
+            )
+            if outcome != "sent":
+                # Already closed (same_position) still counts as referenced;
+                # anything else (unavailable, disabled) aborts this cover.
+                if detail != "same_position":
+                    _LOGGER.warning(
+                        "Re-sync cycle: close leg for %s not sent (%s) — skipped",
+                        entity,
+                        detail,
+                    )
+                    continue
+            else:
+                await self._cmd_svc.wait_for_position(entity, POSITION_CLOSED)
+            if return_to == POSITION_CLOSED:
+                cycled.append(entity)
+                continue
+            ctx = self._build_position_context(
+                entity, options, force=True, bypass_auto_control=True
+            )
+            outcome, detail = await self._cmd_svc.apply_position(
+                entity, return_to, trigger, ctx
+            )
+            if outcome == "sent":
+                cycled.append(entity)
+            else:
+                _LOGGER.warning(
+                    "Re-sync cycle: return leg for %s not sent (%s)", entity, detail
+                )
+        return cycled
 
     async def async_apply_user_tilt(
         self,
