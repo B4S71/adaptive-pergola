@@ -207,11 +207,29 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
 
     @property
     def is_closed(self) -> bool | None:
-        """Derived from mirrored current_position (0 = closed)."""
+        """Whether the cover is fully closed.
+
+        Position-capable sources decide by ``current_position`` (0 = closed).
+        Tilt-only sources — e.g. a bioclimatic-pergola slat set
+        (``io:SimpleBioclimaticPergolaIOComponent``), which exposes an
+        orientation/tilt axis and no position — have no position to read, so
+        fall back to the source's own open/closed state and then to the
+        mirrored tilt (0 = closed). Without this a tilt-only cover reports
+        ``None`` and Home Assistant renders the entity state as ``unknown``.
+        """
         pos = self.current_cover_position
-        if pos is None:
-            return None
-        return pos == 0
+        if pos is not None:
+            return pos == 0
+        state = self._source_state()
+        if state is not None:
+            if state.state == CoverState.CLOSED:
+                return True
+            if state.state == CoverState.OPEN:
+                return False
+        tilt = self.current_cover_tilt_position
+        if tilt is not None:
+            return tilt == 0
+        return None
 
     async def async_added_to_hass(self) -> None:
         """Subscribe to source state changes once mounted."""
