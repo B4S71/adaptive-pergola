@@ -57,6 +57,7 @@ from .const import (
 )
 from .coordinator import AdaptiveConfigEntry, AdaptiveDataUpdateCoordinator
 from .cover_types import POLICY_REGISTRY, get_policy
+from .frontend import async_register_frontend
 from .helpers import (
     copy_legacy_slot_sensors_to_list,
     custom_position_slot_sensors,
@@ -140,6 +141,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
         )
 
     await async_setup_services(hass)
+
+    # Serve + inject the custom slat iconset (acp:pergola-slats-*) once per HA
+    # instance. Safe for every entry type, including virtual profile entries.
+    await async_register_frontend(hass)
 
     # Virtual entry types (the Building Profile) hold only shared building-level
     # sensor IDs — they register no platforms and build no coordinator. Filter on
