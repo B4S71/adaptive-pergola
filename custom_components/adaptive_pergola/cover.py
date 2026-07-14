@@ -20,7 +20,7 @@ from homeassistant.components.cover import (
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.util import slugify
 
 from .const import (
@@ -61,6 +61,15 @@ def _slat_icon_for_tilt(tilt: int) -> str:
     """Return the ``acp`` iconset name for the nearest slat-position stop."""
     nearest = min(_SLAT_ICON_STOPS, key=lambda stop: abs(stop - tilt))
     return f"acp:pergola-slats-{nearest}"
+
+
+# Safety net for the synthesized opening/closing feedback: if the source never
+# publishes a settling update (Somfy IO via Tahoma can drop the post-move state),
+# clear the moving indicator after this many seconds so the entity can't get
+# stuck showing "opening"/"closing". Tilt moves complete in well under this.
+_MOVE_FEEDBACK_TIMEOUT = 40
+# Tolerance (in tilt %) for treating a source update as "arrived at target".
+_MOVE_ARRIVE_TOLERANCE = 3
 
 
 async def async_setup_entry(
@@ -138,6 +147,14 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
         # source state, not coordinator.data — the two write paths must not
         # share one cache field.
         self._proxy_source_sig: object = _SENTINEL
+        # Synthesized movement feedback. The Somfy IO source reports
+        # opening/closing only intermittently (and briefly), so a user command
+        # issued on the proxy often shows no motion at all. When we dispatch a
+        # command we drive these ourselves until the source settles.
+        self._move_dir: str | None = None  # "opening" | "closing" | None
+        self._move_target: int | None = None
+        self._move_start_tilt: int | None = None
+        self._move_unsub: Any = None
 
     # ---- availability + mirroring -------------------------------------- #
 
@@ -155,13 +172,17 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
 
     @property
     def is_opening(self) -> bool:
-        """True when the source cover reports it is opening."""
+        """True while the slats are opening (synthesized command feedback or source)."""
+        if self._move_dir == "opening":
+            return True
         state = self._source_state()
         return state is not None and state.state == CoverState.OPENING
 
     @property
     def is_closing(self) -> bool:
-        """True when the source cover reports it is closing."""
+        """True while the slats are closing (synthesized command feedback or source)."""
+        if self._move_dir == "closing":
+            return True
         state = self._source_state()
         return state is not None and state.state == CoverState.CLOSING
 
@@ -231,6 +252,65 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
             return tilt == 0
         return None
 
+    # ---- synthesized movement feedback -------------------------------- #
+
+    @callback
+    def _begin_move(self, target: int) -> None:
+        """Show opening/closing immediately for a proxy-issued command.
+
+        The source publishes transitional states unreliably, so derive the
+        direction from the requested target vs the current tilt and drive the
+        indicator ourselves until the source settles or the safety timer fires.
+        """
+        current = self.current_cover_tilt_position
+        if current is None or target == current:
+            return
+        self._move_dir = "opening" if target > current else "closing"
+        self._move_target = target
+        self._move_start_tilt = current
+        if self._move_unsub is not None:
+            self._move_unsub()
+        self._move_unsub = async_call_later(
+            self.hass, _MOVE_FEEDBACK_TIMEOUT, self._end_move
+        )
+        self.async_write_ha_state()
+
+    @callback
+    def _end_move(self, _now: Any = None) -> None:
+        """Clear the synthesized movement indicator and write state."""
+        was_moving = self._move_dir is not None
+        self._move_dir = None
+        self._move_target = None
+        self._move_start_tilt = None
+        if self._move_unsub is not None:
+            self._move_unsub()
+            self._move_unsub = None
+        if was_moving:
+            self.async_write_ha_state()
+
+    @callback
+    def _maybe_finish_move(self) -> None:
+        """Clear synthesized movement once the source has settled at/after target."""
+        if self._move_dir is None:
+            return
+        state = self._source_state()
+        if state is None:
+            return
+        # Source says it is still physically moving — keep the indicator.
+        if state.state in (CoverState.OPENING, CoverState.CLOSING):
+            return
+        tilt = self.current_cover_tilt_position
+        if tilt is None:
+            self._end_move()
+            return
+        reached = (
+            self._move_target is not None
+            and abs(tilt - self._move_target) <= _MOVE_ARRIVE_TOLERANCE
+        )
+        moved = self._move_start_tilt is not None and tilt != self._move_start_tilt
+        if reached or moved:
+            self._end_move()
+
     async def async_added_to_hass(self) -> None:
         """Subscribe to source state changes once mounted."""
         await super().async_added_to_hass()
@@ -241,6 +321,14 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
                 self._handle_source_event,
             )
         )
+        self.async_on_remove(self._cancel_move_timer)
+
+    @callback
+    def _cancel_move_timer(self) -> None:
+        """Cancel the pending movement-feedback timeout, if any (on teardown)."""
+        if self._move_unsub is not None:
+            self._move_unsub()
+            self._move_unsub = None
 
     @callback
     def _handle_source_event(self, event: Event) -> None:
@@ -251,6 +339,9 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
         the rendered surface (state flags, position, tilt, supported features).
         Fails open so a comparison error can never stall the mirror.
         """
+        # A settling source update ends any synthesized movement indicator
+        # first, so the gate below sees the post-move opening/closing flags.
+        self._maybe_finish_move()
         try:
             sig = (
                 self.available,
@@ -259,6 +350,7 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
                 self.current_cover_position,
                 self.current_cover_tilt_position,
                 int(self.supported_features),
+                self._move_dir,
             )
         except Exception:  # noqa: BLE001 - never let a signature error suppress a write
             self._proxy_source_sig = _SENTINEL
@@ -305,17 +397,21 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
         """Open command routed through the helper as position=100."""
         if not self._source_available():
             return
-        await self.coordinator.async_apply_user_position(
+        self._begin_move(100)
+        result = await self.coordinator.async_apply_user_position(
             self._source_entity_id, 100, trigger=TRIGGER_PROXY_OPEN
         )
+        self._end_move_if_skipped(result)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close command routed through the helper (clamp applies intentionally)."""
         if not self._source_available():
             return
-        await self.coordinator.async_apply_user_position(
+        self._begin_move(0)
+        result = await self.coordinator.async_apply_user_position(
             self._source_entity_id, 0, trigger=TRIGGER_PROXY_CLOSE
         )
+        self._end_move_if_skipped(result)
 
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Route the requested tilt onto the dedicated tilt axis (issue #684).
@@ -330,14 +426,27 @@ class AdaptiveProxyCover(AdaptivePergolaBaseEntity, CoverEntity):
         if not caps_get(self._source_caps(), CAP_HAS_SET_TILT_POSITION):
             return
         tilt = int(kwargs["tilt_position"])
-        await self.coordinator.async_apply_user_tilt(
+        self._begin_move(tilt)
+        result = await self.coordinator.async_apply_user_tilt(
             self._source_entity_id, tilt, trigger=TRIGGER_PROXY_TILT
         )
+        self._end_move_if_skipped(result)
+
+    def _end_move_if_skipped(self, result: Any) -> None:
+        """Back out the movement indicator when the pipeline preempted the move.
+
+        ``async_apply_user_*`` returns ``("skipped", reason)`` when a
+        higher-priority handler wins and no command is dispatched; nothing will
+        physically move, so drop the synthesized opening/closing at once.
+        """
+        if isinstance(result, tuple) and result and result[0] == "skipped":
+            self._end_move()
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop forwards directly to the source (no clamp)."""
         if not self._source_available():
             return
+        self._end_move()
         await self.hass.services.async_call(
             "cover",
             "stop_cover",
