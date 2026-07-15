@@ -1,10 +1,12 @@
 """Field + policy registration for the FOV-from-measurements button (#565).
 
 The "Generate field of view from measurements" button is a transient
-``CONF_FOV_COMPUTE`` toggle: ticking it fills ``fov_left``/``fov_right`` from
-the window width + reveal depth, then the form re-renders un-ticked. It is never
+``CONF_FOV_COMPUTE`` toggle: ticking it fills the canonical ``fov_left``/
+``fov_right`` keys from the window width + reveal depth (surfaced on the form
+through the transient sun-window fields since stage 2 of
+docs/CONFIG_FLOW_REWORK.md), then the form re-renders un-ticked. It is never
 persisted, so it must NOT appear in ``live_option_keys``. Cover types that carry
-window geometry (vertical blinds + venetians) advertise it; awnings/tilt don't.
+window geometry (vertical blinds) advertise it; awnings/tilt don't.
 """
 
 from __future__ import annotations
@@ -16,8 +18,8 @@ from custom_components.adaptive_pergola import config_fields as cf
 from custom_components.adaptive_pergola.config_flow import _get_sun_tracking_schema
 from custom_components.adaptive_pergola.const import (
     CONF_FOV_COMPUTE,
-    CONF_FOV_LEFT,
-    CONF_FOV_RIGHT,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
     CoverType,
 )
 from custom_components.adaptive_pergola.cover_types import get_policy
@@ -63,19 +65,20 @@ def test_supports_fov_compute_per_cover_type(cover_type, supported):
 
 
 @pytest.mark.parametrize("cover_type", [CoverType.BLIND])
-def test_toggle_in_schema_before_sliders(cover_type):
+def test_toggle_in_schema_with_window_fields(cover_type):
     keys = _keys(_get_sun_tracking_schema(cover_type))
     assert CONF_FOV_COMPUTE in keys
-    assert keys.index(CONF_FOV_COMPUTE) < keys.index(CONF_FOV_LEFT)
+    assert CONF_SUN_WINDOW_START in keys
+    assert CONF_SUN_WINDOW_END in keys
 
 
 @pytest.mark.parametrize("cover_type", [CoverType.AWNING, CoverType.TILT])
 def test_no_toggle_for_unsupported_cover_types(cover_type):
     keys = _keys(_get_sun_tracking_schema(cover_type))
     assert CONF_FOV_COMPUTE not in keys
-    # The plain fov sliders are still present.
-    assert CONF_FOV_LEFT in keys
-    assert CONF_FOV_RIGHT in keys
+    # The transient sun-window fields are still present.
+    assert CONF_SUN_WINDOW_START in keys
+    assert CONF_SUN_WINDOW_END in keys
 
 
 @pytest.mark.parametrize("cover_type", [CoverType.BLIND])
@@ -85,20 +88,15 @@ def test_toggle_is_transient_not_a_live_option_key(cover_type):
     assert CONF_FOV_COMPUTE not in get_policy(cover_type).live_option_keys()
 
 
-@pytest.mark.parametrize("cover_type", [CoverType.BLIND])
-def test_fov_sliders_optional_with_default_when_button_present(cover_type):
-    # The sliders are relaxed to vol.Optional so the frontend "required field"
-    # check never blocks the button's re-render submit (#565). Default preserved.
+@pytest.mark.parametrize("cover_type", [CoverType.BLIND, CoverType.AWNING])
+def test_sun_window_fields_required_with_defaults(cover_type):
+    # Stage 2: the transient sun-window fields replaced the fov sliders. They
+    # are Required with the default 90..270 window (azimuth 180 ± 90°) — the
+    # button re-render always supplies suggested values, so the frontend
+    # Required check never blocks it.
     schema = _get_sun_tracking_schema(cover_type)
     markers = {str(m): m for m in schema.schema}
-    for key in (CONF_FOV_LEFT, CONF_FOV_RIGHT):
-        assert isinstance(markers[key], vol.Optional)
-        assert markers[key].default() == 90
-
-
-@pytest.mark.parametrize("cover_type", [CoverType.AWNING, CoverType.TILT])
-def test_fov_sliders_stay_required_without_button(cover_type):
-    schema = _get_sun_tracking_schema(cover_type)
-    markers = {str(m): m for m in schema.schema}
-    for key in (CONF_FOV_LEFT, CONF_FOV_RIGHT):
-        assert isinstance(markers[key], vol.Required)
+    assert isinstance(markers[CONF_SUN_WINDOW_START], vol.Required)
+    assert isinstance(markers[CONF_SUN_WINDOW_END], vol.Required)
+    assert markers[CONF_SUN_WINDOW_START].default() == 90
+    assert markers[CONF_SUN_WINDOW_END].default() == 270

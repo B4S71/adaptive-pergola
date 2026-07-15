@@ -42,6 +42,8 @@ from custom_components.adaptive_pergola.const import (
     CONF_DRY_RUN,
     CONF_ENABLE_GLARE_ZONES,
     CONF_ENTITIES,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
 )
 
 # Options intentionally in the Duplicate flow (copy-all) but NOT in selective sync.
@@ -49,6 +51,12 @@ from custom_components.adaptive_pergola.const import (
 # (e.g. per-instance debug flags). All other options should be in SYNC_CATEGORIES.
 _DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
     {
+        # Transient-only sun-window form fields (docs/CONFIG_FLOW_REWORK.md,
+        # stage 2): shown on the sun-tracking step but popped on submit and
+        # converted to the canonical set_azimuth / fov_left / fov_right keys.
+        # Never persisted, so never synced or duplicated.
+        CONF_SUN_WINDOW_START,
+        CONF_SUN_WINDOW_END,
         CONF_DRY_RUN,
         CONF_DEBUG_MODE,
         CONF_DEBUG_CATEGORIES,
@@ -88,7 +96,10 @@ _DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
 # CONFIG_SCHEMA (data-step, has "name"/"mode") is intentionally excluded.
 _OPTION_SCHEMAS: list[vol.Schema] = [
     GEOMETRY_LOUVERED_ROOF_SCHEMA,
-    SUN_TRACKING_SCHEMA,  # includes CONF_AZIMUTH, handled by _SHARED_OPTIONS_EXCLUDED
+    # Renders the transient sun_window_start/end fields (stage 2); the canonical
+    # CONF_AZIMUTH they map to stays in _SHARED_OPTIONS_EXCLUDED, the canonical
+    # fov_left/fov_right stay in SYNC_CATEGORIES["sun_tracking"].
+    SUN_TRACKING_SCHEMA,
     POSITION_SCHEMA,
     AUTOMATION_SCHEMA,
     MANUAL_OVERRIDE_SCHEMA,

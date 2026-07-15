@@ -37,6 +37,8 @@ from custom_components.adaptive_pergola.const import (
     CONF_FOV_COMPUTE,
     CONF_FOV_LEFT,
     CONF_FOV_RIGHT,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
     CONF_HEIGHT_WIN,
     CONF_MANUAL_IGNORE_INTERMEDIATE,
     CONF_MANUAL_OVERRIDE_DURATION,
@@ -80,9 +82,10 @@ _VERTICAL_GEOMETRY = {
 }
 
 _SUN_TRACKING = {
-    CONF_AZIMUTH: 180,
-    CONF_FOV_LEFT: 45,
-    CONF_FOV_RIGHT: 45,
+    # Transient sun-window presentation (stage 2): 135°→225° converts to the
+    # canonical set_azimuth=180, fov_left=fov_right=45 on submit.
+    CONF_SUN_WINDOW_START: 135,
+    CONF_SUN_WINDOW_END: 225,
     # CONF_MIN_ELEVATION / CONF_MAX_ELEVATION are Optional — omit to use defaults
     CONF_DISTANCE: 0.5,
     "blind_spot": False,
@@ -234,6 +237,14 @@ async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
     options = entry.options
     assert options.get(CONF_DELTA_TIME) is not None
     assert options.get(CONF_MANUAL_OVERRIDE_DURATION) is not None
+
+    # The transient sun-window fields (135°→225°) persist as the canonical
+    # azimuth-midpoint + symmetric fov keys, and never persist themselves.
+    assert options[CONF_AZIMUTH] == 180
+    assert options[CONF_FOV_LEFT] == 45
+    assert options[CONF_FOV_RIGHT] == 45
+    assert CONF_SUN_WINDOW_START not in options
+    assert CONF_SUN_WINDOW_END not in options
 
 
 @pytest.mark.integration
@@ -1974,9 +1985,8 @@ async def test_full_setup_persists_fov_and_window_width(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
-            CONF_AZIMUTH: 180,
-            CONF_FOV_LEFT: 90,
-            CONF_FOV_RIGHT: 90,
+            CONF_SUN_WINDOW_START: 90,  # 180° ± 90° window
+            CONF_SUN_WINDOW_END: 270,
             CONF_DISTANCE: 0.5,
             "blind_spot": False,
             "enable_glare_zones": False,
@@ -1986,13 +1996,12 @@ async def test_full_setup_persists_fov_and_window_width(
     assert (
         result.get("step_id") == "sun_tracking"
     ), f"expected re-render on button press, got {result!r}"
-    # Second submit without the button: keep the (now derived) angles and advance.
+    # Second submit without the button: narrow the window (180° ± 45°) and advance.
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
-            CONF_AZIMUTH: 180,
-            CONF_FOV_LEFT: 45,
-            CONF_FOV_RIGHT: 45,
+            CONF_SUN_WINDOW_START: 135,
+            CONF_SUN_WINDOW_END: 225,
             CONF_DISTANCE: 0.5,
             "blind_spot": False,
             "enable_glare_zones": False,
@@ -2048,13 +2057,12 @@ async def test_create_flow_sun_tracking_rerender_keeps_typed_azimuth() -> None:
         return_value={"type": "form", "step_id": "position"}
     )
 
-    # First submit: the user types azimuth 137 and presses the FOV-from-
-    # measurements button → re-render path.
+    # First submit: the user types the 107..167 sun window (midpoint azimuth
+    # 137, ±30°) and presses the FOV-from-measurements button → re-render path.
     result = await flow.async_step_sun_tracking(
         {
-            CONF_AZIMUTH: 137,
-            CONF_FOV_LEFT: 30,
-            CONF_FOV_RIGHT: 30,
+            CONF_SUN_WINDOW_START: 107,
+            CONF_SUN_WINDOW_END: 167,
             CONF_FOV_COMPUTE: True,
             CONF_DISTANCE: 0.5,
         }
@@ -2062,18 +2070,20 @@ async def test_create_flow_sun_tracking_rerender_keeps_typed_azimuth() -> None:
     assert result["type"] == "form", "expected re-render on button press"
     assert result["step_id"] == "sun_tracking"
 
-    # After the fix: the re-rendered form must carry 137 as suggested_value for
-    # CONF_AZIMUTH — the user's just-typed input must not be discarded.
+    # After the fix: the re-rendered window must stay centred on the typed
+    # midpoint 137 (the button only widens it to the derived ±76°: 61..213) —
+    # the user's just-typed input must not be discarded for the default 180.
     schema = result.get("data_schema")
     assert schema is not None, "re-render must return a data_schema"
-    suggested_azimuth = None
+    suggested = {}
     for marker in schema.schema:
-        if str(marker) == CONF_AZIMUTH and marker.description:
-            suggested_azimuth = marker.description.get("suggested_value")
-            break
-    assert suggested_azimuth == 137, (
-        f"Re-rendered form must carry typed azimuth 137 as suggested_value, "
-        f"got {suggested_azimuth!r}. "
+        if str(marker) in (CONF_SUN_WINDOW_START, CONF_SUN_WINDOW_END) and (
+            marker.description
+        ):
+            suggested[str(marker)] = marker.description.get("suggested_value")
+    assert suggested == {CONF_SUN_WINDOW_START: 61, CONF_SUN_WINDOW_END: 213}, (
+        f"Re-rendered form must stay centred on the typed azimuth 137, "
+        f"got {suggested!r}. "
         "Defect B: create-flow _show_sun_tracking_form discards typed input."
     )
 

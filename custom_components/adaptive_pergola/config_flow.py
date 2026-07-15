@@ -75,6 +75,11 @@ from .const import (
     CONF_FOV_COMPUTE,
     CONF_FOV_LEFT,
     CONF_FOV_RIGHT,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
+    DEFAULT_FOV_LEFT,
+    DEFAULT_FOV_RIGHT,
+    DEFAULT_WINDOW_AZIMUTH,
     CONF_HEIGHT_WIN,
     CONF_INTERP,
     CONF_INTERP_END,
@@ -3036,6 +3041,113 @@ def _sun_tracking_placeholders(
     return {"learn_more": _SUN_TRACKING_WIKI, "computed_fov": computed}
 
 
+def sun_window_from_canonical(
+    azimuth: float, fov_left: float, fov_right: float
+) -> tuple[int, int]:
+    """Derive the transient sun-window display values from the canonical keys.
+
+    ``start = (azimuth − fov_left) % 360``, ``end = (azimuth + fov_right) % 360``.
+    Pure helper — the inverse of :func:`sun_window_to_canonical`. The display
+    fields are whole degrees (0–359 sliders), so values are rounded to ints —
+    legacy entries may carry non-integer canonical values, but everything this
+    integration writes is integral (see :func:`sun_window_to_canonical`), so
+    windows written here round-trip exactly.
+    """
+    start = round((float(azimuth) - float(fov_left)) % 360) % 360
+    end = round((float(azimuth) + float(fov_right)) % 360) % 360
+    return start, end
+
+
+def sun_window_to_canonical(start: float, end: float) -> tuple[int, int, int]:
+    """Convert a transient sun-window submit to the canonical storage keys.
+
+    ``span = (end − start) % 360`` (clockwise, wrap-aware; the window may wrap
+    through north, e.g. 137° → 2°). Returns ``(azimuth, fov_left, fov_right)``:
+    azimuth is the window midpoint, the fov halves split the span symmetrically.
+    All values are whole degrees; an odd span cannot split evenly, so the
+    deterministic rounding is ``fov_left = span // 2`` and ``fov_right`` takes
+    the extra degree — with ``azimuth = (start + fov_left) % 360`` the exact
+    ``[start, end]`` coverage is preserved and the round trip through
+    :func:`sun_window_from_canonical` is lossless.
+
+    Raises ``ValueError`` on a zero span (``start == end``): the full-circle
+    window is not supported — the form validates this before converting and
+    shows a field error instead (docs/CONFIG_FLOW_REWORK.md, stage 2).
+    """
+    start_i = round(float(start)) % 360
+    end_i = round(float(end)) % 360
+    span = (end_i - start_i) % 360
+    if span == 0:
+        raise ValueError("sun window must span at least 1°")
+    fov_left = span // 2
+    fov_right = span - fov_left
+    azimuth = (start_i + fov_left) % 360
+    return azimuth, fov_left, fov_right
+
+
+def _apply_sun_window_submit(user_input: dict[str, Any]) -> dict[str, str] | None:
+    """Pop the transient sun-window keys and write the canonical keys instead.
+
+    Shared by both ``async_step_sun_tracking`` submit handlers (create + options
+    flow), following the ``CONF_FOV_COMPUTE`` transient-field pattern: the two
+    display keys never persist. Tolerates submissions that carry the canonical
+    keys directly (unit tests driving the handler) — conversion only runs when
+    both transient keys are present.
+
+    Returns a form-errors dict when the submitted window is invalid (zero span,
+    i.e. ``start == end``); the transient keys are then left in *user_input* so
+    the error re-render shows the user's own values instead of resetting them.
+    Returns ``None`` on success (canonical keys written) or no-op.
+    """
+    if (
+        CONF_SUN_WINDOW_START not in user_input
+        and CONF_SUN_WINDOW_END not in user_input
+    ):
+        return None
+    start = user_input.get(CONF_SUN_WINDOW_START)
+    end = user_input.get(CONF_SUN_WINDOW_END)
+    if start is None or end is None:
+        # Defensive: a partial submit fragment carries no usable window — drop
+        # it so the transient keys can never leak into persisted options.
+        user_input.pop(CONF_SUN_WINDOW_START, None)
+        user_input.pop(CONF_SUN_WINDOW_END, None)
+        return None
+    try:
+        azimuth, fov_left, fov_right = sun_window_to_canonical(start, end)
+    except ValueError:
+        return {CONF_SUN_WINDOW_END: "window must span at least 1°"}
+    user_input.pop(CONF_SUN_WINDOW_START, None)
+    user_input.pop(CONF_SUN_WINDOW_END, None)
+    user_input[CONF_AZIMUTH] = azimuth
+    user_input[CONF_FOV_LEFT] = fov_left
+    user_input[CONF_FOV_RIGHT] = fov_right
+    return None
+
+
+def _inject_sun_window_display(suggested: dict[str, Any]) -> dict[str, Any]:
+    """Add the transient sun-window display values to *suggested* (in place).
+
+    Derives start/end from the stored canonical azimuth/fov keys, falling back
+    to the schema defaults when a key is absent (fresh create flow). When the
+    transient keys are already present (the zero-span error re-render, where
+    ``_apply_sun_window_submit`` left them in the submitted values on purpose)
+    they win, so the user sees their own rejected input rather than a reset.
+    """
+    if CONF_SUN_WINDOW_START in suggested and CONF_SUN_WINDOW_END in suggested:
+        return suggested
+    azimuth = suggested.get(CONF_AZIMUTH)
+    fov_left = suggested.get(CONF_FOV_LEFT)
+    fov_right = suggested.get(CONF_FOV_RIGHT)
+    start, end = sun_window_from_canonical(
+        DEFAULT_WINDOW_AZIMUTH if azimuth is None else azimuth,
+        DEFAULT_FOV_LEFT if fov_left is None else fov_left,
+        DEFAULT_FOV_RIGHT if fov_right is None else fov_right,
+    )
+    suggested[CONF_SUN_WINDOW_START] = start
+    suggested[CONF_SUN_WINDOW_END] = end
+    return suggested
+
+
 def _resolve_fov_compute_submit(
     sensor_type: str | None,
     user_input: dict[str, Any],
@@ -3318,6 +3430,11 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         """Configure sun tracking parameters."""
         if user_input is not None:
             self.optional_entities([CONF_MIN_ELEVATION, CONF_MAX_ELEVATION], user_input)
+            # Transient sun-window fields → canonical azimuth/fov keys, before
+            # any canonicalisation/validation (docs/CONFIG_FLOW_REWORK.md, st. 2).
+            # On a zero-span window the transient keys stay in *user_input* and
+            # the form re-renders below with the field error.
+            window_errors = _apply_sun_window_submit(user_input)
             pressed = _resolve_fov_compute_submit(
                 self.type_blind, user_input, self.config
             )
@@ -3329,6 +3446,10 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             canonical = user_input_to_canonical(
                 self.hass, user_input, length_keys=_SUN_TRACKING_LENGTH_KEYS
             )
+            if window_errors:
+                # Zero-span sun window (start == end) — re-render with the
+                # user's values (the transient keys survived the failed apply).
+                return self._show_sun_tracking_form(canonical, errors=window_errors)
             if pressed:
                 # The button was ticked → re-render with the derived fov values
                 # filled in and the toggle reset, for the user to edit/confirm.
@@ -3368,8 +3489,10 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     ):
         """Render the create-flow sun-tracking form."""
         schema = _get_sun_tracking_schema(self.type_blind, self.hass)
-        suggested = options_to_display(
-            self.hass, values or self.config, length_keys=_SUN_TRACKING_LENGTH_KEYS
+        suggested = _inject_sun_window_display(
+            options_to_display(
+                self.hass, values or self.config, length_keys=_SUN_TRACKING_LENGTH_KEYS
+            )
         )
         return self.async_show_form(
             step_id="sun_tracking",
@@ -4050,6 +4173,11 @@ class OptionsFlowHandler(OptionsFlow):
         """Adjust sun tracking parameters."""
         if user_input is not None:
             self.optional_entities([CONF_MIN_ELEVATION, CONF_MAX_ELEVATION], user_input)
+            # Transient sun-window fields → canonical azimuth/fov keys, before
+            # any canonicalisation/validation (docs/CONFIG_FLOW_REWORK.md, st. 2).
+            # On a zero-span window the transient keys stay in *user_input* and
+            # the form re-renders below with the field error.
+            window_errors = _apply_sun_window_submit(user_input)
             pressed = _resolve_fov_compute_submit(
                 self.sensor_type, user_input, self.options
             )
@@ -4061,6 +4189,10 @@ class OptionsFlowHandler(OptionsFlow):
             canonical = user_input_to_canonical(
                 self.hass, user_input, length_keys=_SUN_TRACKING_LENGTH_KEYS
             )
+            if window_errors:
+                # Zero-span sun window (start == end) — re-render with the
+                # user's values (the transient keys survived the failed apply).
+                return self._show_sun_tracking_form(canonical, errors=window_errors)
             if pressed:
                 # The button was ticked → re-render with the derived fov values
                 # filled in and the toggle reset, for the user to edit/confirm.
@@ -4092,8 +4224,8 @@ class OptionsFlowHandler(OptionsFlow):
     ):
         """Render the sun-tracking form."""
         schema = _get_sun_tracking_schema(self.sensor_type, self.hass)
-        suggested = options_to_display(
-            self.hass, values, length_keys=_SUN_TRACKING_LENGTH_KEYS
+        suggested = _inject_sun_window_display(
+            options_to_display(self.hass, values, length_keys=_SUN_TRACKING_LENGTH_KEYS)
         )
         return self.async_show_form(
             step_id="sun_tracking",

@@ -1,9 +1,10 @@
 """Config-flow behaviour for the FOV-from-measurements button (#565).
 
-Covers the schema rendering (toggle present before the always-shown sliders),
-the button press that derives ``fov_left``/``fov_right`` and re-renders the form,
-the normal save path when the button is not pressed, the transient nature of the
-toggle (never persisted), and venetian parity.
+Covers the schema rendering (toggle present alongside the transient sun-window
+fields), the button press that derives the canonical ``fov_left``/``fov_right``
+and re-renders the form (surfaced through the sun-window fields since stage 2
+of docs/CONFIG_FLOW_REWORK.md), the normal save path when the button is not
+pressed, and the transient nature of the toggle (never persisted).
 """
 
 from __future__ import annotations
@@ -25,6 +26,8 @@ from custom_components.adaptive_pergola.const import (
     CONF_FOV_COMPUTE,
     CONF_FOV_LEFT,
     CONF_FOV_RIGHT,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
     CONF_WINDOW_DEPTH,
     CONF_WINDOW_WIDTH,
     CoverType,
@@ -81,18 +84,22 @@ def test_preview_empty_for_type_without_button():
 
 
 @pytest.mark.parametrize("cover_type", [CoverType.BLIND])
-def test_supported_types_show_button_and_sliders(cover_type):
+def test_supported_types_show_button_and_window_fields(cover_type):
+    # Stage 2: the form carries the transient sun-window fields instead of the
+    # raw azimuth/fov sliders; the button still derives the canonical fov keys.
     keys = _keys(_get_sun_tracking_schema(cover_type))
     assert CONF_FOV_COMPUTE in keys
-    assert CONF_FOV_LEFT in keys
-    assert CONF_FOV_RIGHT in keys
+    assert CONF_SUN_WINDOW_START in keys
+    assert CONF_SUN_WINDOW_END in keys
+    assert CONF_FOV_LEFT not in keys
+    assert CONF_FOV_RIGHT not in keys
 
 
 def test_awning_has_no_button():
     keys = _keys(_get_sun_tracking_schema(CoverType.AWNING))
     assert CONF_FOV_COMPUTE not in keys
-    assert CONF_FOV_LEFT in keys
-    assert CONF_FOV_RIGHT in keys
+    assert CONF_SUN_WINDOW_START in keys
+    assert CONF_SUN_WINDOW_END in keys
 
 
 # ----------------------------------------------------------------------------
@@ -129,17 +136,18 @@ async def test_button_press_derives_fov_and_rerenders():
     result = await flow.async_step_sun_tracking(
         {
             CONF_FOV_COMPUTE: True,
-            CONF_FOV_LEFT: 90,
-            CONF_FOV_RIGHT: 90,
+            CONF_SUN_WINDOW_START: 90,  # 180° ± 90°
+            CONF_SUN_WINDOW_END: 270,
             "distance_shaded_area": 0.5,
         }
     )
     assert advanced is False
     assert result["type"] == "form"
     assert result["step_id"] == "sun_tracking"
-    # The re-rendered form shows the derived angle as the suggested value.
-    assert _suggested(result, CONF_FOV_LEFT) == 76
-    assert _suggested(result, CONF_FOV_RIGHT) == 76
+    # The re-rendered form surfaces the derived angle through the sun-window
+    # fields: azimuth 180 ± derived 76° → 104..256.
+    assert _suggested(result, CONF_SUN_WINDOW_START) == 104
+    assert _suggested(result, CONF_SUN_WINDOW_END) == 256
     # The toggle is never written to options.
     assert CONF_FOV_COMPUTE not in flow.options
 
@@ -150,15 +158,17 @@ async def test_button_not_pressed_saves_typed_values():
     result = await flow.async_step_sun_tracking(
         {
             CONF_FOV_COMPUTE: False,
-            CONF_FOV_LEFT: 30,
-            CONF_FOV_RIGHT: 40,
+            CONF_SUN_WINDOW_START: 150,  # span 70 → azimuth 185, fov 35/35
+            CONF_SUN_WINDOW_END: 220,
             "distance_shaded_area": 0.5,
         }
     )
     assert result["type"] == "menu"  # advanced (saved)
-    assert flow.options[CONF_FOV_LEFT] == 30
-    assert flow.options[CONF_FOV_RIGHT] == 40
+    assert flow.options[CONF_FOV_LEFT] == 35
+    assert flow.options[CONF_FOV_RIGHT] == 35
     assert CONF_FOV_COMPUTE not in flow.options
+    assert CONF_SUN_WINDOW_START not in flow.options
+    assert CONF_SUN_WINDOW_END not in flow.options
 
 
 @pytest.mark.asyncio
@@ -167,13 +177,13 @@ async def test_absent_toggle_saves_typed_values():
     flow = _options_flow({CONF_WINDOW_WIDTH: 2.0, CONF_WINDOW_DEPTH: 0.5})
     await flow.async_step_sun_tracking(
         {
-            CONF_FOV_LEFT: 55,
-            CONF_FOV_RIGHT: 65,
+            CONF_SUN_WINDOW_START: 100,  # span 140 → azimuth 170, fov 70/70
+            CONF_SUN_WINDOW_END: 240,
             "distance_shaded_area": 0.5,
         }
     )
-    assert flow.options[CONF_FOV_LEFT] == 55
-    assert flow.options[CONF_FOV_RIGHT] == 65
+    assert flow.options[CONF_FOV_LEFT] == 70
+    assert flow.options[CONF_FOV_RIGHT] == 70
 
 
 @pytest.mark.asyncio
@@ -184,7 +194,11 @@ async def test_legacy_fov_mode_key_dropped_on_save():
         {CONF_WINDOW_WIDTH: 2.0, CONF_WINDOW_DEPTH: 0.5, "fov_mode": "measurements"}
     )
     await flow.async_step_sun_tracking(
-        {CONF_FOV_LEFT: 45, CONF_FOV_RIGHT: 45, "distance_shaded_area": 0.5}
+        {
+            CONF_SUN_WINDOW_START: 135,
+            CONF_SUN_WINDOW_END: 225,
+            "distance_shaded_area": 0.5,
+        }
     )
     assert "fov_mode" not in flow.options
 
@@ -220,7 +234,7 @@ async def test_imperial_shaded_area_stable_across_button_rerender():
 
     # Second submit without the button: saves rather than looping.
     result2 = await flow.async_step_sun_tracking(
-        {CONF_DISTANCE: s1, CONF_FOV_LEFT: 76, CONF_FOV_RIGHT: 76}
+        {CONF_DISTANCE: s1, CONF_SUN_WINDOW_START: 104, CONF_SUN_WINDOW_END: 256}
     )
     assert result2["type"] == "menu"
     import math
@@ -254,25 +268,38 @@ async def test_create_flow_button_press_then_save():
     flow.config[CONF_WINDOW_WIDTH] = 2.0
     flow.config[CONF_WINDOW_DEPTH] = 0.5
 
-    # Button press → re-render, no advance.
+    # Button press → re-render, no advance. The derived 76° halves surface via
+    # the sun-window fields around the default azimuth 180 → 104..256.
     result1 = await flow.async_step_sun_tracking(
         {CONF_FOV_COMPUTE: True, "distance_shaded_area": 0.5}
     )
     assert result1["type"] == "form"
     assert result1["step_id"] == "sun_tracking"
-    assert _suggested(result1, CONF_FOV_LEFT) == 76
+    assert _suggested(result1, CONF_SUN_WINDOW_START) == 104
+    assert _suggested(result1, CONF_SUN_WINDOW_END) == 256
 
-    # Plain submit → advance to position, persisting the fov values.
+    # Plain submit → advance to position, persisting the canonical fov values.
     result2 = await flow.async_step_sun_tracking(
-        {CONF_FOV_LEFT: 76, CONF_FOV_RIGHT: 76, "distance_shaded_area": 0.5}
+        {
+            CONF_SUN_WINDOW_START: 104,
+            CONF_SUN_WINDOW_END: 256,
+            "distance_shaded_area": 0.5,
+        }
     )
     assert result2["step_id"] == "position"
     assert flow.config[CONF_FOV_LEFT] == 76
+    assert flow.config[CONF_FOV_RIGHT] == 76
     assert CONF_FOV_COMPUTE not in flow.config
+    assert CONF_SUN_WINDOW_START not in flow.config
 
 
-def test_supported_type_sliders_are_optional():
+def test_sun_window_fields_are_required():
+    # The transient sun-window fields replace the old Optional fov sliders
+    # (stage 2); they are Required — the button re-render always supplies
+    # suggested values, so the frontend Required check never blocks it.
     schema = _get_sun_tracking_schema(CoverType.BLIND)
     markers = {str(m): m for m in schema.schema}
-    assert isinstance(markers[CONF_FOV_LEFT], vol.Optional)
-    assert isinstance(markers[CONF_FOV_RIGHT], vol.Optional)
+    assert CONF_FOV_LEFT not in markers
+    assert CONF_FOV_RIGHT not in markers
+    assert isinstance(markers[CONF_SUN_WINDOW_START], vol.Required)
+    assert isinstance(markers[CONF_SUN_WINDOW_END], vol.Required)

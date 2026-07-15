@@ -184,6 +184,15 @@ CONF_FOV_COMPUTE = "fov_compute"  # transient form button: derive fov_left/right
 # from window width + reveal depth (#565). Never persisted. Legacy ``fov_mode``
 # values left in older entries' options are inert — the engine reads
 # ``fov_left``/``fov_right`` only — and are dropped on the next sun-tracking save.
+# Sun-window presentation of the tracking range (docs/CONFIG_FLOW_REWORK.md,
+# stage 2). TRANSIENT form fields, never persisted: the sun-tracking form shows
+# the compass range (clockwise start→end, may wrap through north) instead of
+# azimuth + FOV left/right. On submit both keys are popped and converted to the
+# canonical CONF_AZIMUTH / CONF_FOV_LEFT / CONF_FOV_RIGHT storage keys
+# (``config_flow.sun_window_to_canonical``); on form render they are derived
+# from the stored canonical keys (``config_flow.sun_window_from_canonical``).
+CONF_SUN_WINDOW_START = "sun_window_start"  # transient: window start azimuth, deg
+CONF_SUN_WINDOW_END = "sun_window_end"  # transient: window end azimuth, deg
 CONF_ENTITIES = "group"  # list of HA cover entity_ids controlled
 CONF_ENABLE_PROXY_COVER = "enable_proxy_cover"  # opt-in proxy cover platform
 DEFAULT_ENABLE_PROXY_COVER = False

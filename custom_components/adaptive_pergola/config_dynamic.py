@@ -29,7 +29,6 @@ from .const import (
     BLIND_SPOT_SLOT_NUMBERS,
     BLIND_SPOT_SLOTS,
     BUILDING_PROFILE_SENSOR_KEYS,
-    CONF_AZIMUTH,
     CONF_CLIMATE_MODE,
     CONF_CLOUD_COVERAGE_ENTITY,
     CONF_CLOUD_COVERAGE_THRESHOLD,
@@ -66,6 +65,8 @@ from .const import (
     CONF_SUNRISE_TIME_ENTITY,
     CONF_SUNSET_OFFSET,
     CONF_SUNSET_TIME_ENTITY,
+    CONF_SUN_WINDOW_END,
+    CONF_SUN_WINDOW_START,
     CONF_TEMP_ENTITY,
     CONF_TEMP_HIGH,
     CONF_TEMP_LOW,
@@ -94,6 +95,8 @@ from .const import (
     DEFAULT_BLIND_SPOT_ELEVATION_MODE,
     DEFAULT_CLOUD_COVERAGE_THRESHOLD,
     DEFAULT_ENABLE_POSITION_MATCHING,
+    DEFAULT_FOV_LEFT,
+    DEFAULT_FOV_RIGHT,
     DEFAULT_GLARE_ZONE_Z,
     DEFAULT_WEATHER_RAIN_THRESHOLD,
     DEFAULT_WEATHER_TIMEOUT,
@@ -184,29 +187,28 @@ def sun_tracking_schema(hass: HomeAssistant | None = None) -> vol.Schema:
             vol.Required(
                 CONF_ENABLE_SUN_TRACKING, default=True
             ): selector.BooleanSelector(),
+            # Transient sun-window presentation of CONF_AZIMUTH + CONF_FOV_LEFT/
+            # CONF_FOV_RIGHT (docs/CONFIG_FLOW_REWORK.md stage 2). Both keys are
+            # popped on submit and converted to the canonical keys; never stored.
             vol.Required(
-                CONF_AZIMUTH, default=DEFAULT_WINDOW_AZIMUTH
+                CONF_SUN_WINDOW_START,
+                default=(DEFAULT_WINDOW_AZIMUTH - DEFAULT_FOV_LEFT) % 360,
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0,
                     max=359,
-                    mode=selector.NumberSelectorMode.SLIDER,
-                    unit_of_measurement="°",
-                )
-            ),
-            vol.Required(CONF_FOV_LEFT, default=90): selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=0,
-                    max=180,
                     step=1,
                     mode=selector.NumberSelectorMode.SLIDER,
                     unit_of_measurement="°",
                 )
             ),
-            vol.Required(CONF_FOV_RIGHT, default=90): selector.NumberSelector(
+            vol.Required(
+                CONF_SUN_WINDOW_END,
+                default=(DEFAULT_WINDOW_AZIMUTH + DEFAULT_FOV_RIGHT) % 360,
+            ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0,
-                    max=180,
+                    max=359,
                     step=1,
                     mode=selector.NumberSelectorMode.SLIDER,
                     unit_of_measurement="°",
