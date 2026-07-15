@@ -1055,58 +1055,39 @@ def test_every_option_backed_switch_key_is_settable():
 
 
 class TestCloudSuppressionPositionHook:
-    """``cloud_suppression_position`` returns the roof's no-shade pose."""
+    """The louvered roof does NOT override ``cloud_suppression_position``.
 
-    @staticmethod
-    def _snapshot_with(cover):
+    Site decision (2026-07-15, reversing 0.4.0-beta1): when clouds suppress
+    direct sun, the fixed ``cloudy_position`` always wins at the handler's
+    priority — never a geometry-derived max-light pose. The base hook's None
+    routes the CloudSuppressionHandler to its standard cloudy path.
+    """
+
+    def test_policy_does_not_override_base_hook(self) -> None:
+        """The policy inherits the base None hook (no custom cloud pose)."""
+        from custom_components.adaptive_pergola.cover_types.base import (
+            CoverTypePolicy,
+        )
+        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
+            LouveredRoofPolicy,
+        )
+
+        assert (
+            LouveredRoofPolicy.cloud_suppression_position
+            is CoverTypePolicy.cloud_suppression_position
+        )
+
+    def test_hook_returns_none_for_louvered_engine(self) -> None:
+        """None even with a live louvered engine → handler uses cloudy_position."""
         from types import SimpleNamespace
 
-        return SimpleNamespace(cover=cover)
-
-    def test_returns_max_light_curve(self) -> None:
-        """Without a fixed light position, the max-sunlight curve pose is used."""
-        from unittest.mock import MagicMock
-
-        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
-            LouveredRoofPolicy,
-        )
-        from custom_components.adaptive_pergola.engine.covers import (
-            AdaptiveLouveredRoofCover,
-        )
-
-        cover = MagicMock(spec=AdaptiveLouveredRoofCover)
-        cover.lr_config.max_light_position = None
-        cover.max_light_percentage.return_value = 44
-        pos = LouveredRoofPolicy().cloud_suppression_position(self._snapshot_with(cover))
-        assert pos == 44
-
-    def test_returns_fixed_light_position_when_configured(self) -> None:
-        """A configured ``lr_max_light_position`` wins over the curve."""
-        from unittest.mock import MagicMock
-
-        from custom_components.adaptive_pergola.cover_types.louvered_roof import (
-            LouveredRoofPolicy,
-        )
-        from custom_components.adaptive_pergola.engine.covers import (
-            AdaptiveLouveredRoofCover,
-        )
-
-        cover = MagicMock(spec=AdaptiveLouveredRoofCover)
-        cover.lr_config.max_light_position = 62.4
-        pos = LouveredRoofPolicy().cloud_suppression_position(self._snapshot_with(cover))
-        assert pos == 62
-        cover.max_light_percentage.assert_not_called()
-
-    def test_returns_none_for_foreign_engine(self) -> None:
-        """A non-louvered calc engine falls back to the legacy fixed path."""
-        from unittest.mock import MagicMock
-
         from custom_components.adaptive_pergola.cover_types.louvered_roof import (
             LouveredRoofPolicy,
         )
 
+        cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
         pos = LouveredRoofPolicy().cloud_suppression_position(
-            self._snapshot_with(MagicMock())
+            SimpleNamespace(cover=cover)
         )
         assert pos is None
 
@@ -1144,14 +1125,18 @@ class TestLowSunPosition:
         assert cover.max_light_percentage() == 100
 
     def test_cloud_suppression_pose_unaffected_by_low_sun(self) -> None:
-        """The cloud-suppression policy hook path returns the pure pose."""
+        """Cloud suppression never sees the rest: the policy hook is None.
+
+        The handler therefore uses the configured ``cloudy_position``, which
+        the low-sun rest must not override (it ranks above solar only).
+        """
         from custom_components.adaptive_pergola.cover_types import get_policy
 
         cover = _build(sol_azi=0.0, sol_elev=10.0, low_sun_position=35)
         snapshot = MagicMock()
         snapshot.cover = cover
         pos = get_policy("cover_louvered_roof").cloud_suppression_position(snapshot)
-        assert pos == 100
+        assert pos is None
 
     def test_far_side_reachable_sun_still_tracks(self) -> None:
         """A far-side sun the travel CAN aim at keeps the tracking curve."""

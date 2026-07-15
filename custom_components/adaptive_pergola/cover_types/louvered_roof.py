@@ -488,27 +488,13 @@ class LouveredRoofPolicy(CoverTypePolicy, register=True):
             lr_config=lr_config,
         )
 
-    def cloud_suppression_position(self, snapshot) -> int | None:
-        """No direct sun → the roof's no-shade pose instead of a fixed position.
-
-        Clouds thick enough to suppress direct sun mean there is nothing to
-        shade — the pergola should maximise the diffuse light instead of
-        parking at a fixed cloudy position (which fights the light-maximising
-        geometry; issue observed live: cloudy position 75 % held a near-
-        vertical pose all through an overcast morning). Returns the same pose
-        the engine uses when nothing is shaded: the fixed
-        ``lr_max_light_position`` when configured, otherwise the max-sunlight
-        curve at the current sun elevation. Falls back to ``None`` (legacy
-        fixed-position path) when the snapshot's calc engine is not a
-        louvered-roof engine (defensive — e.g. a stale snapshot mid-reload).
-        """
-        cover = snapshot.cover
-        if not isinstance(cover, AdaptiveLouveredRoofCover):
-            return None
-        if cover.lr_config.max_light_position is not None:
-            pct = max(0.0, min(100.0, float(cover.lr_config.max_light_position)))
-            return int(round(pct))
-        return cover.max_light_percentage()
+    # NOTE (2026-07-15): the louvered roof deliberately does NOT override
+    # ``cloud_suppression_position`` (it briefly did, 0.4.0-beta1 —
+    # returning the max-light curve so an overcast sky wasn't parked at a
+    # near-vertical pose). Site decision reversed that: when clouds suppress
+    # direct sun, the fixed ``cloudy_position`` should always win (at the
+    # handler's priority 60), never a geometry-derived pose — so the base
+    # hook's None routes the handler to its standard cloudy path.
 
     def post_pipeline_resolve(
         self,
