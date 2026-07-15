@@ -17,7 +17,6 @@ import pytest
 from custom_components.adaptive_pergola.config_types import CoverConfig
 from custom_components.adaptive_pergola.cover_types import (
     POLICY_REGISTRY,
-    BuildingProfilePolicy,
     CoverTypePolicy,
     LouveredRoofPolicy,
     get_policy,
@@ -78,16 +77,17 @@ class TestRegistry:
     def test_louvered_roof_policy_registered(self):
         assert POLICY_REGISTRY["cover_louvered_roof"] is LouveredRoofPolicy
 
-    def test_building_profile_policy_registered(self):
-        assert POLICY_REGISTRY["cover_building_profile"] is BuildingProfilePolicy
+    def test_building_profile_policy_gone(self):
+        # The building-profile subsystem was deleted (docs/CONFIG_FLOW_REWORK.md
+        # stage 4); the virtual entry type must no longer register.
+        assert "cover_building_profile" not in POLICY_REGISTRY
 
     def test_only_pergola_types_registered_by_integration(self):
-        # The pergola split ships exactly one physical cover type plus the
-        # virtual building profile. Anything else in the registry must come
-        # from the test-only compat shims (tests/compat_policies.py), never
-        # from the integration package itself.
+        # The pergola split ships exactly one cover type. Anything else in the
+        # registry must come from the test-only compat shims
+        # (tests/compat_policies.py), never from the integration package.
         for key, cls in POLICY_REGISTRY.items():
-            if key in ("cover_louvered_roof", "cover_building_profile"):
+            if key == "cover_louvered_roof":
                 assert cls.__module__.startswith("custom_components.")
             else:
                 assert cls.__module__ == "tests.compat_policies", (
@@ -97,7 +97,6 @@ class TestRegistry:
 
     def test_get_policy_returns_instance(self):
         assert isinstance(get_policy("cover_louvered_roof"), LouveredRoofPolicy)
-        assert isinstance(get_policy("cover_building_profile"), BuildingProfilePolicy)
 
     def test_get_policy_raises_for_unknown(self):
         with pytest.raises(ValueError, match="Unsupported cover type"):

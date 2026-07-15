@@ -2,13 +2,6 @@
   "title": "Adaptive Pergola",
   "config": {
     "step": {
-      "user": {
-        "menu_options": {
-          "create_new": "Create new cover",
-          "create_building_profile": "Create building profile",
-          "duplicate_existing": "Duplicate from existing cover"
-        }
-      },
       "create_new": {
         "title": "Create New Cover",
         "data": {
@@ -139,9 +132,7 @@
           "sun_window_end": "Sun window end azimuth",
           "fov_compute": "Generate field of view from measurements",
           "min_elevation": "Minimum Elevation of the sun",
-          "max_elevation": "Maximum Elevation of the sun",
-          "blind_spot": "Setup Blindspot",
-          "enable_glare_zones": "Enable Glare Zones"
+          "max_elevation": "Maximum Elevation of the sun"
         },
         "data_description": {
           "enable_sun_tracking": "When enabled, covers track the sun within the configured FOV and elevation limits (solar positioning). Disable to skip distance-based solar positioning while keeping glare zones (controlled by their own switch), climate, motion, manual override, custom positions, and other overrides active. Default: enabled.",
@@ -149,9 +140,7 @@
           "sun_window_start": "Compass bearing (0-359°) where the sun window begins. The window runs clockwise from start to end; the shading reacts to the sun only while the sun's azimuth is inside this range. North=0°, East=90°, South=180°, West=270°.",
           "sun_window_end": "Compass bearing (0-359°) where the sun window ends. The window runs clockwise from start to end and may wrap through north (e.g. 137° → 2°). Start and end must differ by at least 1°.",
           "min_elevation": "Track sun only when elevation is ABOVE this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 15° to ignore low morning/evening sun. Leave empty to track sun at all elevations.",
-          "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations.",
-          "blind_spot": "Enable if you have obstacles blocking sun in part of the tracking area (trees, nearby buildings, roof overhang, balcony). When enabled, you define an azimuth + elevation range where sun is blocked. Cover ignores sun position when it's in this 'blind spot'. Leave disabled if you have clear view to sun all day.",
-          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)"
+          "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations."
         }
       },
       "position": {
@@ -532,120 +521,6 @@
         "title": "Weather Conditions",
         "description": "Select the weather states that count as \"sun is out\" for climate mode. The integration compares the live weather entity state to this list — matching states enable solar-based cover control. States not in the list are treated as cloudy, so summer-close and winter-open rules only apply when the weather matches.\n\nTypical choices are \"sunny\" and \"partlycloudy\". The available states depend on your weather integration.\n\n[Learn more]({learn_more})"
       },
-      "blind_spot": {
-        "data": {
-          "blind_spot_left": "Blind spot left edge (from FOV left)",
-          "blind_spot_right": "Blind spot right edge (from FOV left)",
-          "blind_spot_elevation": "Blindspot elevation",
-          "blind_spot_elevation_mode": "Blind spot elevation mode",
-          "blind_spot_left_2": "Blind spot 2 left edge (from FOV left)",
-          "blind_spot_right_2": "Blind spot 2 right edge (from FOV left)",
-          "blind_spot_elevation_2": "Blind spot 2 elevation",
-          "blind_spot_elevation_mode_2": "Blind spot 2 elevation mode",
-          "blind_spot_left_3": "Blind spot 3 left edge (from FOV left)",
-          "blind_spot_right_3": "Blind spot 3 right edge (from FOV left)",
-          "blind_spot_elevation_3": "Blind spot 3 elevation",
-          "blind_spot_elevation_mode_3": "Blind spot 3 elevation mode"
-        },
-        "data_description": {
-          "blind_spot_left": "Left edge of the blind spot zone (horizontal angle in degrees from your FOV left boundary). Where 0 = at the leftmost FOV edge. Example: If your FOV left is 45° and a tree blocks sun from 10-20° relative to that edge, set this to 10. This marks where the obstruction begins horizontally. Use sun position sensor or observe when sun is blocked to find this value.",
-          "blind_spot_right": "Right edge of the blind spot zone (horizontal angle in degrees from your FOV left boundary, must be > left edge). Example: If your FOV left is 45° and a tree blocks sun from 10-20° relative to that edge, set this to 20. This marks where the obstruction ends horizontally. Creates a 'don't track sun here' zone between left and right edges.",
-          "blind_spot_elevation": "Sun elevation (degrees above horizon) threshold where the blind spot applies. Pair with the elevation mode: in 'below' mode the spot blocks sun at or below this angle (e.g. a roof overhang that only blocks low sun — set to 30); in 'above' mode it blocks sun at or above this angle (e.g. a balcony overhead — set to 50). Sun elevation: 0°=horizon, 45°=halfway up, 90°=directly overhead.",
-          "blind_spot_elevation_mode": "Which side of the elevation threshold the blind spot covers. 'Below' (default) blocks LOW sun (a tree or roof overhang); 'Above' blocks HIGH sun (an overhead obstacle like a balcony or deep recess). Only matters when an elevation is set.",
-          "blind_spot_left_2": "Optional second blind-spot slot. Left edge in degrees from your FOV left boundary. Leave this and the right edge unset to disable slot 2.",
-          "blind_spot_right_2": "Right edge of the second blind-spot slot (degrees from FOV left, must be greater than slot 2's left edge).",
-          "blind_spot_elevation_2": "Sun elevation threshold where slot 2 applies (paired with slot 2's elevation mode). Leave unset to apply at all elevations.",
-          "blind_spot_elevation_mode_2": "Which side of slot 2's elevation threshold it covers: 'Below' blocks low sun, 'Above' blocks high sun. Only matters when slot 2's elevation is set.",
-          "blind_spot_left_3": "Optional third blind-spot slot. Left edge in degrees from your FOV left boundary. Leave this and the right edge unset to disable slot 3.",
-          "blind_spot_right_3": "Right edge of the third blind-spot slot (degrees from FOV left, must be greater than slot 3's left edge).",
-          "blind_spot_elevation_3": "Sun elevation threshold where slot 3 applies (paired with slot 3's elevation mode). Leave unset to apply at all elevations.",
-          "blind_spot_elevation_mode_3": "Which side of slot 3's elevation threshold it covers: 'Below' blocks low sun, 'Above' blocks high sun. Only matters when slot 3's elevation is set."
-        },
-        "title": "Blind Spot",
-        "description": "Define up to 3 independent areas where obstacles block the sun (trees, buildings, roof overhangs). The sun is ignored when it falls inside any one of them. These angular values are relative degrees within your field of view, where 0 is the leftmost FOV boundary. Leave a slot's left and right edges unset to skip it.\n\n[Learn more]({learn_more})"
-      },
-      "glare_zones": {
-        "title": "Glare Zones",
-        "description": "Define up to 4 floor areas to protect from direct sunlight. When the sun's angle would cast direct light onto a zone, the blind lowers to shade it. Leave a zone name blank to skip that slot.\n\nCoordinates are relative to the window centre projected onto the floor. **X** is the left/right offset (positive = right). **Y** is the distance into the room. **Radius** defines the circular protected area. Use the Lovelace companion card to visualise zone positions and verify coverage.\n\n[Learn more]({learn_more})",
-        "data": {
-          "enable_glare_zones": "Enable Glare Zones",
-          "glare_zone_1_name": "Zone 1 Name",
-          "glare_zone_1_x": "Zone 1 X Position",
-          "glare_zone_1_y": "Zone 1 Y Position",
-          "glare_zone_1_radius": "Zone 1 Radius",
-          "glare_zone_1_z": "Zone 1 Z Height",
-          "glare_zone_2_name": "Zone 2 Name",
-          "glare_zone_2_x": "Zone 2 X Position",
-          "glare_zone_2_y": "Zone 2 Y Position",
-          "glare_zone_2_radius": "Zone 2 Radius",
-          "glare_zone_2_z": "Zone 2 Z Height",
-          "glare_zone_3_name": "Zone 3 Name",
-          "glare_zone_3_x": "Zone 3 X Position",
-          "glare_zone_3_y": "Zone 3 Y Position",
-          "glare_zone_3_radius": "Zone 3 Radius",
-          "glare_zone_3_z": "Zone 3 Z Height",
-          "glare_zone_4_name": "Zone 4 Name",
-          "glare_zone_4_x": "Zone 4 X Position",
-          "glare_zone_4_y": "Zone 4 Y Position",
-          "glare_zone_4_radius": "Zone 4 Radius",
-          "glare_zone_4_z": "Zone 4 Z Height"
-        },
-        "data_description": {
-          "enable_glare_zones": "When enabled, the blind will lower to shade all active floor zones.",
-          "glare_zone_1_name": "Name for this zone (e.g. 'Desk'). Leave blank to skip.",
-          "glare_zone_1_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_1_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_1_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_1_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_name": "Name for this zone (e.g. 'Sofa'). Leave blank to skip.",
-          "glare_zone_2_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_2_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_name": "Name for this zone (e.g. 'Dining Table'). Leave blank to skip.",
-          "glare_zone_3_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_3_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_name": "Name for this zone (e.g. 'Bed'). Leave blank to skip.",
-          "glare_zone_4_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_4_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for."
-        }
-      },
-      "interp": {
-        "data": {
-          "interp_start": "Calibration input 0% maps to (output %)",
-          "interp_end": "Calibration input 100% maps to (output %)",
-          "interp_list": "Calculated positions (input)",
-          "interp_list_new": "Actual positions to send (output)"
-        },
-        "data_description": {
-          "interp_start": "Output position sent to the cover when the integration calculates 0% (fully closed). Example: if your cover needs 10% to register as closed, set this to 10. Simple 2-point linear calibration — used together with the 100% mapping below. Leave at default unless your cover has limited range.",
-          "interp_end": "Output position sent to the cover when the integration calculates 100% (fully open). Example: if your cover is fully open at 90%, set this to 90. Simple 2-point linear calibration — used together with the 0% mapping above. Leave at default unless your cover has limited range.",
-          "interp_list": "Input positions for custom interpolation mapping (calculated positions from integration). Enter evenly-spaced values like: 0, 25, 50, 75, 100. These are the theoretical positions the integration calculates. Must have 2+ values and same length as 'Actual positions to send (output)'. Used for advanced non-linear calibration. Leave empty for normal operation.",
-          "interp_list_new": "Output positions for custom interpolation mapping (actual positions sent to cover). Enter corresponding real positions like: 0, 20, 40, 65, 100. These are what actually gets sent to your cover entity. Must have same length as 'Calculated positions (input)'. Example use: Make cover more aggressive in closing by mapping 50% calculated to 40% actual. Integration interpolates between your points. Leave empty for normal operation."
-        },
-        "title": "Position Calibration",
-        "description": "Adjust cover position mapping for non-standard covers by mapping a calculated position (input) to an actual position sent to the cover (output). Use simple 2-point calibration (map 0% and 100%) for covers with limited range (e.g., only moves between 10–90%). Use advanced list mapping for non-linear covers or to bias behavior more open/closed. Most covers don't need this — only enable if your cover doesn't respond correctly to standard 0–100% commands.\n\n[Learn more]({learn_more})"
-      },
-      "duplicate_select": {
-        "title": "Duplicate Cover — Select Source",
-        "description": "Choose which existing cover to duplicate settings from.",
-        "data": {
-          "source_entry": "Source cover"
-        }
-      },
-      "duplicate_configure": {
-        "title": "Duplicate Cover — Configure",
-        "description": "Enter the unique settings for the new cover. All other settings will be copied from the source.",
-        "data": {
-          "name": "Name",
-          "group": "Cover Entities",
-          "set_azimuth": "Window Azimuth"
-        }
-      },
       "summary": {
         "title": "Configuration Summary",
         "description": "{summary}"
@@ -721,84 +596,22 @@
           "winter_close_insulation": "When enabled, the cover closes fully (0%) during winter when the sun is not directly hitting the window, helping to trap heat indoors. Has no effect when the sun is on the window (the cover opens to capture solar heat).",
           "summer_close_bypass_sun_floor": "When enabled, summer heat-blocking closes the cover all the way to the global minimum position, ignoring the higher 'minimum position when sun is in view' floor. Use this for full heat protection in summer even while the sun is directly on the window. Has no effect outside summer, and the maximum-position limit still applies."
         }
-      },
-      "create_building_profile": {
-        "title": "Create Building Profile",
-        "description": "Name the profile and select the shared building-level sensors it provides. Linked covers copy these sensor entities into their own configuration. Leave a field blank to let each cover keep its own local sensor.\n\n[Learn more]({learn_more})",
-        "data": {
-          "name": "Name",
-          "cloud_coverage_entity": "Cloud coverage sensor (optional)",
-          "daytime_gate_sensors": "Daytime gate sensors",
-          "daytime_gate_template": "Daytime gate template (optional)",
-          "irradiance_entity": "Irradiance sensor (optional)",
-          "is_sunny_sensor": "Is Sunny binary sensor (optional)",
-          "is_sunny_template": "Is Sunny template (optional)",
-          "lux_entity": "Lux sensor (optional)",
-          "outside_temp": "Outside temperature sensor (optional)",
-          "sunrise_time_entity": "Sunrise Time Entity",
-          "sunset_time_entity": "Sunset Time Entity",
-          "weather_entity": "Weather entity (optional)",
-          "weather_is_raining_sensor": "Is Raining binary sensor",
-          "weather_is_raining_template": "Is Raining template (optional)",
-          "weather_is_windy_sensor": "Is Windy binary sensor",
-          "weather_is_windy_template": "Is Windy template (optional)",
-          "weather_rain_sensor": "Rain rate sensor",
-          "weather_severe_sensors": "Severe weather sensors (hail, frost, storm, etc.)",
-          "weather_wind_direction_sensor": "Wind direction sensor (optional)",
-          "weather_wind_speed_sensor": "Wind speed sensor"
-        },
-        "data_description": {
-          "name": "A friendly name for this building profile.",
-          "cloud_coverage_entity": "Optional cloud coverage sensor reporting 0–100% (e.g. from a weather integration). When the reading reaches the threshold, glare control is suppressed and the cover returns to its default position. Leave empty if you don't have this sensor.",
-          "daytime_gate_sensors": "Optional binary sensors (or input_boolean / switch / schedule) that decide when it is 'daytime' for sun tracking. When ON the integration sun-tracks; when OFF it applies the Sunset Position. Use a lux 'bright enough' binary sensor so real light — not the clock — opens and closes the tracking window: covers keep tracking on bright evenings past astronomical sunset, and stay at the sunset position on dark, overcast mornings. When set, this REPLACES the astronomical sunset/sunrise boundary (Sunset/Sunrise Offset are ignored). An unavailable or unknown sensor is treated as daytime, so tracking never stops just because a sensor hasn't reported. Leave empty to use the astronomical sunset/sunrise calculation.",
-          "daytime_gate_template": "Optional Home Assistant Jinja2 template that decides 'daytime' for sun tracking. When it renders truthy (on/true/1) the integration sun-tracks; when falsy it applies the Sunset Position. How it combines with the gate sensors above (OR or AND) is set by 'Daytime gate template logic' below. It can stand alone with no sensors. Example: a Sun2 elevation template, or a lux comparison. A template that fails to render is treated as daytime, so a broken template never forces a premature sunset. When set (alone or with sensors), this REPLACES the astronomical sunset/sunrise boundary. Leave empty to disable.",
-          "irradiance_entity": "Optional solar irradiance sensor (outdoor) for precise sun detection. Measures solar power in W/m². When the sensor reads below the threshold, direct sun is absent and glare control is suppressed. Leave empty if you don't have this sensor.",
-          "is_sunny_sensor": "Optional binary sensor, input_boolean, switch, or schedule that authoritatively reports whether the sun is hitting the window. When ON, sun is assumed present; when OFF, sun is assumed absent and cloud suppression fires regardless of weather state. When unavailable or unknown, the integration falls back to the Weather Entity / Weather Conditions logic below. Use this when you compute sun-on-window upstream (e.g. azimuth-gated irradiance) and want to feed Adaptive Pergola a clean boolean.",
-          "is_sunny_template": "Optional Home Assistant Jinja2 template that decides whether the sun is on the window. When it renders truthy (on/true/1) sun is assumed present; when falsy it is assumed absent and cloud suppression fires. How it combines with the Is Sunny binary sensor above (OR or AND) is set by 'Is Sunny template logic' below; it can stand alone with no sensor. Example: an azimuth/elevation comparison, or a lux threshold. A template that is empty or fails to render gives no opinion, so the integration falls back to the sensor and then the Weather Entity / Weather Conditions logic. Leave empty to disable.",
-          "lux_entity": "Optional illuminance sensor (indoor or outdoor) for precise sun detection. When the sensor reads below the threshold, direct sun is absent and glare control is suppressed. Typical direct-sun values: 5,000–10,000 lux. Leave empty if you don't have this sensor.",
-          "outside_temp": "Optional outdoor temperature sensor. When provided, this reading (rather than the indoor sensor) determines the current season, and the outside threshold guard is applied to prevent summer-close behavior on cold days.",
-          "sunrise_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunrise at -4° elevation'). When set, replaces the astral-computed sunrise time as the morning window-close boundary. Accepts sensor or input_datetime entities. Sunrise Offset still applies on top. Falls back to astral if the entity is unavailable.",
-          "sunset_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunset at -4° elevation'). When set, replaces the astral-computed sunset time as the window boundary. Accepts sensor or input_datetime entities reporting an ISO-8601 datetime. Sunset Offset still applies on top. Falls back to astral if the entity is unavailable.",
-          "weather_entity": "Optional weather integration used to detect cloud cover. When the current weather state is not in the selected list below, direct sun is assumed absent and glare control is suppressed. Leave empty to ignore weather state.",
-          "weather_is_raining_sensor": "Binary sensor for rain detection. Override activates when this sensor is 'on'. Leave empty to ignore.",
-          "weather_is_raining_template": "Optional Home Assistant Jinja2 template that decides whether it is raining. When it renders truthy (on/true/1) the override engages. How it combines with the Is Raining binary sensor above (OR or AND) is set by 'Is Raining template logic' below; it can stand alone with no sensor and reacts the instant the template flips. Example: derive 'raining' from a numeric rain-rate threshold. A template that is empty or fails to render gives no opinion (no retract). Leave empty to disable.",
-          "weather_is_windy_sensor": "Binary sensor for wind detection. Override activates when this sensor is 'on'. Leave empty to ignore.",
-          "weather_is_windy_template": "Optional Home Assistant Jinja2 template that decides whether it is windy. When it renders truthy (on/true/1) the override engages. How it combines with the Is Windy binary sensor above (OR or AND) is set by 'Is Windy template logic' below; it can stand alone with no sensor and reacts the instant the template flips. Example: derive 'windy' from a numeric wind-speed threshold. A template that is empty or fails to render gives no opinion (no retract). Leave empty to disable.",
-          "weather_rain_sensor": "Numeric sensor reporting rain rate. Override activates when the value meets or exceeds the threshold. Leave empty to ignore rain rate.",
-          "weather_severe_sensors": "Binary sensors for severe conditions (hail, frost, thunderstorm, etc.). Override activates when ANY sensor is 'on'. Leave empty to ignore.",
-          "weather_wind_direction_sensor": "Optional: only trigger wind override when wind blows toward this window's azimuth (within the direction tolerance). Leave empty to trigger on wind speed alone regardless of direction.",
-          "weather_wind_speed_sensor": "Numeric sensor reporting wind speed. Override activates when the value meets or exceeds the threshold. Leave empty to ignore wind speed."
-        }
-      },
-      "building_profile": {
-        "title": "Building Profile",
-        "description": "Link this cover to a Building Profile to share building-level sensors across covers. Linking copies the profile's sensors into this cover; blank profile fields keep this cover's own values.\n\n[Learn more]({learn_more})",
-        "data": {
-          "building_profile_id": "Building Profile"
-        },
-        "data_description": {
-          "building_profile_id": "Link this cover to a Building Profile to inherit its shared building-level sensors. Select 'None (unlinked)' to skip profile linking and manage this cover's sensors locally."
-        }
       }
     },
     "abort": {
-      "user_cancelled": "Action cancelled by user",
-      "source_not_found": "The source cover no longer exists."
+      "user_cancelled": "Action cancelled by user"
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Configuring: **{instance_name}**{profile_line}\n\nIf Adaptive Pergola has been useful, you can [☕ Buy Me a Coffee]({coffee_url}).",
+        "description": "Configuring: **{instance_name}**\n\nIf Adaptive Pergola has been useful, you can [☕ Buy Me a Coffee]({coffee_url}).",
         "menu_options": {
           "cover_entities": "🪟 Covers & Device",
           "geometry": "📐 Cover Geometry",
           "sun_tracking": "☀️ Sun Tracking",
           "position": "📊 Position Settings",
           "behavior": "🎛️ Behaviour & Timing",
-          "blind_spot": "🌳 Blind Spot",
-          "glare_zones": "🔆 Glare Zones",
-          "interp": "📊 Position Calibration",
           "automation": "⏱️ Movement & Schedule",
           "weather": "Weather Conditions",
           "manual_override": "✋ Manual Override",
@@ -807,15 +620,10 @@
           "weather_override": "🌧️ Weather Override",
           "pipeline_priorities": "🔀 Handler Priorities",
           "summary": "📋 Configuration Summary",
-          "sync": "🔄 Copy to Other Covers",
           "debug": "🔍 Debug & Diagnostics",
           "done": "✅ Save & Close",
           "light_cloud": "☁️ Light Sensors & Cloud",
-          "temperature_climate": "🌡️ Temperature & Climate",
-          "building_profile": "🏢 Building Profile",
-          "profile_sensors": "📡 Shared Sensors",
-          "profile_overview": "🏢 Profile Overview",
-          "profile_overrides": "🧹 Local Overrides"
+          "temperature_climate": "🌡️ Temperature & Climate"
         }
       },
       "pipeline_priorities": {
@@ -989,9 +797,7 @@
           "sun_window_end": "Sun window end azimuth",
           "fov_compute": "Generate field of view from measurements",
           "min_elevation": "Minimum Elevation of the sun",
-          "max_elevation": "Maximum Elevation of the sun",
-          "blind_spot": "Setup Blindspot",
-          "enable_glare_zones": "Enable Glare Zones"
+          "max_elevation": "Maximum Elevation of the sun"
         },
         "data_description": {
           "enable_sun_tracking": "When enabled, covers track the sun within the configured FOV and elevation limits (solar positioning). Disable to skip distance-based solar positioning while keeping glare zones (controlled by their own switch), climate, motion, manual override, custom positions, and other overrides active. Default: enabled.",
@@ -999,9 +805,7 @@
           "sun_window_start": "Compass bearing (0-359°) where the sun window begins. The window runs clockwise from start to end; the shading reacts to the sun only while the sun's azimuth is inside this range. North=0°, East=90°, South=180°, West=270°.",
           "sun_window_end": "Compass bearing (0-359°) where the sun window ends. The window runs clockwise from start to end and may wrap through north (e.g. 137° → 2°). Start and end must differ by at least 1°.",
           "min_elevation": "Track sun only when elevation is ABOVE this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 15° to ignore low morning/evening sun. Leave empty to track sun at all elevations.",
-          "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations.",
-          "blind_spot": "Enable if you have obstacles blocking sun in part of the tracking area (trees, nearby buildings, roof overhang, balcony). When enabled, you define an azimuth + elevation range where sun is blocked. Cover ignores sun position when it's in this 'blind spot'. Leave disabled if you have clear view to sun all day.",
-          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)"
+          "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations."
         }
       },
       "position": {
@@ -1042,7 +846,7 @@
       },
       "behavior": {
         "title": "Behaviour (Timing & Thresholds)",
-        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, and the position-match tolerance and matching toggle. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, and the position-match tolerance and matching toggle. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})",
         "data": {
           "sunset_time_entity": "Sunset Time Entity",
           "sunrise_time_entity": "Sunrise Time Entity",
@@ -1304,7 +1108,7 @@
       },
       "weather_override": {
         "title": "Weather Override",
-        "description": "Configure weather-based safety overrides. Any configured condition triggers cover retraction. Unconfigured inputs are ignored.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "Configure weather-based safety overrides. Any configured condition triggers cover retraction. Unconfigured inputs are ignored.\n\n[Learn more]({learn_more})",
         "data": {
           "weather_enabled": "Enable weather override",
           "weather_bypass_auto_control": "Active when Automatic Control is off",
@@ -1356,112 +1160,6 @@
         "title": "Weather Conditions",
         "description": "Select the weather states that count as \"sun is out\" for climate mode. The integration compares the live weather entity state to this list — matching states enable solar-based cover control. States not in the list are treated as cloudy, so summer-close and winter-open rules only apply when the weather matches.\n\nTypical choices are \"sunny\" and \"partlycloudy\". The available states depend on your weather integration.\n\n[Learn more]({learn_more})"
       },
-      "blind_spot": {
-        "data": {
-          "blind_spot_left": "Blind spot left edge (from FOV left)",
-          "blind_spot_right": "Blind spot right edge (from FOV left)",
-          "blind_spot_elevation": "Blindspot elevation",
-          "blind_spot_elevation_mode": "Blind spot elevation mode",
-          "blind_spot_left_2": "Blind spot 2 left edge (from FOV left)",
-          "blind_spot_right_2": "Blind spot 2 right edge (from FOV left)",
-          "blind_spot_elevation_2": "Blind spot 2 elevation",
-          "blind_spot_elevation_mode_2": "Blind spot 2 elevation mode",
-          "blind_spot_left_3": "Blind spot 3 left edge (from FOV left)",
-          "blind_spot_right_3": "Blind spot 3 right edge (from FOV left)",
-          "blind_spot_elevation_3": "Blind spot 3 elevation",
-          "blind_spot_elevation_mode_3": "Blind spot 3 elevation mode"
-        },
-        "data_description": {
-          "blind_spot_left": "Left edge of the blind spot zone (horizontal angle in degrees from your FOV left boundary). Where 0 = at the leftmost FOV edge. Example: If your FOV left is 45° and a tree blocks sun from 10-20° relative to that edge, set this to 10. This marks where the obstruction begins horizontally. Use sun position sensor or observe when sun is blocked to find this value.",
-          "blind_spot_right": "Right edge of the blind spot zone (horizontal angle in degrees from your FOV left boundary, must be > left edge). Example: If your FOV left is 45° and a tree blocks sun from 10-20° relative to that edge, set this to 20. This marks where the obstruction ends horizontally. Creates a 'don't track sun here' zone between left and right edges.",
-          "blind_spot_elevation": "Sun elevation (degrees above horizon) threshold where the blind spot applies. Pair with the elevation mode: in 'below' mode the spot blocks sun at or below this angle (e.g. a roof overhang that only blocks low sun — set to 30); in 'above' mode it blocks sun at or above this angle (e.g. a balcony overhead — set to 50). Sun elevation: 0°=horizon, 45°=halfway up, 90°=directly overhead.",
-          "blind_spot_elevation_mode": "Which side of the elevation threshold the blind spot covers. 'Below' (default) blocks LOW sun (a tree or roof overhang); 'Above' blocks HIGH sun (an overhead obstacle like a balcony or deep recess). Only matters when an elevation is set.",
-          "blind_spot_left_2": "Optional second blind-spot slot. Left edge in degrees from your FOV left boundary. Leave this and the right edge unset to disable slot 2.",
-          "blind_spot_right_2": "Right edge of the second blind-spot slot (degrees from FOV left, must be greater than slot 2's left edge).",
-          "blind_spot_elevation_2": "Sun elevation threshold where slot 2 applies (paired with slot 2's elevation mode). Leave unset to apply at all elevations.",
-          "blind_spot_elevation_mode_2": "Which side of slot 2's elevation threshold it covers: 'Below' blocks low sun, 'Above' blocks high sun. Only matters when slot 2's elevation is set.",
-          "blind_spot_left_3": "Optional third blind-spot slot. Left edge in degrees from your FOV left boundary. Leave this and the right edge unset to disable slot 3.",
-          "blind_spot_right_3": "Right edge of the third blind-spot slot (degrees from FOV left, must be greater than slot 3's left edge).",
-          "blind_spot_elevation_3": "Sun elevation threshold where slot 3 applies (paired with slot 3's elevation mode). Leave unset to apply at all elevations.",
-          "blind_spot_elevation_mode_3": "Which side of slot 3's elevation threshold it covers: 'Below' blocks low sun, 'Above' blocks high sun. Only matters when slot 3's elevation is set."
-        },
-        "title": "Blind Spot",
-        "description": "Define up to 3 independent areas where obstacles block the sun (trees, buildings, roof overhangs). The sun is ignored when it falls inside any one of them. These angular values are relative degrees within your field of view, where 0 is the leftmost FOV boundary. Leave a slot's left and right edges unset to skip it.\n\n[Learn more]({learn_more})"
-      },
-      "interp": {
-        "data": {
-          "interp_start": "Calibration input 0% maps to (output %)",
-          "interp_end": "Calibration input 100% maps to (output %)",
-          "interp_list": "Calculated positions (input)",
-          "interp_list_new": "Actual positions to send (output)"
-        },
-        "data_description": {
-          "interp_start": "Output position sent to the cover when the integration calculates 0% (fully closed). Example: if your cover needs 10% to register as closed, set this to 10. Simple 2-point linear calibration — used together with the 100% mapping below. Leave at default unless your cover has limited range.",
-          "interp_end": "Output position sent to the cover when the integration calculates 100% (fully open). Example: if your cover is fully open at 90%, set this to 90. Simple 2-point linear calibration — used together with the 0% mapping above. Leave at default unless your cover has limited range.",
-          "interp_list": "Input positions for custom interpolation mapping (calculated positions from integration). Enter evenly-spaced values like: 0, 25, 50, 75, 100. These are the theoretical positions the integration calculates. Must have 2+ values and same length as 'Actual positions to send (output)'. Used for advanced non-linear calibration. Leave empty for normal operation.",
-          "interp_list_new": "Output positions for custom interpolation mapping (actual positions sent to cover). Enter corresponding real positions like: 0, 20, 40, 65, 100. These are what actually gets sent to your cover entity. Must have same length as 'Calculated positions (input)'. Example use: Make cover more aggressive in closing by mapping 50% calculated to 40% actual. Integration interpolates between your points. Leave empty for normal operation."
-        },
-        "title": "Position Calibration",
-        "description": "Adjust cover position mapping for non-standard covers by mapping a calculated position (input) to an actual position sent to the cover (output). Use simple 2-point calibration (map 0% and 100%) for covers with limited range (e.g., only moves between 10–90%). Use advanced list mapping for non-linear covers or to bias behavior more open/closed. Most covers don't need this — only enable if your cover doesn't respond correctly to standard 0–100% commands.\n\n[Learn more]({learn_more})"
-      },
-      "glare_zones": {
-        "title": "Glare Zones",
-        "description": "Define up to 4 floor areas to protect from direct sunlight. When the sun's angle would cast direct light onto a zone, the blind lowers to shade it. Leave a zone name blank to skip that slot.\n\nCoordinates are relative to the window centre projected onto the floor. **X** is the left/right offset (positive = right). **Y** is the distance into the room. **Radius** defines the circular protected area. Use the Lovelace companion card to visualise zone positions and verify coverage.\n\n[Learn more]({learn_more})",
-        "data": {
-          "enable_glare_zones": "Enable Glare Zones",
-          "glare_zone_1_name": "Zone 1 Name",
-          "glare_zone_1_x": "Zone 1 X Position",
-          "glare_zone_1_y": "Zone 1 Y Position",
-          "glare_zone_1_radius": "Zone 1 Radius",
-          "glare_zone_1_z": "Zone 1 Z Height",
-          "glare_zone_2_name": "Zone 2 Name",
-          "glare_zone_2_x": "Zone 2 X Position",
-          "glare_zone_2_y": "Zone 2 Y Position",
-          "glare_zone_2_radius": "Zone 2 Radius",
-          "glare_zone_2_z": "Zone 2 Z Height",
-          "glare_zone_3_name": "Zone 3 Name",
-          "glare_zone_3_x": "Zone 3 X Position",
-          "glare_zone_3_y": "Zone 3 Y Position",
-          "glare_zone_3_radius": "Zone 3 Radius",
-          "glare_zone_3_z": "Zone 3 Z Height",
-          "glare_zone_4_name": "Zone 4 Name",
-          "glare_zone_4_x": "Zone 4 X Position",
-          "glare_zone_4_y": "Zone 4 Y Position",
-          "glare_zone_4_radius": "Zone 4 Radius",
-          "glare_zone_4_z": "Zone 4 Z Height"
-        },
-        "data_description": {
-          "enable_glare_zones": "When enabled, the blind will lower to shade all active floor zones.",
-          "glare_zone_1_name": "Name for this zone (e.g. 'Desk'). Leave blank to skip.",
-          "glare_zone_1_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_1_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_1_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_1_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_name": "Name for this zone (e.g. 'Sofa'). Leave blank to skip.",
-          "glare_zone_2_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_2_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_2_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_name": "Name for this zone (e.g. 'Dining Table'). Leave blank to skip.",
-          "glare_zone_3_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_3_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_3_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_name": "Name for this zone (e.g. 'Bed'). Leave blank to skip.",
-          "glare_zone_4_x": "Left/right offset from window centre. Shown in the unit Home Assistant is configured for. Positive = right.",
-          "glare_zone_4_y": "Distance into the room (perpendicular to window). Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_radius": "Protection radius around the zone centre. Shown in the unit Home Assistant is configured for.",
-          "glare_zone_4_z": "Target height above the floor (e.g. desk surface ≈ 0.75 m, seated eyes ≈ 1.1 m, wall TV ≈ 1.5 m). Default 0 protects the floor. Shown in the unit Home Assistant is configured for."
-        }
-      },
-      "sync": {
-        "title": "Copy Settings to Other Covers",
-        "description": "Choose which covers to copy settings to and which categories to sync. Only selected categories will be overwritten on target covers.\n\n⚠️ **Azimuth is always excluded** — each cover keeps its own window orientation.",
-        "data": {
-          "target_entries": "Target covers",
-          "sync_categories": "Categories to sync"
-        }
-      },
       "summary": {
         "title": "Configuration Summary",
         "description": "{summary}"
@@ -1482,16 +1180,9 @@
           "debug_event_buffer_size": "Number of diagnostic events to keep in the rolling ring buffer. The buffer captures decisions and state transitions across all pipeline subsystems — manual override, motion, weather, time-window scheduling, cover commands, and the pipeline. Each event is a small dict (~200 bytes). Increase for intermittent issues that require longer observation windows. The buffer is reset on integration reload."
         }
       },
-      "sync_confirm": {
-        "title": "Copy Settings — Confirm",
-        "description": "Copying settings from **{source_name}**. Your current settings will be saved before copying.\n\nThe following categories will be overwritten:\n\n{categories_summary}\n\nOn these covers:\n\n{entries_summary}\n\nEach cover will keep its own name, entities, azimuth, and device association.",
-        "data": {
-          "confirm": "Confirm sync"
-        }
-      },
       "light_cloud": {
         "title": "Light Sensors & Cloud Suppression",
-        "description": "**Glare suppression in low light.** The first toggle below is the master on/off for this feature — leave it off and the rest of this screen is ignored. When on, set the optional **Cloudy position** the cover parks at when suppression fires (leave blank to use the default position).\n\nThe remaining sensors tell the integration *when* the sun is absent — any one of weather state, lux, solar irradiance, or cloud coverage will trigger suppression. Configure only the sensors you actually have; any single match is enough.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "**Glare suppression in low light.** The first toggle below is the master on/off for this feature — leave it off and the rest of this screen is ignored. When on, set the optional **Cloudy position** the cover parks at when suppression fires (leave blank to use the default position).\n\nThe remaining sensors tell the integration *when* the sun is absent — any one of weather state, lux, solar irradiance, or cloud coverage will trigger suppression. Configure only the sensors you actually have; any single match is enough.\n\n[Learn more]({learn_more})",
         "data": {
           "weather_entity": "Weather entity (optional)",
           "is_sunny_sensor": "Is Sunny binary sensor (optional)",
@@ -1525,7 +1216,7 @@
       },
       "temperature_climate": {
         "title": "Temperature & Climate Mode",
-        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})",
         "data": {
           "climate_mode": "Enable climate mode",
           "temp_entity": "Inside temperature entity",
@@ -1552,81 +1243,10 @@
           "winter_close_insulation": "When enabled, the cover closes fully (0%) during winter when the sun is not directly hitting the window, helping to trap heat indoors. Has no effect when the sun is on the window (the cover opens to capture solar heat).",
           "summer_close_bypass_sun_floor": "When enabled, summer heat-blocking closes the cover all the way to the global minimum position, ignoring the higher 'minimum position when sun is in view' floor. Use this for full heat protection in summer even while the sun is directly on the window. Has no effect outside summer, and the maximum-position limit still applies."
         }
-      },
-      "building_profile": {
-        "title": "Building Profile",
-        "description": "Link this cover to a Building Profile to share building-level sensors across covers. Linking copies the profile's sensors into this cover; blank profile fields keep this cover's own values.\n\n[Learn more]({learn_more})",
-        "data": {
-          "building_profile_id": "Building Profile"
-        },
-        "data_description": {
-          "building_profile_id": "Link this cover to a Building Profile to inherit its shared building-level sensors. Select 'None (unlinked)' to manage this cover's sensors locally."
-        }
-      },
-      "profile_sensors": {
-        "title": "Building Profile — Shared Sensors",
-        "description": "Edit the building-level sensor entity IDs shared across linked covers. Linked covers inherit these sensors; leave a field blank to let each cover keep its own local value.\n\n[Learn more]({learn_more})",
-        "data": {
-          "cloud_coverage_entity": "Cloud coverage sensor (optional)",
-          "daytime_gate_sensors": "Daytime gate sensors",
-          "daytime_gate_template": "Daytime gate template (optional)",
-          "irradiance_entity": "Irradiance sensor (optional)",
-          "is_sunny_sensor": "Is Sunny binary sensor (optional)",
-          "is_sunny_template": "Is Sunny template (optional)",
-          "lux_entity": "Lux sensor (optional)",
-          "outside_temp": "Outside temperature sensor (optional)",
-          "sunrise_time_entity": "Sunrise Time Entity",
-          "sunset_time_entity": "Sunset Time Entity",
-          "weather_entity": "Weather entity (optional)",
-          "weather_is_raining_sensor": "Is Raining binary sensor",
-          "weather_is_raining_template": "Is Raining template (optional)",
-          "weather_is_windy_sensor": "Is Windy binary sensor",
-          "weather_is_windy_template": "Is Windy template (optional)",
-          "weather_rain_sensor": "Rain rate sensor",
-          "weather_severe_sensors": "Severe weather sensors (hail, frost, storm, etc.)",
-          "weather_wind_direction_sensor": "Wind direction sensor (optional)",
-          "weather_wind_speed_sensor": "Wind speed sensor"
-        },
-        "data_description": {
-          "cloud_coverage_entity": "Optional cloud coverage sensor reporting 0–100% (e.g. from a weather integration). When the reading reaches the threshold, glare control is suppressed and the cover returns to its default position. Leave empty if you don't have this sensor.",
-          "daytime_gate_sensors": "Optional binary sensors (or input_boolean / switch / schedule) that decide when it is 'daytime' for sun tracking. When ON the integration sun-tracks; when OFF it applies the Sunset Position. Leave empty to use the astronomical sunset/sunrise calculation.",
-          "daytime_gate_template": "Optional Home Assistant Jinja2 template that decides 'daytime' for sun tracking. Leave empty to disable.",
-          "irradiance_entity": "Optional solar irradiance sensor (outdoor) for precise sun detection. Measures solar power in W/m². Leave empty if you don't have this sensor.",
-          "is_sunny_sensor": "Optional binary sensor, input_boolean, switch, or schedule that authoritatively reports whether the sun is hitting the window. Leave empty to use weather/lux logic.",
-          "is_sunny_template": "Optional Home Assistant Jinja2 template that decides whether the sun is on the window. Leave empty to disable.",
-          "lux_entity": "Optional illuminance sensor (indoor or outdoor) for precise sun detection. Leave empty if you don't have this sensor.",
-          "outside_temp": "Optional outdoor temperature sensor. When provided, this reading determines the current season for all linked covers.",
-          "sunrise_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunrise at -4° elevation'). Falls back to astral if unavailable.",
-          "sunset_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunset at -4° elevation'). Falls back to astral if unavailable.",
-          "weather_entity": "Optional weather integration used to detect cloud cover. Leave empty to ignore weather state.",
-          "weather_is_raining_sensor": "Binary sensor for rain detection. Override activates when this sensor is 'on'. Leave empty to ignore.",
-          "weather_is_raining_template": "Optional Home Assistant Jinja2 template that decides whether it is raining. Leave empty to disable.",
-          "weather_is_windy_sensor": "Binary sensor for wind detection. Override activates when this sensor is 'on'. Leave empty to ignore.",
-          "weather_is_windy_template": "Optional Home Assistant Jinja2 template that decides whether it is windy. Leave empty to disable.",
-          "weather_rain_sensor": "Numeric sensor reporting rain rate. Override activates when the value meets or exceeds the threshold. Leave empty to ignore rain rate.",
-          "weather_severe_sensors": "Binary sensors for severe conditions (hail, frost, thunderstorm, etc.). Override activates when ANY sensor is 'on'. Leave empty to ignore.",
-          "weather_wind_direction_sensor": "Optional: only trigger wind override when wind blows toward this window's azimuth. Leave empty to trigger on wind speed alone.",
-          "weather_wind_speed_sensor": "Numeric sensor reporting wind speed. Override activates when the value meets or exceeds the threshold. Leave empty to ignore wind speed."
-        }
-      },
-      "profile_overview": {
-        "title": "Building Profile — Overview",
-        "description": "{overview}"
-      },
-      "profile_overrides": {
-        "title": "Building Profile — Local Overrides",
-        "description": "Sensors a linked cover has overridden, or set locally where this profile leaves them blank. Select any to reset — an overridden sensor re-inherits the profile value; a local sensor is cleared.\n\n{overrides}",
-        "data": {
-          "clear_overrides": "Clear selected overrides"
-        }
       }
     },
     "abort": {
-      "no_covers_to_sync": "No other covers of the same type exist to sync to.",
-      "no_targets_selected": "No covers were selected to sync to.",
-      "no_categories_selected": "No categories were selected to sync.",
-      "user_cancelled": "Sync cancelled.",
-      "sync_complete": "Settings synced successfully."
+      "user_cancelled": "Sync cancelled."
     }
   },
   "entity": {
@@ -1780,36 +1400,6 @@
         "reconciliation": "Reconciliation (1-minute position retry loop)",
         "pipeline": "Pipeline (priority handler chain decisions)",
         "motion": "Motion (sensor events, timeout state)"
-      }
-    },
-    "sync_categories": {
-      "options": {
-        "geometry": "Cover Geometry (dimensions, depth, sill height)",
-        "sun_tracking": "Sun Tracking (FOV, elevation limits)",
-        "blind_spot": "Blind Spot Configuration",
-        "position": "Position Settings (defaults, sunset, offsets)",
-        "interp": "Position Calibration",
-        "automation": "Schedule & Timing (deltas, start/end times)",
-        "manual_override": "Manual Override",
-        "custom_position_values": "Custom Positions — Values & Priorities",
-        "custom_position_sensors": "Custom Positions — Trigger Sensors",
-        "motion_override_values": "Motion Override — Timeout",
-        "motion_override_sensors": "Motion Override — Sensors",
-        "weather_override_values": "Weather Override — Thresholds & Position",
-        "weather_override_sensors": "Weather Override — Sensors",
-        "light_cloud_values": "Light & Cloud — Thresholds",
-        "light_cloud_sensors": "Light & Cloud — Sensors",
-        "temperature_climate_values": "Climate Mode — Thresholds & Settings",
-        "temperature_climate_sensors": "Climate Mode — Room Sensors",
-        "glare_zones": "Glare Zones",
-        "climate": "Climate Configuration (temperature, presence, lux)",
-        "weather": "Weather Conditions",
-        "light_cloud": "Light Sensors & Cloud Suppression",
-        "temperature_climate": "Temperature & Climate Mode",
-        "force_override": "Force Override",
-        "custom_position": "Custom Positions",
-        "motion_override": "Motion Override",
-        "weather_override": "Weather Override"
       }
     },
     "motion_timeout_mode": {

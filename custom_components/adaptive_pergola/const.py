@@ -83,13 +83,10 @@ CONF_BLUEPRINT = "blueprint"
 
 CONF_SENSOR_TYPE = "sensor_type"  # one of CoverType.* (see section 27)
 CONF_DEVICE_ID = "linked_device_id"  # HA device_id to link this instance to
-CONF_BUILDING_PROFILE_ID = (
-    "building_profile_id"  # entry_id of a linked Building Profile
-)
-# Shared-sensor keys a linked cover has overridden locally (inherit/override
-# model). Keys NOT in this list track the profile; keys in it keep the cover's
-# own value and are skipped by profile propagation. Absent = no overrides.
-CONF_PROFILE_SENSOR_OVERRIDES = "profile_sensor_overrides"
+# The building-profile subsystem (building_profile_id /
+# profile_sensor_overrides option keys) was deleted in the config-flow
+# condensation (docs/CONFIG_FLOW_REWORK.md, stage 4). Old entries may still
+# carry the keys in storage — they are inert.
 
 
 # =============================================================================
@@ -1435,10 +1432,10 @@ class CoverType(StrEnum):
     OSCILLATING_AWNING = "cover_oscillating_awning"
     ROOF_WINDOW = "cover_roof_window"
     LOUVERED_ROOF = "cover_louvered_roof"
-    # Virtual entry type — not a physical cover. Holds shared building-level
-    # sensor entity IDs that linked covers copy into their own options. Its
-    # policy registers no platforms (``controls_cover = False``).
-    BUILDING_PROFILE = "cover_building_profile"
+    # The BUILDING_PROFILE virtual entry type was deleted with its subsystem
+    # (docs/CONFIG_FLOW_REWORK.md, stage 4). A stale entry stored with
+    # ``cover_building_profile`` is treated as an unknown cover type and
+    # skipped gracefully at setup.
 
     @property
     def display_name(self) -> str:
@@ -1456,64 +1453,7 @@ class CoverType(StrEnum):
             self.OSCILLATING_AWNING: "Oscillating Awning",
             self.ROOF_WINDOW: "Roof Window",
             self.LOUVERED_ROOF: "Louvered Roof",
-            self.BUILDING_PROFILE: "Building Profile",
         }[self]
-
-
-# =============================================================================
-# 28. Building-profile sensor key sets
-# =============================================================================
-# Canonical frozensets of the sensor-picker option keys. ``config_flow``'s
-# ``SYNC_CATEGORIES`` references these (it used to inline the same membership),
-# so they live here — ``const`` cannot import from ``config_flow`` (circular).
-# ``BUILDING_PROFILE_SENSOR_KEYS`` is the set of option keys a Building Profile
-# owns and copies into each linked cover. Threshold/reaction keys, presence,
-# and the sunrise/sunset OFFSETS are deliberately excluded — they stay per-cover.
-# The four ``*_template_mode`` keys are profile-owned (moved from per-cover in
-# issue #720): they render in the profile screen, are copied to linked covers,
-# and are hidden on the per-cover weather/light/behavior forms.
-
-LIGHT_CLOUD_SENSOR_KEYS = frozenset(
-    {
-        CONF_WEATHER_ENTITY,
-        CONF_LUX_ENTITY,
-        CONF_IRRADIANCE_ENTITY,
-        CONF_CLOUD_COVERAGE_ENTITY,
-        CONF_IS_SUNNY_SENSOR,
-        CONF_IS_SUNNY_TEMPLATE,
-        CONF_IS_SUNNY_TEMPLATE_MODE,
-    }
-)
-
-WEATHER_OVERRIDE_SENSOR_KEYS = frozenset(
-    {
-        CONF_WEATHER_WIND_SPEED_SENSOR,
-        CONF_WEATHER_WIND_DIRECTION_SENSOR,
-        CONF_WEATHER_RAIN_SENSOR,
-        CONF_WEATHER_IS_RAINING_SENSOR,
-        CONF_WEATHER_IS_RAINING_TEMPLATE,
-        CONF_WEATHER_IS_RAINING_TEMPLATE_MODE,
-        CONF_WEATHER_IS_WINDY_SENSOR,
-        CONF_WEATHER_IS_WINDY_TEMPLATE,
-        CONF_WEATHER_IS_WINDY_TEMPLATE_MODE,
-        CONF_WEATHER_SEVERE_SENSORS,
-    }
-)
-
-BUILDING_PROFILE_SENSOR_KEYS = (
-    LIGHT_CLOUD_SENSOR_KEYS
-    | WEATHER_OVERRIDE_SENSOR_KEYS
-    | frozenset(
-        {
-            CONF_OUTSIDETEMP_ENTITY,
-            CONF_DAYTIME_GATE_SENSORS,
-            CONF_DAYTIME_GATE_TEMPLATE,
-            CONF_DAYTIME_GATE_TEMPLATE_MODE,
-            CONF_SUNSET_TIME_ENTITY,
-            CONF_SUNRISE_TIME_ENTITY,
-        }
-    )
-)
 
 
 class TiltMode(StrEnum):

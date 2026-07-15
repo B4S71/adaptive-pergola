@@ -157,14 +157,13 @@ def test_register_stub_policy_round_trip(policy_cls) -> None:
 
 @pytest.mark.unit
 def test_controls_cover_default_true() -> None:
-    """``controls_cover`` defaults True; only virtual entry types opt out.
+    """``controls_cover`` defaults True and every registered policy keeps it.
 
-    The base default is ``True`` so adding the discriminator didn't require
-    touching every policy. ``cover_building_profile`` is the one shipped
-    virtual entry type that registers no platforms and has no axes, so it is
-    the sole policy allowed to report ``False``. Pinning both directions
-    keeps the cover-contract suites and cover-only menus exercising every
-    real cover type and guards against a real cover accidentally opting out.
+    The building-profile virtual entry type — the only policy that ever
+    reported ``False`` — was deleted with its subsystem
+    (docs/CONFIG_FLOW_REWORK.md, stage 4). The flag remains as the
+    discriminator the shared-infra suites filter on, so a future virtual
+    entry type slots back in without string branching.
     """
     from custom_components.adaptive_pergola.cover_types.base import CoverTypePolicy
 
@@ -172,16 +171,10 @@ def test_controls_cover_default_true() -> None:
 
     from custom_components.adaptive_pergola.cover_types import POLICY_REGISTRY
 
-    expected_non_cover = {"cover_building_profile"}
     for cover_type, policy_cls in POLICY_REGISTRY.items():
-        if cover_type in expected_non_cover:
-            assert (
-                policy_cls.controls_cover is False
-            ), f"{cover_type} is a virtual entry type — controls_cover must be False"
-        else:
-            assert (
-                policy_cls.controls_cover is True
-            ), f"{cover_type} must declare controls_cover=True"
+        assert (
+            policy_cls.controls_cover is True
+        ), f"{cover_type} must declare controls_cover=True"
 
 
 @pytest.mark.unit

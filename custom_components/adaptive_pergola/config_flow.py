@@ -25,12 +25,7 @@ from .const import (
     BLIND_SPOT_ELEV_MODE_ABOVE,
     BLIND_SPOT_SLOTS,
     DEFAULT_BLIND_SPOT_ELEVATION_MODE,
-    LIGHT_CLOUD_SENSOR_KEYS,
-    WEATHER_OVERRIDE_SENSOR_KEYS,
-    CONF_AWNING_ANGLE,
     CONF_AZIMUTH,
-    CONF_BUILDING_PROFILE_ID,
-    CONF_PROFILE_SENSOR_OVERRIDES,
     CONF_CLIMATE_MODE,
     CONF_CLOUD_SUPPRESSION,
     CONF_CLOUDY_POSITION,
@@ -57,9 +52,6 @@ from .const import (
     CONF_ENDPOINT_USE_OPEN_CLOSE,
     CONF_ENFORCE_DELTA_AT_ENDPOINTS,
     CONF_ENTITIES,
-    CONF_FORCE_OVERRIDE_MIN_MODE,
-    CONF_FORCE_OVERRIDE_POSITION,
-    CONF_FORCE_OVERRIDE_SENSORS,
     CONF_MY_POSITION_VALUE,
     CONF_SUNSET_USE_MY,
     CUSTOM_POSITION_SAFETY_PRIORITY,
@@ -80,11 +72,8 @@ from .const import (
     DEFAULT_FOV_LEFT,
     DEFAULT_FOV_RIGHT,
     DEFAULT_WINDOW_AZIMUTH,
-    CONF_HEIGHT_WIN,
     CONF_INTERP,
     CONF_INTERP_END,
-    CONF_INTERP_LIST,
-    CONF_INTERP_LIST_NEW,
     CONF_INTERP_START,
     CONF_INVERSE_STATE,
     CONF_CLOUD_COVERAGE_ENTITY,
@@ -93,8 +82,6 @@ from .const import (
     CONF_IRRADIANCE_THRESHOLD,
     CONF_IS_SUNNY_SENSOR,
     CONF_IS_SUNNY_TEMPLATE,
-    CONF_IS_SUNNY_TEMPLATE_MODE,
-    CONF_LENGTH_AWNING,
     CONF_LUX_ENTITY,
     CONF_LUX_THRESHOLD,
     CONF_MANUAL_IGNORE_EXTERNAL,
@@ -128,11 +115,9 @@ from .const import (
     CONF_POSITION_TOLERANCE,
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
-    CONF_PRESENCE_TEMPLATE_MODE,
     CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SENSOR_TYPE,
-    CONF_SILL_HEIGHT,
     CONF_START_ENTITY,
     CONF_START_TIME,
     CONF_SUMMER_CLOSE_BYPASS_SUN_FLOOR,
@@ -145,18 +130,14 @@ from .const import (
     CONF_TEMP_ENTITY,
     CONF_TEMP_HIGH,
     CONF_TEMP_LOW,
-    CONF_TILT_DEPTH,
-    CONF_TILT_DISTANCE,
     CONF_TILT_MODE,
     CONF_TRANSPARENT_BLIND,
     CONF_WINTER_CLOSE_INSULATION,
     CONF_WEATHER_ENTITY,
     CONF_WEATHER_IS_RAINING_SENSOR,
     CONF_WEATHER_IS_RAINING_TEMPLATE,
-    CONF_WEATHER_IS_RAINING_TEMPLATE_MODE,
     CONF_WEATHER_IS_WINDY_SENSOR,
     CONF_WEATHER_IS_WINDY_TEMPLATE,
-    CONF_WEATHER_IS_WINDY_TEMPLATE_MODE,
     CONF_WEATHER_OVERRIDE_MIN_MODE,
     CONF_WEATHER_OVERRIDE_POSITION,
     CONF_WEATHER_RAIN_SENSOR,
@@ -213,8 +194,6 @@ from .cover_types import get_policy as _get_policy  # noqa: E402
 SENSOR_TYPE_MENU = [k for k in _POLICY_REGISTRY if _get_policy(k).controls_cover]
 
 _STANDALONE_SENTINEL = "__standalone__"
-# Sentinel value for the "no profile / unlink" choice in the link selector.
-_PROFILE_NONE_SENTINEL = "__none__"
 
 _WIKI_BASE_URL = "https://github.com/jrhubott/adaptive-cover-pro/wiki"
 
@@ -270,9 +249,6 @@ from .unit_system import (  # noqa: E402
 from . import config_fields  # noqa: E402
 from .config_dynamic import (  # noqa: E402
     behavior_schema as _behavior_schema,
-    blind_spot_schema,
-    building_profile_sensors_schema,
-    glare_zones_schema as _glare_zones_schema,
     light_cloud_schema,
     sun_tracking_schema,
     temperature_climate_schema,
@@ -283,36 +259,6 @@ from .pipeline.handlers import (  # noqa: E402
     resolve_handler_priority,
 )
 from .priority_chain import build_priority_chain  # noqa: E402
-from .profile_link import (  # noqa: E402
-    _building_profile_entries,
-    _copy_profile_to_cover,
-    _cover_entries,
-    _covers_linked_to,
-    clear_cover_override,
-    compute_override_keys,
-    merge_profile_into_config,
-    profile_for_cover,
-)
-
-# Local Overrides step: the multi-select field key and the empty-state message.
-_OVERRIDE_SELECT_KEY = "clear_overrides"
-_LABELS_NO_OVERRIDES = "No local overrides — every linked cover matches this profile."
-
-# Profile-owned keys shown on each sensor step (for the inherit/override note).
-# The light/cloud and weather-override groups already exist as const frozensets;
-# the rest split between the temperature and behavior steps.
-_TEMPERATURE_PROFILE_KEYS = frozenset({CONF_OUTSIDETEMP_ENTITY})
-_BEHAVIOR_PROFILE_KEYS = frozenset(
-    {
-        CONF_SUNSET_TIME_ENTITY,
-        CONF_SUNRISE_TIME_ENTITY,
-        CONF_DAYTIME_GATE_SENSORS,
-        CONF_DAYTIME_GATE_TEMPLATE,
-        CONF_DAYTIME_GATE_TEMPLATE_MODE,
-    }
-)
-
-
 def _handler_priority_overrides(config: dict[str, Any]) -> dict[str, int]:
     """Effective built-in handler priorities for *config* (override or default).
 
@@ -325,37 +271,10 @@ def _handler_priority_overrides(config: dict[str, Any]) -> dict[str, int]:
     }
 
 
-def _blind_spot_step_errors(user_input: dict[str, Any]) -> dict[str, str]:
-    """Return per-slot ``right <= left`` errors for the blind-spot step (#701).
-
-    Shared by the initial and options flows so the gate is identical. A slot is
-    only checked when both its edges are present; absent (optional) slots 2/3
-    produce no error.
-    """
-    errors: dict[str, str] = {}
-    for keys in BLIND_SPOT_SLOTS.values():
-        left = user_input.get(keys["left"])
-        right = user_input.get(keys["right"])
-        if left is not None and right is not None and right <= left:
-            errors[keys["right"]] = "Must be greater than 'Blind Spot Left Edge'"
-    return errors
-
-
 # Module-level constant for tests / imports. Identical to the legacy
 # vol.Schema(...) shape — metric labels, no hass needed. ``sun_tracking_schema``
 # is re-exported from ``config_dynamic`` above.
 SUN_TRACKING_SCHEMA = sun_tracking_schema()
-
-# Combined creation form for a Building Profile entry: the name field plus the
-# shared building-level sensor pickers, collected in one step. Reuses
-# ``building_profile_sensors_schema`` so the sensor set stays single-sourced.
-BUILDING_PROFILE_CREATE_SCHEMA = vol.Schema(
-    {
-        vol.Required("name"): selector.TextSelector(),
-        **building_profile_sensors_schema().schema,
-    }
-)
-
 
 # Keys in SUN_TRACKING_SCHEMA stored in canonical metres.
 _SUN_TRACKING_LENGTH_KEYS: tuple[str, ...] = (CONF_DISTANCE,)
@@ -866,40 +785,6 @@ WEATHER_OPTIONS = vol.Schema(
     }
 )
 
-INTERPOLATION_OPTIONS = vol.Schema(
-    {
-        vol.Optional(CONF_INTERP_START): selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0,
-                max=100,
-                step=1,
-                mode=selector.NumberSelectorMode.SLIDER,
-                unit_of_measurement="%",
-            )
-        ),
-        vol.Optional(CONF_INTERP_END): selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0,
-                max=100,
-                step=1,
-                mode=selector.NumberSelectorMode.SLIDER,
-                unit_of_measurement="%",
-            )
-        ),
-        vol.Optional(CONF_INTERP_LIST, default=[]): selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                multiple=True, custom_value=True, options=["0", "50", "100"]
-            )
-        ),
-        vol.Optional(CONF_INTERP_LIST_NEW, default=[]): selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                multiple=True, custom_value=True, options=["0", "50", "100"]
-            )
-        ),
-    }
-)
-
-
 def _get_azimuth_edges(data) -> int:
     """Return the total azimuth field-of-view span (fov_left + fov_right)."""
     return data[CONF_FOV_LEFT] + data[CONF_FOV_RIGHT]
@@ -1237,7 +1122,6 @@ _SUMMARY_LABELS_EN: dict[str, str] = {
     ),
     "headers.your_cover": "**Your Cover**",
     "cover.type_with_entities": "{type_label} controlling {entity_str}",
-    "cover.building_profile": "🏢 Linked to building profile: {name}",
     "headers.cover_warnings": "**Cover Warnings**",
     "headers.how_it_decides": "**How It Decides** (first matching rule wins)",
     # --- singular/plural words ---
@@ -1745,13 +1629,6 @@ def _build_config_summary(  # noqa: C901, PLR0912, PLR0915
     # the translated ``geometry.*`` bundle (or the policy-key-less EN default,
     # which still renders English over the policy's own base layer).
     lines.extend(summary_policy.summary_geometry_lines(config, L))
-
-    # Building profile link — show the profile name when this is a linked cover.
-    _profile_id = config.get(CONF_BUILDING_PROFILE_ID)
-    if _profile_id and hass is not None:
-        _profile_entry = hass.config_entries.async_get_entry(_profile_id)
-        if _profile_entry is not None:
-            lines.append(L["cover.building_profile"].format(name=_profile_entry.title))
 
     # =========================================================================
     # Section 1c: Cover Capability Warnings
@@ -2575,363 +2452,6 @@ async def _get_device_name_for_entity(
     return device_entry.name_by_user or device_entry.name or None
 
 
-_SHARED_OPTIONS_EXCLUDED = frozenset({CONF_ENTITIES, CONF_AZIMUTH, CONF_DEVICE_ID})
-
-# Maps each syncable category (matching options menu names) to its config keys.
-# Used by the sync flow to let users choose which setting groups to copy.
-SYNC_CATEGORIES: dict[str, frozenset[str]] = {
-    "geometry": frozenset(
-        {
-            CONF_HEIGHT_WIN,
-            CONF_WINDOW_DEPTH,
-            CONF_SILL_HEIGHT,
-            CONF_WINDOW_WIDTH,
-            CONF_LENGTH_AWNING,
-            CONF_AWNING_ANGLE,
-            CONF_TILT_DEPTH,
-            CONF_TILT_DISTANCE,
-            CONF_TILT_MODE,
-        }
-    ),
-    "sun_tracking": frozenset(
-        {
-            CONF_ENABLE_SUN_TRACKING,
-            CONF_FOV_LEFT,
-            CONF_FOV_RIGHT,
-            CONF_MIN_ELEVATION,
-            CONF_MAX_ELEVATION,
-            CONF_DISTANCE,
-            CONF_ENABLE_BLIND_SPOT,
-            CONF_MINIMIZE_MOVEMENTS,
-            CONF_MAX_COVERAGE_STEPS,
-        }
-    ),
-    "blind_spot": frozenset(
-        keys[sub]
-        for keys in BLIND_SPOT_SLOTS.values()
-        for sub in ("left", "right", "elevation", "elevation_mode")
-    ),
-    "position": frozenset(
-        {
-            CONF_DEFAULT_HEIGHT,
-            CONF_MAX_POSITION,
-            CONF_ENABLE_MAX_POSITION,
-            CONF_MIN_POSITION,
-            CONF_ENABLE_MIN_POSITION,
-            CONF_ENFORCE_DELTA_AT_ENDPOINTS,
-            CONF_ENDPOINT_USE_OPEN_CLOSE,
-            CONF_MIN_POSITION_SUN_TRACKING,
-            CONF_SUNSET_POS,
-            CONF_END_OF_WINDOW_POS,
-            CONF_ENABLE_MY_POSITION_ENTITIES,
-            CONF_MY_POSITION_VALUE,
-            CONF_SUNSET_USE_MY,
-            CONF_SUNSET_OFFSET,
-            CONF_SUNRISE_OFFSET,
-            CONF_SUNSET_TIME_ENTITY,
-            CONF_SUNRISE_TIME_ENTITY,
-            CONF_DAYTIME_GATE_SENSORS,
-            CONF_DAYTIME_GATE_TEMPLATE,
-            CONF_DAYTIME_GATE_TEMPLATE_MODE,
-            CONF_OPEN_CLOSE_THRESHOLD,
-            CONF_POSITION_TOLERANCE,
-            CONF_ENABLE_POSITION_MATCHING,
-            CONF_INVERSE_STATE,
-            CONF_INTERP,
-            CONF_RETURN_SUNSET,
-        }
-    ),
-    "interp": frozenset(
-        {
-            CONF_INTERP_START,
-            CONF_INTERP_END,
-            CONF_INTERP_LIST,
-            CONF_INTERP_LIST_NEW,
-        }
-    ),
-    "automation": frozenset(
-        {
-            CONF_DELTA_POSITION,
-            CONF_DELTA_TIME,
-            CONF_RESYNC_TRAVEL_THRESHOLD,
-            CONF_START_TIME,
-            CONF_START_ENTITY,
-            CONF_END_TIME,
-            CONF_END_ENTITY,
-        }
-    ),
-    "manual_override": frozenset(
-        {
-            CONF_MANUAL_OVERRIDE_DURATION,
-            CONF_MANUAL_OVERRIDE_RESET,
-            CONF_MANUAL_THRESHOLD,
-            CONF_MANUAL_IGNORE_INTERMEDIATE,
-            CONF_MANUAL_IGNORE_EXTERNAL,
-            CONF_MANUAL_OVERRIDE_INPUT_ENTITIES,
-            CONF_TRANSIT_TIMEOUT,
-        }
-    ),
-    # Legacy aliases (issue #563): force override merged into custom-position
-    # slot 5. Kept for programmatic sync callers; the legacy keys are inert on
-    # current code but still drive a rolled-back install.
-    "force_override_values": frozenset(
-        {
-            CONF_FORCE_OVERRIDE_POSITION,
-            CONF_FORCE_OVERRIDE_MIN_MODE,
-        }
-    ),
-    "force_override_sensors": frozenset(
-        {
-            CONF_FORCE_OVERRIDE_SENSORS,
-        }
-    ),
-    "force_override": frozenset(
-        {
-            CONF_FORCE_OVERRIDE_SENSORS,
-            CONF_FORCE_OVERRIDE_POSITION,
-            CONF_FORCE_OVERRIDE_MIN_MODE,
-        }
-    ),
-    "custom_position_values": frozenset(
-        keys[k]
-        for keys in CUSTOM_POSITION_SLOTS.values()
-        for k in ("position", "priority", "min_mode", "use_my", "template_mode")
-    ),
-    "custom_position_sensors": frozenset(
-        keys[k]
-        for keys in CUSTOM_POSITION_SLOTS.values()
-        for k in ("sensor", "sensors", "template")
-    ),
-    # Legacy alias: full union of custom_position_values + custom_position_sensors
-    "custom_position": frozenset(
-        v for keys in CUSTOM_POSITION_SLOTS.values() for v in keys.values()
-    ),
-    "motion_override_values": frozenset(
-        {
-            CONF_MOTION_TEMPLATE_MODE,
-            CONF_MOTION_TIMEOUT,
-            CONF_MOTION_TIMEOUT_MODE,
-        }
-    ),
-    "motion_override_sensors": frozenset(
-        {
-            CONF_MOTION_SENSORS,
-            CONF_MOTION_MEDIA_PLAYERS,
-            CONF_MOTION_TEMPLATE,
-        }
-    ),
-    # Legacy alias: full union of motion_override_values + motion_override_sensors
-    "motion_override": frozenset(
-        {
-            CONF_MOTION_SENSORS,
-            CONF_MOTION_MEDIA_PLAYERS,
-            CONF_MOTION_TEMPLATE,
-            CONF_MOTION_TEMPLATE_MODE,
-            CONF_MOTION_TIMEOUT,
-            CONF_MOTION_TIMEOUT_MODE,
-        }
-    ),
-    "weather_override_values": frozenset(
-        {
-            CONF_WEATHER_ENABLED,
-            CONF_WEATHER_BYPASS_AUTO_CONTROL,
-            CONF_WEATHER_WIND_SPEED_THRESHOLD,
-            CONF_WEATHER_WIND_DIRECTION_TOLERANCE,
-            CONF_WEATHER_RAIN_THRESHOLD,
-            CONF_WEATHER_OVERRIDE_POSITION,
-            CONF_WEATHER_OVERRIDE_MIN_MODE,
-            CONF_WEATHER_TIMEOUT,
-            CONF_WEATHER_IS_RAINING_TEMPLATE_MODE,
-            CONF_WEATHER_IS_WINDY_TEMPLATE_MODE,
-        }
-    ),
-    # Canonical membership lives in const.WEATHER_OVERRIDE_SENSOR_KEYS so the
-    # building-profile sensor-key set can reuse it without duplication.
-    "weather_override_sensors": WEATHER_OVERRIDE_SENSOR_KEYS,
-    # Legacy alias: full union of weather_override_values + weather_override_sensors
-    "weather_override": frozenset(
-        {
-            CONF_WEATHER_ENABLED,
-            CONF_WEATHER_BYPASS_AUTO_CONTROL,
-            CONF_WEATHER_WIND_SPEED_SENSOR,
-            CONF_WEATHER_WIND_DIRECTION_SENSOR,
-            CONF_WEATHER_WIND_SPEED_THRESHOLD,
-            CONF_WEATHER_WIND_DIRECTION_TOLERANCE,
-            CONF_WEATHER_RAIN_SENSOR,
-            CONF_WEATHER_RAIN_THRESHOLD,
-            CONF_WEATHER_IS_RAINING_SENSOR,
-            CONF_WEATHER_IS_RAINING_TEMPLATE,
-            CONF_WEATHER_IS_RAINING_TEMPLATE_MODE,
-            CONF_WEATHER_IS_WINDY_SENSOR,
-            CONF_WEATHER_IS_WINDY_TEMPLATE,
-            CONF_WEATHER_IS_WINDY_TEMPLATE_MODE,
-            CONF_WEATHER_SEVERE_SENSORS,
-            CONF_WEATHER_OVERRIDE_POSITION,
-            CONF_WEATHER_OVERRIDE_MIN_MODE,
-            CONF_WEATHER_TIMEOUT,
-        }
-    ),
-    "light_cloud_values": frozenset(
-        {
-            CONF_WEATHER_STATE,
-            CONF_LUX_THRESHOLD,
-            CONF_IRRADIANCE_THRESHOLD,
-            CONF_CLOUD_COVERAGE_THRESHOLD,
-            CONF_CLOUD_SUPPRESSION,
-            CONF_CLOUDY_POSITION,
-            CONF_IS_SUNNY_TEMPLATE_MODE,
-        }
-    ),
-    # Canonical membership lives in const.LIGHT_CLOUD_SENSOR_KEYS so the
-    # building-profile sensor-key set can reuse it without duplication.
-    "light_cloud_sensors": LIGHT_CLOUD_SENSOR_KEYS,
-    # Legacy alias: full union of light_cloud_values + light_cloud_sensors
-    "light_cloud": frozenset(
-        {
-            CONF_WEATHER_ENTITY,
-            CONF_WEATHER_STATE,
-            CONF_LUX_ENTITY,
-            CONF_LUX_THRESHOLD,
-            CONF_IRRADIANCE_ENTITY,
-            CONF_IRRADIANCE_THRESHOLD,
-            CONF_CLOUD_COVERAGE_ENTITY,
-            CONF_CLOUD_COVERAGE_THRESHOLD,
-            CONF_CLOUD_SUPPRESSION,
-            CONF_CLOUDY_POSITION,
-            CONF_IS_SUNNY_SENSOR,
-            CONF_IS_SUNNY_TEMPLATE,
-            CONF_IS_SUNNY_TEMPLATE_MODE,
-        }
-    ),
-    "temperature_climate_values": frozenset(
-        {
-            CONF_CLIMATE_MODE,
-            CONF_TEMP_LOW,
-            CONF_TEMP_HIGH,
-            CONF_OUTSIDE_THRESHOLD,
-            CONF_TRANSPARENT_BLIND,
-            CONF_WINTER_CLOSE_INSULATION,
-            CONF_SUMMER_CLOSE_BYPASS_SUN_FLOOR,
-            CONF_PRESENCE_TEMPLATE_MODE,
-        }
-    ),
-    "temperature_climate_sensors": frozenset(
-        {
-            CONF_TEMP_ENTITY,
-            CONF_OUTSIDETEMP_ENTITY,
-            CONF_PRESENCE_ENTITY,
-            CONF_PRESENCE_TEMPLATE,
-        }
-    ),
-    # Legacy alias: full union of temperature_climate_values + temperature_climate_sensors
-    "temperature_climate": frozenset(
-        {
-            CONF_CLIMATE_MODE,
-            CONF_TEMP_ENTITY,
-            CONF_TEMP_LOW,
-            CONF_TEMP_HIGH,
-            CONF_OUTSIDETEMP_ENTITY,
-            CONF_OUTSIDE_THRESHOLD,
-            CONF_PRESENCE_ENTITY,
-            CONF_PRESENCE_TEMPLATE,
-            CONF_PRESENCE_TEMPLATE_MODE,
-            CONF_TRANSPARENT_BLIND,
-            CONF_WINTER_CLOSE_INSULATION,
-            CONF_SUMMER_CLOSE_BYPASS_SUN_FLOOR,
-        }
-    ),
-    # Legacy alias for backward compat
-    "climate": frozenset(
-        {
-            CONF_WEATHER_ENTITY,
-            CONF_LUX_ENTITY,
-            CONF_LUX_THRESHOLD,
-            CONF_IRRADIANCE_ENTITY,
-            CONF_IRRADIANCE_THRESHOLD,
-            CONF_CLOUD_COVERAGE_ENTITY,
-            CONF_CLOUD_COVERAGE_THRESHOLD,
-            CONF_CLOUD_SUPPRESSION,
-            CONF_CLOUDY_POSITION,
-            CONF_IS_SUNNY_SENSOR,
-            CONF_IS_SUNNY_TEMPLATE,
-            CONF_IS_SUNNY_TEMPLATE_MODE,
-            CONF_CLIMATE_MODE,
-            CONF_TEMP_ENTITY,
-            CONF_TEMP_LOW,
-            CONF_TEMP_HIGH,
-            CONF_OUTSIDETEMP_ENTITY,
-            CONF_OUTSIDE_THRESHOLD,
-            CONF_PRESENCE_ENTITY,
-            CONF_PRESENCE_TEMPLATE,
-            CONF_PRESENCE_TEMPLATE_MODE,
-            CONF_TRANSPARENT_BLIND,
-            CONF_WINTER_CLOSE_INSULATION,
-            CONF_SUMMER_CLOSE_BYPASS_SUN_FLOOR,
-        }
-    ),
-    "glare_zones": frozenset(
-        {CONF_ENABLE_GLARE_ZONES}
-        | {
-            f"glare_zone_{i}_{axis}"
-            for i in range(1, 5)
-            for axis in ("name", "x", "y", "radius", "z")
-        }
-    ),
-    "weather": frozenset(
-        {
-            CONF_WEATHER_STATE,
-        }
-    ),
-}
-
-# Categories shown in the sync selector UI.
-# Mixed categories (force_override, custom_position, motion_override, weather_override,
-# light_cloud, temperature_climate) are split into *_values (thresholds/flags/modes)
-# and *_sensors (entity_id assignments) so users can copy global values without
-# overwriting room-specific sensor assignments (issue #125).
-# Legacy aliases remain in SYNC_CATEGORIES for programmatic callers.
-_SYNC_UI_CATEGORIES: list[str] = [
-    "geometry",
-    "sun_tracking",
-    "blind_spot",
-    "position",
-    "interp",
-    "automation",
-    "manual_override",
-    "custom_position_values",
-    "custom_position_sensors",
-    "motion_override_values",
-    "motion_override_sensors",
-    "weather_override_values",
-    "weather_override_sensors",
-    "light_cloud_values",
-    "light_cloud_sensors",
-    "temperature_climate_values",
-    "temperature_climate_sensors",
-    "glare_zones",
-]
-
-
-def _extract_shared_options(
-    entry: ConfigEntry,
-    categories: list[str] | None = None,
-) -> dict[str, Any]:
-    """Return options safe to copy across covers.
-
-    Excludes per-window fields: CONF_ENTITIES, CONF_AZIMUTH, CONF_DEVICE_ID.
-    When categories is None, returns all shared options (used by duplicate flow).
-    When categories is a list, returns only options belonging to those categories.
-    """
-    if categories is None:
-        return {
-            k: v for k, v in entry.options.items() if k not in _SHARED_OPTIONS_EXCLUDED
-        }
-    allowed_keys = frozenset().union(
-        *(SYNC_CATEGORIES[c] for c in categories if c in SYNC_CATEGORIES)
-    )
-    return {k: v for k, v in entry.options.items() if k in allowed_keys}
-
-
 def _build_cover_entity_schema(
     sensor_type: str,
     devices: dict[str, str] | None = None,
@@ -3196,31 +2716,8 @@ def _get_sun_tracking_schema(
     """
     base = sun_tracking_schema(hass) if hass is not None else SUN_TRACKING_SCHEMA
     if sensor_type in POLICY_REGISTRY:
-        policy = get_policy(sensor_type)
-        base = policy.fov_compute_schema(base)
-        if policy.supports_glare_zones:
-            base = base.extend(
-                {
-                    vol.Optional(
-                        CONF_ENABLE_GLARE_ZONES, default=False
-                    ): selector.BooleanSelector(),
-                }
-            )
+        base = get_policy(sensor_type).fov_compute_schema(base)
     return base
-
-
-def _glare_zone_length_keys() -> tuple[str, ...]:
-    """Return the 16 metres-stored option keys for the 4 glare zone slots."""
-    return tuple(
-        f"glare_zone_{i}_{axis}"
-        for i in range(1, 5)
-        for axis in ("x", "y", "radius", "z")
-    )
-
-
-# Glare-zones schema is built in ``config_dynamic`` (locale-aware). Thin alias
-# preserves the existing call sites / signature ``(options, hass)``.
-_build_glare_zones_schema = _glare_zones_schema
 
 
 class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -3267,9 +2764,9 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step — straight to the pergola form.
 
-        Condensed flow (docs/CONFIG_FLOW_REWORK.md): no create-menu. Building-
-        profile creation and duplicate-existing are heritage entry points; the
-        handlers remain callable but are no longer reachable from the UI.
+        Condensed flow (docs/CONFIG_FLOW_REWORK.md): no create-menu. The
+        building-profile and duplicate-existing entry points were deleted in
+        stage 4 — creating a pergola is the only flow.
         """
         return await self.async_step_create_new(user_input)
 
@@ -3285,27 +2782,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="create_new",
             data_schema=CONFIG_SCHEMA,
-        )
-
-    async def async_step_create_building_profile(
-        self, user_input: dict[str, Any] | None = None
-    ):
-        """Create a Building Profile entry from a single combined form.
-
-        One step collects the profile name together with the shared
-        building-level sensor IDs, then delegates to the shared finalize
-        (``async_step_update``) — the same path the cover flow uses.
-        """
-        if user_input is not None:
-            self.config = dict(user_input)
-            self.type_blind = CoverType.BUILDING_PROFILE
-            return await self.async_step_update()
-        return self.async_show_form(
-            step_id="create_building_profile",
-            data_schema=BUILDING_PROFILE_CREATE_SCHEMA,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
-            },
         )
 
     async def async_step_setup_mode(self, user_input: dict[str, Any] | None = None):
@@ -3413,25 +2889,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_glare_zones(self, user_input: dict[str, Any] | None = None):
-        """Configure glare zone definitions (initial flow)."""
-        if user_input is not None:
-            canonical = user_input_to_canonical(
-                self.hass, user_input, length_keys=_glare_zone_length_keys()
-            )
-            self.config.update(canonical)
-            # Glare zone (priority 45) is the last L3 handler → L4 automation.
-            return await self.async_step_automation()
-
-        schema = _build_glare_zones_schema(self.config, self.hass)
-        return self.async_show_form(
-            step_id="glare_zones",
-            data_schema=schema,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Glare-Zones"
-            },
-        )
-
     async def async_step_sun_tracking(self, user_input: dict[str, Any] | None = None):
         """Configure sun tracking parameters."""
         if user_input is not None:
@@ -3472,19 +2929,8 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     },
                 )
             self.config.update(canonical)
-            # In full setup, offer to link this cover to a Building Profile when
-            # any profiles exist. Check profiles first so the guard short-circuits
-            # safely in unit tests that build a bare ConfigFlowHandler without
-            # initialising setup_mode (profiles are [] with a MagicMock hass).
-            if (
-                _building_profile_entries(self.hass)
-                and self.setup_mode != "quick"
-                and get_policy(self.type_blind).controls_cover
-            ):
-                return await self.async_step_building_profile()
-            # L1 physical setup: the blind-spot sub-step (when enabled) attaches
-            # to the window here, before L2 positions. Quick setup skips it.
-            return await self._route_after_window_config()
+            # L1 physical setup complete → L2 positions.
+            return await self.async_step_position()
         return self._show_sun_tracking_form(self.config)
 
     def _show_sun_tracking_form(
@@ -3507,67 +2953,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             description_placeholders=_sun_tracking_placeholders(
                 self.type_blind, self.config
             ),
-        )
-
-    async def _route_after_window_config(self) -> FlowResult:
-        """Route to blind_spot or position after all window-config steps complete.
-
-        Called from ``async_step_sun_tracking`` (no profiles path) and from
-        ``async_step_building_profile`` (after profile selection), so the routing
-        logic lives in one place instead of being mirrored in both callers.
-        """
-        if self.config.get(CONF_ENABLE_BLIND_SPOT) and self.setup_mode != "quick":
-            return await self.async_step_blind_spot()
-        return await self.async_step_position()
-
-    async def async_step_building_profile(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Link this new cover to a Building Profile during creation.
-
-        Merges the profile's non-empty shared-sensor keys directly into
-        ``self.config`` (there is no existing entry yet) and stores
-        ``CONF_BUILDING_PROFILE_ID``. Selecting the none/skip choice leaves
-        the cover unlinked. On submit, routes to the same blind_spot/position
-        step that ``async_step_sun_tracking`` would have used, via the shared
-        ``_route_after_window_config`` helper.
-        """
-        if user_input is not None:
-            chosen = user_input.get(CONF_BUILDING_PROFILE_ID) or _PROFILE_NONE_SENTINEL
-            if chosen != _PROFILE_NONE_SENTINEL:
-                profile = self.hass.config_entries.async_get_entry(chosen)
-                if profile is not None:
-                    # Store only the link ID here. The sensor-value merge is
-                    # applied at entry-creation time (async_step_update) so that
-                    # profile values survive subsequent form steps that call
-                    # optional_entities() and overwrite absent keys with None.
-                    self.config[CONF_BUILDING_PROFILE_ID] = profile.entry_id
-            return await self._route_after_window_config()
-
-        profiles = _building_profile_entries(self.hass)
-        options = [
-            {"value": _PROFILE_NONE_SENTINEL, "label": "None (unlinked)"},
-            *({"value": e.entry_id, "label": e.title} for e in profiles),
-        ]
-        current = self.config.get(CONF_BUILDING_PROFILE_ID) or _PROFILE_NONE_SENTINEL
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_BUILDING_PROFILE_ID, default=current
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=options,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-            }
-        )
-        return self.async_show_form(
-            step_id="building_profile",
-            data_schema=schema,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
-            },
         )
 
     async def async_step_position(self, user_input: dict[str, Any] | None = None):
@@ -3593,10 +2978,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.optional_entities(_BEHAVIOR_OPTIONAL_KEYS, user_input)
             self.config.update(user_input)
-            # L2 calibration (interp) stays attached to positions/behavior; then
-            # the L3 handler steps begin in pipeline-priority order (weather = 90).
-            if self.config.get(CONF_INTERP):
-                return await self.async_step_interp()
+            # The L3 handler steps begin in pipeline-priority order (weather = 90).
             return await self.async_step_weather_override()
         return self.async_show_form(
             step_id="behavior",
@@ -3604,59 +2986,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
                 "position_matching_wiki": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position-Matching",
-            },
-        )
-
-    async def async_step_blind_spot(self, user_input: dict[str, Any] | None = None):
-        """Add blindspot to data."""
-        schema = blind_spot_schema(self.config)
-        if user_input is not None:
-            errors = _blind_spot_step_errors(user_input)
-            if errors:
-                return self.async_show_form(
-                    step_id="blind_spot",
-                    data_schema=schema,
-                    errors=errors,
-                    description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Blindspot"
-                    },
-                )
-            self.config.update(user_input)
-            # Blind spot is the tail of L1 physical setup → continue to L2 positions.
-            return await self.async_step_position()
-
-        return self.async_show_form(
-            step_id="blind_spot",
-            data_schema=schema,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Blindspot"
-            },
-        )
-
-    async def async_step_interp(self, user_input: dict[str, Any] | None = None):
-        """Show interpolation options."""
-        if user_input is not None:
-            if len(user_input[CONF_INTERP_LIST]) != len(
-                user_input[CONF_INTERP_LIST_NEW]
-            ):
-                return self.async_show_form(
-                    step_id="interp",
-                    data_schema=INTERPOLATION_OPTIONS,
-                    errors={
-                        CONF_INTERP_LIST_NEW: "Must have same length as 'Calculated positions (input)' list"
-                    },
-                    description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position"
-                    },
-                )
-            self.config.update(user_input)
-            # Calibration done → begin L3 handler steps in priority order.
-            return await self.async_step_weather_override()
-        return self.async_show_form(
-            step_id="interp",
-            data_schema=INTERPOLATION_OPTIONS,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position"
             },
         )
 
@@ -3784,11 +3113,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     },
                 )
             self.config.update(user_input)
-            # L3 priority 50 → glare (45) when supported/enabled, else L4 automation.
-            if get_policy(self.type_blind).supports_glare_zones and self.config.get(
-                CONF_ENABLE_GLARE_ZONES
-            ):
-                return await self.async_step_glare_zones()
+            # L3 priority 50 → L4 automation.
             return await self.async_step_automation()
         return self.async_show_form(
             step_id="temperature_climate",
@@ -3850,32 +3175,19 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         # entry.options["mode"] must carry the strategy mode ("basic" / "advanced").
         options[CONF_MODE] = self.mode
 
-        # Quick setup skips some steps (e.g. automation) leaving critical keys
-        # absent from self.config.  Apply constant-backed defaults so the
-        # coordinator never receives None for gating values (issue #133). A
-        # virtual entry type (Building Profile) builds no coordinator, so it
-        # keeps only the sensor IDs it collected — no cover automation defaults.
-        if get_policy(self.type_blind).controls_cover:
-            options.setdefault(CONF_DELTA_POSITION, DEFAULT_DELTA_POSITION)
-            options.setdefault(CONF_DELTA_TIME, DEFAULT_DELTA_TIME)
-            options.setdefault(
-                CONF_MANUAL_OVERRIDE_DURATION, DEFAULT_MANUAL_OVERRIDE_DURATION
-            )
-            options.setdefault(CONF_MOTION_SENSORS, [])
-            options.setdefault(CONF_MOTION_TIMEOUT, DEFAULT_MOTION_TIMEOUT)
-            options.setdefault(
-                CONF_ENABLE_POSITION_MATCHING, DEFAULT_ENABLE_POSITION_MATCHING
-            )
-
-        # If the user linked a Building Profile during creation, merge its
-        # non-empty shared-sensor keys into options now — after all form steps
-        # have run. This ensures profile values survive optional_entities() calls
-        # in later steps that would otherwise overwrite absent keys with None.
-        profile_id = options.get(CONF_BUILDING_PROFILE_ID)
-        if profile_id:
-            _profile_entry = self.hass.config_entries.async_get_entry(profile_id)
-            if _profile_entry is not None:
-                merge_profile_into_config(_profile_entry, options)
+        # The condensed flow skips some steps (e.g. automation) leaving critical
+        # keys absent from self.config.  Apply constant-backed defaults so the
+        # coordinator never receives None for gating values (issue #133).
+        options.setdefault(CONF_DELTA_POSITION, DEFAULT_DELTA_POSITION)
+        options.setdefault(CONF_DELTA_TIME, DEFAULT_DELTA_TIME)
+        options.setdefault(
+            CONF_MANUAL_OVERRIDE_DURATION, DEFAULT_MANUAL_OVERRIDE_DURATION
+        )
+        options.setdefault(CONF_MOTION_SENSORS, [])
+        options.setdefault(CONF_MOTION_TIMEOUT, DEFAULT_MOTION_TIMEOUT)
+        options.setdefault(
+            CONF_ENABLE_POSITION_MATCHING, DEFAULT_ENABLE_POSITION_MATCHING
+        )
 
         return self.async_create_entry(
             title=title,
@@ -3885,121 +3197,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             },
             options=options,
         )
-
-    async def async_step_duplicate_existing(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle duplicate existing configuration flow."""
-        return await self.async_step_duplicate_select(user_input)
-
-    async def async_step_duplicate_select(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Select the source cover to duplicate from."""
-        acp_entries = _cover_entries(self.hass)
-
-        if not acp_entries:
-            return self.async_abort(reason="source_not_found")  # type: ignore[return-value]
-
-        if user_input is not None:
-            self.selected_source_entry_id = user_input["source_entry"]
-            return await self.async_step_duplicate_configure()
-
-        return self.async_show_form(  # type: ignore[return-value]
-            step_id="duplicate_select",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("source_entry"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=[
-                                {"value": e.entry_id, "label": e.title}
-                                for e in acp_entries
-                            ],
-                        )
-                    )
-                }
-            ),
-        )
-
-    async def async_step_duplicate_configure(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Configure the unique fields for the duplicated cover."""
-        source_entry = self.hass.config_entries.async_get_entry(
-            self.selected_source_entry_id or ""
-        )
-        if not source_entry:
-            return self.async_abort(reason="source_not_found")  # type: ignore[return-value]
-
-        if user_input is not None:
-            shared_options = _extract_shared_options(source_entry)
-            sensor_type = source_entry.data.get(CONF_SENSOR_TYPE)
-            new_name = await self._ensure_unique_name(user_input["name"], suffix="Copy")
-
-            return self.async_create_entry(  # type: ignore[return-value]
-                title=f"{_cover_type_label(sensor_type)} {new_name}",
-                data={"name": new_name, CONF_SENSOR_TYPE: sensor_type},
-                options={
-                    **shared_options,
-                    CONF_ENTITIES: user_input.get(CONF_ENTITIES, []),
-                    CONF_AZIMUTH: user_input[CONF_AZIMUTH],
-                    # CONF_DEVICE_ID intentionally omitted — device association skipped for duplicates
-                },
-            )
-
-        source_azimuth = source_entry.options.get(CONF_AZIMUTH, 180)
-        sensor_type = source_entry.data.get(CONF_SENSOR_TYPE)
-        cover_entity_selector = selector.EntitySelector(
-            selector.EntitySelectorConfig(
-                multiple=True,
-                filter=get_policy(sensor_type).entity_selector_filter(),
-            )
-        )
-
-        schema = vol.Schema(
-            {
-                vol.Required("name"): selector.TextSelector(),
-                vol.Optional(CONF_ENTITIES, default=[]): cover_entity_selector,
-                vol.Required(
-                    CONF_AZIMUTH, default=source_azimuth
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0,
-                        max=359,
-                        mode=selector.NumberSelectorMode.SLIDER,
-                        unit_of_measurement="°",
-                    )
-                ),
-            }
-        )
-
-        return self.async_show_form(  # type: ignore[return-value]
-            step_id="duplicate_configure",
-            data_schema=schema,
-        )
-
-    async def _ensure_unique_name(self, name: str, suffix: str = "Imported") -> str:
-        """Ensure name doesn't conflict with existing entries.
-
-        Appends ' (suffix)' or ' (suffix N)' if a conflict exists.
-        Default suffix is 'Imported' for backward compatibility with legacy import flow.
-        """
-        existing_entries = self.hass.config_entries.async_entries(DOMAIN)
-        existing_names = {e.data.get("name") for e in existing_entries}
-
-        if name not in existing_names:
-            return name
-
-        suffixed_name = f"{name} ({suffix})"
-        if suffixed_name not in existing_names:
-            return suffixed_name
-
-        counter = 2
-        while f"{name} ({suffix} {counter})" in existing_names:
-            counter += 1
-
-        return f"{name} ({suffix} {counter})"
-
 
 class OptionsFlowHandler(OptionsFlow):
     """Options to adjust parameters."""
@@ -4012,32 +3209,11 @@ class OptionsFlowHandler(OptionsFlow):
         self.sensor_type: CoverType = (  # type: ignore[misc]
             self.current_config.get(CONF_SENSOR_TYPE) or CoverType.BLIND
         )
-        self.selected_sync_targets: list[str] = []
-        self.selected_sync_categories: list[str] = []
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
-        # Building Profile entries have no cover, geometry, or handlers to
-        # configure — show a small menu (edit shared sensors, view the overview
-        # of linked covers) instead of the full cover-options menu.
-        if not get_policy(self.sensor_type).controls_cover:
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=[
-                    "profile_sensors",
-                    "profile_overview",
-                    "profile_overrides",
-                    "done",
-                ],
-                description_placeholders={
-                    "instance_name": self._config_entry.title,
-                    "coffee_url": "https://www.buymeacoffee.com/jrhubott",
-                    "profile_line": "",
-                },
-            )
-
         # Ordered by the 4-layer pipeline model (#613): physical setup →
         # positions → handlers in priority order → global motion constraints.
 
@@ -4047,9 +3223,9 @@ class OptionsFlowHandler(OptionsFlow):
             "geometry",
             "sun_tracking",
         ]
-        # Condensed flow (docs/CONFIG_FLOW_REWORK.md): building-profile
-        # linking, blind-spot and interpolation are heritage — their step
-        # handlers remain callable but are no longer offered in the menu.
+        # Condensed flow (docs/CONFIG_FLOW_REWORK.md): the heritage
+        # building-profile, blind-spot and interpolation steps were deleted
+        # in stage 4.
 
         # ── Layer 2: Where can I go? / how do I behave? ──────────────
         keys.append("position")  # L2a positions (% values)
@@ -4066,8 +3242,8 @@ class OptionsFlowHandler(OptionsFlow):
                 "temperature_climate",  # Climate, priority 50
             ]
         )
-        # Condensed flow: glare zones and multi-cover sync are heritage —
-        # not offered for pergolas.
+        # Condensed flow: the heritage glare-zone and multi-cover sync steps
+        # were deleted in stage 4.
 
         # Re-order the whole handler chain (built-in priority overrides).
         keys.append("pipeline_priorities")
@@ -4082,24 +3258,12 @@ class OptionsFlowHandler(OptionsFlow):
         # Icons are embedded directly in each translation string (e.g. "🪟 Covers & Device").
         menu_options: list[str] = keys
 
-        # Build the profile_line placeholder: shows the linked profile's title
-        # when this cover is linked, or collapses to "" when unlinked.
-        _linked_profile_id = self.options.get(CONF_BUILDING_PROFILE_ID)
-        _profile_line = ""
-        if _linked_profile_id:
-            _profile_entry = self.hass.config_entries.async_get_entry(
-                _linked_profile_id
-            )
-            if _profile_entry is not None:
-                _profile_line = f"\n🏢 Building Profile: **{_profile_entry.title}**"
-
         return self.async_show_menu(  # type: ignore[return-value]
             step_id="init",
             menu_options=menu_options,
             description_placeholders={
                 "instance_name": self.config_entry.title,
                 "coffee_url": "https://www.buymeacoffee.com/jrhubott",
-                "profile_line": _profile_line,
             },
         )
 
@@ -4152,26 +3316,6 @@ class OptionsFlowHandler(OptionsFlow):
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             description_placeholders={
                 "geometry_wiki_link": _geometry_wiki_link(self.sensor_type)
-            },
-        )
-
-    async def async_step_glare_zones(self, user_input: dict[str, Any] | None = None):
-        """Configure glare zone definitions (options)."""
-        gz_keys = _glare_zone_length_keys()
-        if user_input is not None:
-            canonical = user_input_to_canonical(
-                self.hass, user_input, length_keys=gz_keys
-            )
-            self.options.update(canonical)
-            return await self.async_step_init()
-
-        schema = _build_glare_zones_schema(self.options, self.hass)
-        suggested = options_to_display(self.hass, self.options, length_keys=gz_keys)
-        return self.async_show_form(
-            step_id="glare_zones",
-            data_schema=self.add_suggested_values_to_schema(schema, suggested),
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Glare-Zones"
             },
         )
 
@@ -4272,7 +3416,6 @@ class OptionsFlowHandler(OptionsFlow):
             description_placeholders={
                 "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
                 "position_matching_wiki": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position-Matching",
-                "profile_inherit": self._profile_inherit_note(_BEHAVIOR_PROFILE_KEYS),
             },
         )
 
@@ -4376,182 +3519,12 @@ class OptionsFlowHandler(OptionsFlow):
             return await self.async_step_init()
         suggested = _stringify_templatable(self.options)
         placeholders = dict(_weather_override_placeholders(self.hass, self.options))
-        placeholders["profile_inherit"] = self._profile_inherit_note(
-            WEATHER_OVERRIDE_SENSOR_KEYS
-        )
         return self.async_show_form(
             step_id="weather_override",
             data_schema=self.add_suggested_values_to_schema(
                 weather_override_schema(self.hass, suggested), suggested
             ),
             description_placeholders=placeholders,
-        )
-
-    def _profile_inherit_note(self, keys) -> str:
-        """Markdown note of the profile's value per profile-owned key on a step.
-
-        Empty when the cover is unlinked. Lets a linked cover see whether the
-        Building Profile assigns a value (and whether the cover overrides it)
-        next to the pickers — HA can't annotate individual schema fields.
-        """
-        from .building_overview import profile_value_breakdown
-
-        profile = profile_for_cover(self.hass, self.options)
-        if profile is None:
-            return ""
-        return profile_value_breakdown(
-            profile.options or {}, self.options, keys, profile_title=profile.title
-        )
-
-    async def async_step_building_profile(
-        self, user_input: dict[str, Any] | None = None
-    ):
-        """Link this cover to a Building Profile (or unlink it).
-
-        Linking copies the profile's non-empty shared-sensor subset into this
-        cover's own options (reusing ``_copy_profile_to_cover``) and reloads the
-        cover. Selecting the none/unlink choice clears the link; the last-copied
-        sensor IDs are left in place (no teardown).
-        """
-        if user_input is not None:
-            chosen = user_input.get(CONF_BUILDING_PROFILE_ID) or _PROFILE_NONE_SENTINEL
-            if chosen != _PROFILE_NONE_SENTINEL:
-                profile = self.hass.config_entries.async_get_entry(chosen)
-                if profile is not None:
-                    _copy_profile_to_cover(self.hass, profile, self._config_entry)
-                    self.options = dict(self._config_entry.options)
-            elif self.options.pop(CONF_BUILDING_PROFILE_ID, None) is not None:
-                self.hass.config_entries.async_update_entry(
-                    self._config_entry, options=dict(self.options)
-                )
-            return await self.async_step_init()
-
-        profiles = _building_profile_entries(self.hass)
-        options = [
-            {"value": _PROFILE_NONE_SENTINEL, "label": "None (unlinked)"},
-            *({"value": e.entry_id, "label": e.title} for e in profiles),
-        ]
-        current = self.options.get(CONF_BUILDING_PROFILE_ID) or _PROFILE_NONE_SENTINEL
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_BUILDING_PROFILE_ID, default=current
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=options,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-            }
-        )
-        return self.async_show_form(
-            step_id="building_profile",
-            data_schema=schema,
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
-            },
-        )
-
-    async def async_step_profile_sensors(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Edit the shared building-level sensor IDs on a Building Profile entry.
-
-        This is the only options step for a profile: it exposes exactly the
-        ``BUILDING_PROFILE_SENSOR_KEYS`` pickers and saves on submit.  Mirrors
-        the create-flow's ``async_step_create_building_profile`` sensor section.
-        """
-        if user_input is not None:
-            self.options.update(user_input)
-            return self.async_create_entry(title="", data=self.options)
-
-        schema = building_profile_sensors_schema()
-        return self.async_show_form(
-            step_id="profile_sensors",
-            data_schema=self.add_suggested_values_to_schema(schema, self.options),
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
-            },
-        )
-
-    async def async_step_profile_overview(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Read-only overview of every cover linked to this Building Profile.
-
-        Scoped to this profile's linked covers — what shared sensors they
-        inherit (with divergence warnings) and how their per-cover settings
-        compare. Renders markdown only; submitting returns to the menu.
-        """
-        if user_input is not None:
-            return await self.async_step_init()
-        from .building_overview import build_building_overview
-
-        linked = _covers_linked_to(self.hass, self._config_entry)
-        overview_text = build_building_overview(self._config_entry, linked, self.hass)
-        return self.async_show_form(
-            step_id="profile_overview",
-            data_schema=vol.Schema({}),
-            description_placeholders={"overview": overview_text},
-        )
-
-    async def async_step_profile_overrides(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """View and clear linked covers' local sensor overrides.
-
-        Lists every shared sensor a linked cover has overridden (or set locally
-        where the profile is blank). Selecting entries and submitting clears them:
-        an overridden key re-inherits the profile value; a local key is removed.
-        """
-        from .building_overview import build_override_records
-
-        linked = _covers_linked_to(self.hass, self._config_entry)
-        records = build_override_records(self._config_entry, linked)
-        by_token = {f"{r.entry_id}|{r.key}": r for r in records}
-
-        if user_input is not None:
-            for token in user_input.get(_OVERRIDE_SELECT_KEY, []):
-                record = by_token.get(token)
-                cover = self.hass.config_entries.async_get_entry(record.entry_id)
-                if record is not None and cover is not None:
-                    clear_cover_override(
-                        self.hass, self._config_entry, cover, record.key
-                    )
-            return await self.async_step_init()
-
-        if not records:
-            return self.async_show_form(
-                step_id="profile_overrides",
-                data_schema=vol.Schema({}),
-                description_placeholders={"overrides": _LABELS_NO_OVERRIDES},
-            )
-
-        options = [
-            {
-                "value": token,
-                "label": (
-                    f"{r.cover_name} — {r.label}: {r.local_text} "
-                    f"(profile: {r.profile_text if r.profile_sets_it else 'not set'})"
-                ),
-            }
-            for token, r in by_token.items()
-        ]
-        schema = vol.Schema(
-            {
-                vol.Optional(_OVERRIDE_SELECT_KEY, default=[]): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=options,
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.LIST,
-                    )
-                )
-            }
-        )
-        return self.async_show_form(
-            step_id="profile_overrides",
-            data_schema=schema,
-            description_placeholders={"overrides": ""},
         )
 
     async def async_step_pipeline_priorities(
@@ -4578,195 +3551,6 @@ class OptionsFlowHandler(OptionsFlow):
             },
         )
 
-    async def async_step_sync(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Select target covers and setting categories to sync."""
-        current_type = self._config_entry.data.get(CONF_SENSOR_TYPE)
-        other_entries = [
-            e
-            for e in self.hass.config_entries.async_entries(DOMAIN)
-            if e.entry_id != self._config_entry.entry_id
-            and e.data.get(CONF_SENSOR_TYPE) == current_type
-        ]
-
-        if not other_entries:
-            return self.async_abort(reason="no_covers_to_sync")  # type: ignore[return-value]
-
-        available = [
-            cat
-            for cat in _SYNC_UI_CATEGORIES
-            if cat in SYNC_CATEGORIES
-            and any(k in self._config_entry.options for k in SYNC_CATEGORIES[cat])
-        ]
-
-        if user_input is not None:
-            targets = user_input.get("target_entries", [])
-            if not targets:
-                return await self.async_step_init()
-            selected = user_input.get("sync_categories", [])
-            if not selected:
-                return await self.async_step_init()
-            self.selected_sync_targets = targets
-            self.selected_sync_categories = selected
-            return await self.async_step_sync_confirm()
-
-        return self.async_show_form(  # type: ignore[return-value]
-            step_id="sync",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("target_entries", default=[]): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            multiple=True,
-                            options=[
-                                {"value": e.entry_id, "label": e.title}
-                                for e in other_entries
-                            ],
-                        )
-                    ),
-                    vol.Required(
-                        "sync_categories", default=[]
-                    ): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            multiple=True,
-                            options=available,
-                            translation_key="sync_categories",
-                        )
-                    ),
-                }
-            ),
-        )
-
-    async def async_step_sync_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Confirm and execute sync to selected covers."""
-        if user_input is not None:
-            if user_input.get("confirm"):
-                # Save current cover's settings first so sync copies the latest values
-                self.hass.config_entries.async_update_entry(
-                    self._config_entry,
-                    options=dict(self.options),
-                )
-                shared_options = _extract_shared_options(
-                    self._config_entry, categories=self.selected_sync_categories
-                )
-                for entry_id in self.selected_sync_targets:
-                    target = self.hass.config_entries.async_get_entry(entry_id)
-                    if target:
-                        self.hass.config_entries.async_update_entry(
-                            target,
-                            options={**target.options, **shared_options},
-                        )
-            return await self.async_step_init()
-
-        # Build summary of selected targets
-        target_titles = []
-        for entry_id in self.selected_sync_targets:
-            target = self.hass.config_entries.async_get_entry(entry_id)
-            if target:
-                target_titles.append(f"• {target.title}")
-
-        # Build summary of selected categories using friendly names
-        _category_labels = {
-            "geometry": "Window Dimensions",
-            "sun_tracking": "Sun Tracking",
-            "blind_spot": "Blind Spot Configuration",
-            "position": "Position Settings",
-            "interp": "Position Calibration",
-            "automation": "Schedule & Timing",
-            "manual_override": "Manual Override",
-            "custom_position_values": "Custom Positions — Values & Priorities",
-            "custom_position_sensors": "Custom Positions — Trigger Sensors",
-            "motion_override_values": "Motion Override — Timeout",
-            "motion_override_sensors": "Motion Override — Sensors",
-            "weather_override_values": "Weather Override — Thresholds & Position",
-            "weather_override_sensors": "Weather Override — Sensors",
-            "light_cloud_values": "Light & Cloud — Thresholds",
-            "light_cloud_sensors": "Light & Cloud — Sensors",
-            "temperature_climate_values": "Climate Mode — Thresholds & Settings",
-            "temperature_climate_sensors": "Climate Mode — Room Sensors",
-            "glare_zones": "Glare Zones",
-            # Legacy aliases (kept for back-compat; not shown in UI)
-            "force_override": "Force Override",
-            "custom_position": "Custom Positions",
-            "motion_override": "Motion Override",
-            "weather_override": "Weather Override",
-            "light_cloud": "Light Sensors & Cloud Suppression",
-            "temperature_climate": "Temperature & Climate Mode",
-        }
-        category_lines = [
-            f"• {_category_labels.get(c, c)}" for c in self.selected_sync_categories
-        ]
-
-        return self.async_show_form(  # type: ignore[return-value]
-            step_id="sync_confirm",
-            data_schema=vol.Schema(
-                {vol.Required("confirm", default=False): selector.BooleanSelector()}
-            ),
-            description_placeholders={
-                "source_name": self._config_entry.title,
-                "entries_summary": "\n".join(target_titles) or "(none selected)",
-                "categories_summary": "\n".join(category_lines) or "(none selected)",
-            },
-        )
-
-    async def async_step_interp(self, user_input: dict[str, Any] | None = None):
-        """Show interpolation options."""
-        if user_input is not None:
-            if len(user_input[CONF_INTERP_LIST]) != len(
-                user_input[CONF_INTERP_LIST_NEW]
-            ):
-                return self.async_show_form(
-                    step_id="interp",
-                    data_schema=self.add_suggested_values_to_schema(
-                        INTERPOLATION_OPTIONS, user_input
-                    ),
-                    errors={
-                        CONF_INTERP_LIST_NEW: "Must have same length as 'Calculated positions (input)' list"
-                    },
-                    description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position"
-                    },
-                )
-            self.options.update(user_input)
-            return await self.async_step_init()
-        return self.async_show_form(
-            step_id="interp",
-            data_schema=self.add_suggested_values_to_schema(
-                INTERPOLATION_OPTIONS, user_input or self.options
-            ),
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position"
-            },
-        )
-
-    async def async_step_blind_spot(self, user_input: dict[str, Any] | None = None):
-        """Add blindspot to data."""
-        schema = blind_spot_schema(self.options)
-        if user_input is not None:
-            errors = _blind_spot_step_errors(user_input)
-            if errors:
-                return self.async_show_form(
-                    step_id="blind_spot",
-                    data_schema=schema,
-                    errors=errors,
-                    description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Blindspot"
-                    },
-                )
-            self.options.update(user_input)
-            return await self.async_step_init()
-        return self.async_show_form(
-            step_id="blind_spot",
-            data_schema=self.add_suggested_values_to_schema(
-                schema, user_input or self.options
-            ),
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Blindspot"
-            },
-        )
-
     async def async_step_light_cloud(self, user_input: dict[str, Any] | None = None):
         """Manage light sensors, weather conditions, and cloud suppression."""
         suggested = _stringify_templatable(user_input or self.options)
@@ -4781,7 +3565,6 @@ class OptionsFlowHandler(OptionsFlow):
             ),
             description_placeholders={
                 "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides",
-                "profile_inherit": self._profile_inherit_note(LIGHT_CLOUD_SENSOR_KEYS),
             },
         )
 
@@ -4803,9 +3586,6 @@ class OptionsFlowHandler(OptionsFlow):
                     errors={CONF_TEMP_ENTITY: "Required when climate mode is enabled"},
                     description_placeholders={
                         "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode",
-                        "profile_inherit": self._profile_inherit_note(
-                            _TEMPERATURE_PROFILE_KEYS
-                        ),
                     },
                 )
             self.options.update(user_input)
@@ -4817,9 +3597,6 @@ class OptionsFlowHandler(OptionsFlow):
             ),
             description_placeholders={
                 "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode",
-                "profile_inherit": self._profile_inherit_note(
-                    _TEMPERATURE_PROFILE_KEYS
-                ),
             },
         )
 
@@ -4886,25 +3663,7 @@ class OptionsFlowHandler(OptionsFlow):
 
     async def _update_options(self) -> FlowResult:
         """Update config entry options."""
-        self._recompute_profile_overrides()
         return self.async_create_entry(title="", data=self.options)  # type: ignore[return-value]
-
-    def _recompute_profile_overrides(self) -> None:
-        """Refresh the cover's local-override list against its profile on save.
-
-        Single, stateless recompute point (inherit/override model): a shared
-        sensor whose value now equals the profile's drops out of the list; a
-        changed one is recorded. Skipped for unlinked covers / profiles.
-        """
-        profile = profile_for_cover(self.hass, self.options)
-        if profile is None:
-            self.options.pop(CONF_PROFILE_SENSOR_OVERRIDES, None)
-            return
-        overrides = compute_override_keys(self.options, profile.options or {})
-        if overrides:
-            self.options[CONF_PROFILE_SENSOR_OVERRIDES] = overrides
-        else:
-            self.options.pop(CONF_PROFILE_SENSOR_OVERRIDES, None)
 
     def optional_entities(self, keys: list, user_input: dict[str, Any]):
         """Set value to None if key does not exist."""

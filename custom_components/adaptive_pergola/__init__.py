@@ -17,7 +17,6 @@ from homeassistant.helpers.event import (
 from homeassistant.helpers.template import Template
 
 from .const import (
-    CONF_BUILDING_PROFILE_ID,
     CONF_CLOUD_COVERAGE_ENTITY,
     CONF_DAYTIME_GATE_SENSORS,
     CONF_DAYTIME_GATE_TEMPLATE,
@@ -64,7 +63,6 @@ from .helpers import (
     manual_override_input_entities,
     motion_entities,
 )
-from .profile_link import _copy_profile_to_cover, _covers_linked_to
 from .templates import is_template_string
 from .migrations import (
     async_prune_legacy_entities,
@@ -143,18 +141,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
     await async_setup_services(hass)
 
     # Serve + inject the custom slat iconset (acp:pergola-slats-*) once per HA
-    # instance. Safe for every entry type, including virtual profile entries.
+    # instance.
     await async_register_frontend(hass)
-
-    # Virtual entry types (the Building Profile) hold only shared building-level
-    # sensor IDs — they register no platforms and build no coordinator. Filter on
-    # the policy capability, never on the cover-type string, so the regression
-    # guard stays unambiguous. Register a propagation update-listener so a change
-    # to the profile reaches its linked covers, then return without forwarding
-    # platforms.
-    if not get_policy(entry.data[CONF_SENSOR_TYPE]).controls_cover:
-        entry.async_on_unload(entry.add_update_listener(_async_profile_propagate))
-        return True
 
     coordinator = AdaptiveDataUpdateCoordinator(hass)
     # Detect reload vs. cold HA boot so first-refresh can suppress non-safety
@@ -393,12 +381,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) ->
     # async_setup_entry) — nothing to unload.
     if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
         return True
-    # Virtual entry types (Building Profile, controls_cover == False) forwarded
-    # no platforms in async_setup_entry, so unloading platforms would raise
-    # "Config entry was never loaded!". Mirror the setup short-circuit.
-    if not get_policy(entry.data[CONF_SENSOR_TYPE]).controls_cover:
-        await async_unload_services(hass)
-        return True
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         await async_unload_services(hass)
     return unload_ok
@@ -407,29 +389,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) ->
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Clean up after a config entry is removed.
 
-    Q5 active sweep: when a deleted entry is a Building Profile (virtual,
-    ``controls_cover == False``), strip the dangling ``CONF_BUILDING_PROFILE_ID``
-    from every cover still linked to it so their profile pickers re-expose on the
-    next options view. The last-copied sensor IDs are deliberately left in place
-    so the covers keep functioning. Removing a real cover does nothing here.
-
-    Also drops the entry's last-good diagnostics snapshot from the hass.data cache
+    Drops the entry's last-good diagnostics snapshot from the hass.data cache
     (written each update cycle, kept across reloads) so it does not leak.
     """
     hass.data.get(DIAG_CACHE_KEY, {}).pop(entry.entry_id, None)
-    # Unknown cover type (stale pre-split entry): nothing was linked, nothing
-    # to sweep — and get_policy would raise, blocking the deletion cleanup.
-    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
-        return
-    if get_policy(entry.data.get(CONF_SENSOR_TYPE)).controls_cover:
-        return
-    for cover in _covers_linked_to(hass, entry):
-        hass.config_entries.async_update_entry(
-            cover,
-            options={
-                k: v for k, v in cover.options.items() if k != CONF_BUILDING_PROFILE_ID
-            },
-        )
 
 
 # Fields that moved from centimetres to metres in config-entry version 2.
@@ -577,26 +540,6 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 _RUNTIME_APPLICABLE_OPTIONS: dict[str, str] = {
     CONF_ENABLE_SUN_TRACKING: "async_apply_sun_tracking_update",
 }
-
-
-async def _async_profile_propagate(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Propagate a Building Profile's sensor changes to its linked covers.
-
-    Registered as the update listener for virtual ``building_profile`` entries
-    (which build no coordinator). Re-copies the profile's non-empty shared-sensor
-    subset into every linked cover via the shared copier — the ``async_update_entry``
-    it performs fires each cover's self-reload listener, so linked covers pick up
-    the changed sensor IDs immediately.
-    """
-    # Guard: only profiles (virtual, controls_cover == False) propagate. A real
-    # cover reaching here would be a wiring bug — its own listener handles
-    # reloads. Unknown types (stale pre-split entries) never propagate.
-    if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
-        return
-    if get_policy(entry.data.get(CONF_SENSOR_TYPE)).controls_cover:
-        return
-    for cover in _covers_linked_to(hass, entry):
-        _copy_profile_to_cover(hass, entry, cover)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:

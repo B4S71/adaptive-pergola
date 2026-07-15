@@ -21,11 +21,6 @@ from .base import POLICY_REGISTRY, CoverTypePolicy
 # creating its module and importing it here.
 from .louvered_roof import LouveredRoofPolicy
 
-# Virtual entry type — imported LAST so it sorts to the bottom of the
-# cover-type picker (``SENSOR_TYPE_MENU`` follows registration order). It is
-# not a physical cover (``controls_cover = False``).
-from .building_profile import BuildingProfilePolicy
-
 
 def get_policy(cover_type) -> CoverTypePolicy:
     """Return a policy instance for the given cover-type identifier.
@@ -51,7 +46,6 @@ def get_policy(cover_type) -> CoverTypePolicy:
 
 __all__ = [
     "POLICY_REGISTRY",
-    "BuildingProfilePolicy",
     "CoverTypePolicy",
     "LouveredRoofPolicy",
     "get_policy",

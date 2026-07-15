@@ -28,7 +28,6 @@ from .const import (
     BLIND_SPOT_ELEVATION_MODES,
     BLIND_SPOT_SLOT_NUMBERS,
     BLIND_SPOT_SLOTS,
-    BUILDING_PROFILE_SENSOR_KEYS,
     CONF_CLIMATE_MODE,
     CONF_CLOUD_COVERAGE_ENTITY,
     CONF_CLOUD_COVERAGE_THRESHOLD,
@@ -149,7 +148,7 @@ def _template_combine_mode_selector() -> selector.SelectSelector:
     """Return the shared OR/AND combine-mode selector (template condition fields).
 
     Single source of truth for the ``template_combine_mode`` SelectSelector
-    used by ``_condition_template_schema`` and ``building_profile_sensors_schema``.
+    used by ``_condition_template_schema``.
     """
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
@@ -235,9 +234,10 @@ def sun_tracking_schema(hass: HomeAssistant | None = None) -> vol.Schema:
                     unit_of_measurement="°",
                 )
             ),
-            vol.Optional(
-                CONF_ENABLE_BLIND_SPOT, default=False
-            ): selector.BooleanSelector(),
+            # CONF_ENABLE_BLIND_SPOT left the pergola-facing form with the rest
+            # of the blind-spot UI (docs/CONFIG_FLOW_REWORK.md, stage 4). The
+            # engine still honours stored values (incl. the set_blind_spot
+            # service); there is just no form toggle any more.
             # minimize_movements / max_coverage_steps moved to the L4 global
             # motion-constraints (automation) step — see config_flow.AUTOMATION_SCHEMA (#613).
         }
@@ -437,60 +437,6 @@ def light_cloud_schema(
         ): _threshold_selector(),
     }
     return vol.Schema(schema)
-
-
-def building_profile_sensors_schema() -> vol.Schema:
-    """Sensor-only schema for a Building Profile entry.
-
-    Renders exactly the ``BUILDING_PROFILE_SENSOR_KEYS`` pickers — no
-    thresholds, geometry, or cover selection. Reuses the same selector
-    primitives as the weather-override / light-cloud / climate / behavior
-    steps so the profile collects the building-level sensor IDs once and copies
-    them into each linked cover.
-    """
-    selectors: dict = {
-        # Light & cloud sensors
-        CONF_WEATHER_ENTITY: selector.EntitySelector(
-            selector.EntityFilterSelectorConfig(domain="weather")
-        ),
-        CONF_IS_SUNNY_SENSOR: binary_on_selector(),
-        CONF_IS_SUNNY_TEMPLATE: selector.TemplateSelector(),
-        CONF_IS_SUNNY_TEMPLATE_MODE: _template_combine_mode_selector(),
-        CONF_LUX_ENTITY: numeric_selector(device_class="illuminance"),
-        CONF_IRRADIANCE_ENTITY: numeric_selector(device_class="irradiance"),
-        CONF_CLOUD_COVERAGE_ENTITY: numeric_selector(),
-        # Weather-override retraction sensors
-        CONF_WEATHER_WIND_SPEED_SENSOR: numeric_selector(),
-        CONF_WEATHER_WIND_DIRECTION_SENSOR: numeric_selector(),
-        CONF_WEATHER_RAIN_SENSOR: numeric_selector(),
-        CONF_WEATHER_IS_RAINING_SENSOR: binary_on_selector(),
-        CONF_WEATHER_IS_RAINING_TEMPLATE: selector.TemplateSelector(),
-        CONF_WEATHER_IS_RAINING_TEMPLATE_MODE: _template_combine_mode_selector(),
-        CONF_WEATHER_IS_WINDY_SENSOR: binary_on_selector(),
-        CONF_WEATHER_IS_WINDY_TEMPLATE: selector.TemplateSelector(),
-        CONF_WEATHER_IS_WINDY_TEMPLATE_MODE: _template_combine_mode_selector(),
-        CONF_WEATHER_SEVERE_SENSORS: binary_on_selector(multiple=True),
-        # Outside temperature
-        CONF_OUTSIDETEMP_ENTITY: numeric_selector(),
-        # Daytime gate
-        CONF_DAYTIME_GATE_SENSORS: binary_on_selector(multiple=True),
-        CONF_DAYTIME_GATE_TEMPLATE: selector.TemplateSelector(),
-        CONF_DAYTIME_GATE_TEMPLATE_MODE: _template_combine_mode_selector(),
-        # Sunrise / sunset time entities (offsets stay per-cover)
-        CONF_SUNSET_TIME_ENTITY: selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=["sensor", "input_datetime"])
-        ),
-        CONF_SUNRISE_TIME_ENTITY: selector.EntitySelector(
-            selector.EntitySelectorConfig(domain=["sensor", "input_datetime"])
-        ),
-    }
-    return vol.Schema(
-        {
-            vol.Optional(key): sel
-            for key, sel in selectors.items()
-            if key in BUILDING_PROFILE_SENSOR_KEYS
-        }
-    )
 
 
 def temperature_climate_schema(

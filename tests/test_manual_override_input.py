@@ -192,16 +192,6 @@ def test_input_entities_in_manual_override_schema() -> None:
     assert match.config.get("multiple") is True
 
 
-def test_input_entities_in_sync_category() -> None:
-    """The key is in the manual_override sync category so options-flow copy works."""
-    from custom_components.adaptive_pergola import config_flow as cf
-    from custom_components.adaptive_pergola.const import (
-        CONF_MANUAL_OVERRIDE_INPUT_ENTITIES,
-    )
-
-    assert CONF_MANUAL_OVERRIDE_INPUT_ENTITIES in cf.SYNC_CATEGORIES["manual_override"]
-
-
 @pytest.mark.asyncio
 async def test_handler_ignores_unavailable() -> None:
     """unavailable/unknown are not 'on' so they don't engage."""

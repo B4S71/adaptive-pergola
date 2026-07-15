@@ -2,13 +2,6 @@
   "title": "Adaptive Pergola",
   "config": {
     "step": {
-      "user": {
-        "menu_options": {
-          "create_new": "Créer un nouveau store",
-          "create_building_profile": "Créer un profil de bâtiment",
-          "duplicate_existing": "Dupliquer à partir d'un store existant"
-        }
-      },
       "create_new": {
         "title": "Créer un nouveau store",
         "data": {
@@ -139,8 +132,6 @@
           "sun_window_end": "Azimut de fin de la fenêtre solaire",
           "min_elevation": "Élévation minimale du soleil",
           "max_elevation": "Élévation maximale du soleil",
-          "blind_spot": "Configurer la zone cachée",
-          "enable_glare_zones": "Activer les zones d'éblouissement",
           "fov_compute": "Générer le champ de vision à partir des mesures"
         },
         "data_description": {
@@ -149,8 +140,6 @@
           "sun_window_end": "Relèvement au compas (0-359°) où se termine la fenêtre solaire. La fenêtre s'étend dans le sens horaire du début à la fin et peut passer par le nord (p. ex. 137° → 2°). Le début et la fin doivent différer d'au moins 1°.",
           "min_elevation": "Suivez le soleil uniquement quand l'élévation est AU-DESSUS de cet angle (degrés au-dessus de l'horizon). Élévation du soleil : 0°=horizon, 45°=mi-chemin vers le zénith, 90°=directement au-dessus. Utilisez ceci pour ignorer le soleil à certains moments. Exemple : réglez sur 15° pour ignorer le soleil bas du matin/soir. Laissez vide pour suivre le soleil à toutes les élévations.",
           "max_elevation": "Suivez le soleil uniquement quand l'élévation est AU-DESSOUS de cet angle (degrés au-dessus de l'horizon). Élévation du soleil : 0°=horizon, 45°=mi-chemin vers le zénith, 90°=directement au-dessus. Utilisez ceci pour ignorer le soleil à certains moments. Exemple : réglez sur 60° pour ignorer le soleil haut de midi. Laissez vide pour suivre le soleil à toutes les élévations.",
-          "blind_spot": "Activez si vous avez des obstacles bloquant le soleil dans une partie de la zone de suivi (arbres, bâtiments à proximité, surplomb de toit, balcon). Lorsqu'il est activé, vous définissez une plage azimut + élévation où le soleil est bloqué. Le store ignore la position du soleil quand elle se trouve dans cette « zone cachée ». Laissez désactivé si vous avez une vue dégagée du soleil toute la journée.",
-          "enable_glare_zones": "Protégez les zones de sol spécifiques de l'éblouissement direct du soleil (stores verticaux uniquement)",
           "fov_compute": "**{computed_fov}**\n\nRemplit les champs de vision gauche/droit à partir de la largeur de la fenêtre et de la profondeur de tableau — la profondeur de tableau est mesurée depuis le parement extérieur du mur, où se trouve la couverture. Définissez la largeur de la fenêtre et la profondeur de tableau sur la page Géométrie de la couverture, puis activez cette option et soumettez pour l'appliquer. Les curseurs restent modifiables, vous pouvez donc ajuster l'un ou l'autre angle par la suite."
         }
       },
@@ -504,120 +493,6 @@
         "title": "Conditions météorologiques",
         "description": "Sélectionnez les états météorologiques qui comptent comme « le soleil est dehors » pour le mode climat. L'intégration compare l'état de l'entité météo en direct à cette liste — les états correspondants activent le contrôle de protection basé sur l'énergie solaire. Les états qui ne figurent pas dans la liste sont traités comme nuageux, donc les règles d'été/fermeture et d'hiver/ouverture s'appliquent uniquement lorsque la météo correspond.\n\nLes choix typiques sont « ensoleillé » et « partiellement nuageux ». Les états disponibles dépendent de votre intégration météo.\n\n[En savoir plus]({learn_more})"
       },
-      "blind_spot": {
-        "data": {
-          "blind_spot_left": "Bord gauche de la zone cachée (depuis FOV gauche)",
-          "blind_spot_right": "Bord droit de la zone cachée (depuis FOV gauche)",
-          "blind_spot_elevation": "Élévation zone cachée",
-          "blind_spot_left_2": "Bord gauche zone cachée 2 (depuis FOV gauche)",
-          "blind_spot_right_2": "Bord droit zone cachée 2 (depuis FOV gauche)",
-          "blind_spot_elevation_2": "Élévation zone cachée 2",
-          "blind_spot_left_3": "Bord gauche zone cachée 3 (depuis FOV gauche)",
-          "blind_spot_right_3": "Bord droit zone cachée 3 (depuis FOV gauche)",
-          "blind_spot_elevation_3": "Élévation zone cachée 3",
-          "blind_spot_elevation_mode": "Mode d'élévation zone cachée",
-          "blind_spot_elevation_mode_2": "Mode d'élévation zone cachée 2",
-          "blind_spot_elevation_mode_3": "Mode d'élévation zone cachée 3"
-        },
-        "data_description": {
-          "blind_spot_left": "Bord gauche de la zone de point aveugle (angle horizontal en degrés de votre limite FOV gauche). Où 0 = au bord FOV le plus à gauche. Exemple : Si votre FOV gauche est 45° et un arbre bloque le soleil de 10-20° par rapport à ce bord, réglez sur 10. Cela marque où l'obstruction commence horizontalement. Utilisez le capteur de position du soleil ou observez quand le soleil est bloqué pour trouver cette valeur.",
-          "blind_spot_right": "Bord droit de la zone de point aveugle (angle horizontal en degrés de votre limite FOV gauche, doit être > bord gauche). Exemple : Si votre FOV gauche est 45° et un arbre bloque le soleil de 10-20° par rapport à ce bord, réglez sur 20. Cela marque où l'obstruction se termine horizontalement. Crée une zone « ne pas suivre le soleil ici » entre les bords gauche et droit.",
-          "blind_spot_elevation": "Élévation solaire maximale (degrés au-dessus de l'horizon) où la zone cachée s'applique. Exemple : Le surplomb du toit bloque le soleil uniquement quand c'est bas (< 30°) donc réglez sur 30. Le soleil à plus haute élévation dégaze l'obstacle, donc la zone cachée ne s'applique pas. Si l'obstacle bloque toutes les élévations (bâtiment haut), réglez sur 90 ou laissez élevé. Élévation du soleil : 0°=horizon, 45°=mi-hauteur, 90°=directement au-dessus. Mesurez ou estimez en fonction de la hauteur et de la distance de l'obstacle.",
-          "blind_spot_left_2": "Slot zone cachée 2 facultatif. Bord gauche en degrés de votre limite FOV gauche. Laissez ce champ et le bord droit vides pour désactiver le slot 2.",
-          "blind_spot_right_2": "Bord droit du slot zone cachée 2 (degrés depuis FOV gauche, doit être supérieur au bord gauche du slot 2).",
-          "blind_spot_elevation_2": "Élévation solaire maximale où le slot 2 s'applique. Laissez vide pour s'appliquer à toutes les élévations.",
-          "blind_spot_left_3": "Slot zone cachée 3 facultatif. Bord gauche en degrés de votre limite FOV gauche. Laissez ce champ et le bord droit vides pour désactiver le slot 3.",
-          "blind_spot_right_3": "Bord droit du slot zone cachée 3 (degrés depuis FOV gauche, doit être supérieur au bord gauche du slot 3).",
-          "blind_spot_elevation_3": "Élévation solaire maximale où le slot 3 s'applique. Laissez vide pour s'appliquer à toutes les élévations.",
-          "blind_spot_elevation_mode": "De quel côté du seuil d'élévation se trouve la zone cachée. « En dessous » (par défaut) bloque le soleil BAS (un arbre ou avant-toit) ; « Au-dessus » bloque le soleil HAUT (un obstacle en surplomb comme un balcon ou une alcôve profonde). Ne s'applique que si une élévation est définie.",
-          "blind_spot_elevation_mode_2": "De quel côté du seuil d'élévation du slot 2 se trouve la zone : « En dessous » bloque le soleil bas, « Au-dessus » bloque le soleil haut. Ne s'applique que si l'élévation du slot 2 est définie.",
-          "blind_spot_elevation_mode_3": "De quel côté du seuil d'élévation du slot 3 se trouve la zone : « En dessous » bloque le soleil bas, « Au-dessus » bloque le soleil haut. Ne s'applique que si l'élévation du slot 3 est définie."
-        },
-        "title": "Zone cachée",
-        "description": "Définissez les zones où les obstacles bloquent le soleil (arbres, bâtiments, surplombs de toit). Ces valeurs angulaires sont relatives en degrés dans votre champ de vision, où 0 est la limite FOV la plus à gauche. La protection ignorera la position du soleil lorsqu'elle se trouve dans cette zone de point aveugle.\n\n[En savoir plus]({learn_more})"
-      },
-      "glare_zones": {
-        "title": "Zones d'éblouissement",
-        "description": "Définissez jusqu'à 4 zones de plancher à protéger de la lumière directe du soleil. Lorsque l'angle du soleil projetterait la lumière directe sur une zone, le store s'abaisse pour l'ombrager. Laissez le nom d'une zone vide pour ignorer cet emplacement.\n\nLes coordonnées sont relatives au centre de la fenêtre projeté sur le sol. **X** est le décalage gauche/droite (positif = droite). **Y** est la distance dans la pièce. **Rayon** définit la zone protégée circulaire. Utilisez la carte Lovelace compagnon pour visualiser les positions des zones et vérifier la couverture.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "enable_glare_zones": "Activer les zones d'éblouissement",
-          "glare_zone_1_name": "Nom zone 1",
-          "glare_zone_1_x": "Position X zone 1",
-          "glare_zone_1_y": "Position Y zone 1",
-          "glare_zone_1_radius": "Rayon zone 1",
-          "glare_zone_2_name": "Nom zone 2",
-          "glare_zone_2_x": "Position X zone 2",
-          "glare_zone_2_y": "Position Y zone 2",
-          "glare_zone_2_radius": "Rayon zone 2",
-          "glare_zone_3_name": "Nom zone 3",
-          "glare_zone_3_x": "Position X zone 3",
-          "glare_zone_3_y": "Position Y zone 3",
-          "glare_zone_3_radius": "Rayon zone 3",
-          "glare_zone_4_name": "Nom zone 4",
-          "glare_zone_4_x": "Position X zone 4",
-          "glare_zone_4_y": "Position Y zone 4",
-          "glare_zone_4_radius": "Rayon zone 4",
-          "glare_zone_1_z": "Zone 1 hauteur Z",
-          "glare_zone_2_z": "Zone 2 hauteur Z",
-          "glare_zone_3_z": "Zone 3 hauteur Z",
-          "glare_zone_4_z": "Zone 4 hauteur Z"
-        },
-        "data_description": {
-          "enable_glare_zones": "Quand activé, le store s'abaisse pour ombrager toutes les zones actives du sol.",
-          "glare_zone_1_name": "Nom de cette zone (par ex. 'Bureau'). Laissez vide pour sauter.",
-          "glare_zone_1_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_1_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_1_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_name": "Nom de cette zone (par ex. 'Canapé'). Laissez vide pour sauter.",
-          "glare_zone_2_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_2_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_name": "Nom de cette zone (par ex. 'Table à manger'). Laissez vide pour sauter.",
-          "glare_zone_3_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_3_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_name": "Nom de cette zone (par ex. 'Lit'). Laissez vide pour sauter.",
-          "glare_zone_4_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_4_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_1_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant."
-        }
-      },
-      "interp": {
-        "data": {
-          "interp_start": "Entrée de calibration 0 % correspond à (sortie %)",
-          "interp_end": "Entrée de calibration 100 % correspond à (sortie %)",
-          "interp_list": "Positions calculées (entrée)",
-          "interp_list_new": "Positions réelles à envoyer (sortie)"
-        },
-        "data_description": {
-          "interp_start": "Position de sortie envoyée au store quand l'intégration calcule 0 % (complètement fermé). Exemple : si votre store a besoin de 10 % pour être enregistré comme fermé, réglez ceci à 10. Calibration linéaire simple à 2 points — utilisée avec le mappage 100 % ci-dessous. Conservez la valeur par défaut sauf si votre store a une plage limitée.",
-          "interp_end": "Position de sortie envoyée au store quand l'intégration calcule 100 % (complètement ouvert). Exemple : si votre store est complètement ouvert à 90 %, réglez ceci à 90. Calibration linéaire simple à 2 points — utilisée avec le mappage 0 % ci-dessus. Conservez la valeur par défaut sauf si votre store a une plage limitée.",
-          "interp_list": "Positions d'entrée pour le mappage personnalisé d'interpolation (positions calculées par l'intégration). Entrez des valeurs espacées régulièrement comme : 0, 25, 50, 75, 100. Ce sont les positions théoriques que l'intégration calcule. Doit avoir 2+ valeurs et la même longueur que « Positions réelles à envoyer (sortie) ». Utilisé pour la calibration avancée non-linéaire. Laissez vide pour un fonctionnement normal.",
-          "interp_list_new": "Positions de sortie pour le mappage personnalisé d'interpolation (positions réelles envoyées au store). Entrez les positions réelles correspondantes comme : 0, 20, 40, 65, 100. C'est ce qui est réellement envoyé à votre entité store. Doit avoir la même longueur que « Positions calculées (entrée) ». Exemple d'utilisation : Rendez le store plus agressif en fermant en mappant 50 % calculé à 40 % réel. L'intégration interpole entre vos points. Laissez vide pour un fonctionnement normal."
-        },
-        "title": "Étalonnage de position",
-        "description": "Ajustez le mappage de position de protection pour les protections non-standard en mappant une position calculée (entrée) à une position réelle envoyée à la protection (sortie). Utilisez un étalonnage simple à 2 points (mappage 0% et 100%) pour les protections avec une plage limitée (par exemple, se déplace uniquement entre 10 et 90%). Utilisez le mappage de liste avancé pour les protections non-linéaires ou pour biaiser le comportement plus ouvert/fermé. La plupart des protections n'en ont pas besoin — activez uniquement si votre protection ne répond pas correctement aux commandes 0-100% standard.\n\n[En savoir plus]({learn_more})"
-      },
-      "duplicate_select": {
-        "title": "Dupliquer un store — Sélectionner la source",
-        "description": "Choisissez lequel des stores existants dupliquer.",
-        "data": {
-          "source_entry": "Store source"
-        }
-      },
-      "duplicate_configure": {
-        "title": "Dupliquer un store — Configurer",
-        "description": "Entrez les paramètres uniques pour le nouveau store. Tous les autres paramètres seront copiés depuis la source.",
-        "data": {
-          "name": "Nom",
-          "group": "Entités de store",
-          "set_azimuth": "Azimut de la fenêtre"
-        }
-      },
       "summary": {
         "title": "Résumé de la configuration",
         "description": "{summary}"
@@ -721,69 +596,10 @@
         },
         "description": "Affinez le comportement du store une fois une position choisie : ajustements de synchronisation du coucher/lever du soleil, la tolérance de correspondance de position et le basculement de correspondance. Ce ne sont pas des positions cibles — chaque valeur en pourcentage vit sur l'étape Paramètres de Position ; cette étape ne contient que les boutons de synchronisation et seuil.\n\n[En savoir plus]({learn_more})",
         "title": "Comportement (Synchronisation & Seuils)"
-      },
-      "create_building_profile": {
-        "title": "Créer un profil de bâtiment",
-        "description": "Nommez le profil et sélectionnez les capteurs partagés à l'échelle du bâtiment qu'il fournit. Les volets liés copient ces entités de capteur dans leur propre configuration. Laissez un champ vide pour que chaque volet conserve son propre capteur local.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "name": "Nom",
-          "cloud_coverage_entity": "Capteur de couverture nuageuse (optionnel)",
-          "daytime_gate_sensors": "Capteurs du filtre de jour",
-          "daytime_gate_template": "Modèle du filtre de jour (optionnel)",
-          "irradiance_entity": "Capteur d'irradiance (optionnel)",
-          "is_sunny_sensor": "Capteur binaire « Ensoleillé » (optionnel)",
-          "is_sunny_template": "Modèle Is Sunny (optionnel)",
-          "lux_entity": "Capteur de lux (optionnel)",
-          "outside_temp": "Capteur de température extérieure (optionnel)",
-          "sunrise_time_entity": "Entité Heure de Lever du Soleil",
-          "sunset_time_entity": "Entité Heure de Coucher du Soleil",
-          "weather_entity": "Entité météo (optionnelle)",
-          "weather_is_raining_sensor": "Capteur binaire En train de pleuvoir",
-          "weather_is_raining_template": "Modèle Is Raining (optionnel)",
-          "weather_is_windy_sensor": "Capteur binaire Venteux",
-          "weather_is_windy_template": "Modèle Is Windy (optionnel)",
-          "weather_rain_sensor": "Capteur de taux de pluie",
-          "weather_severe_sensors": "Capteurs de conditions météorologiques graves (grêle, gel, tempête, etc.)",
-          "weather_wind_direction_sensor": "Capteur de direction du vent (optionnel)",
-          "weather_wind_speed_sensor": "Capteur de vitesse du vent"
-        },
-        "data_description": {
-          "name": "Un nom convivial pour ce profil de bâtiment.",
-          "cloud_coverage_entity": "Capteur de couverture nuageuse optionnel indiquant une valeur de 0 à 100 % (par ex. d'une intégration météo). Quand la valeur atteint le seuil, le contrôle de l'éblouissement est supprimé et le store revient à sa position par défaut. Laissez vide si vous ne disposez pas de ce capteur.",
-          "daytime_gate_sensors": "Capteurs binaires optionnels (ou input_boolean / switch / schedule) qui décident si c'est « jour » pour le suivi du soleil. Lorsqu'ils sont activés, l'intégration assure le suivi du soleil ; lorsqu'ils sont désactivés, elle applique la Position de coucher de soleil. Utilisez un capteur binaire « assez lumineux » basé sur le lux pour que la lumière réelle — et non l'horloge — ouvre et ferme la fenêtre de suivi : les protections continuent le suivi lors de soirées lumineuses après le coucher du soleil astronomique, et restent à la position de coucher de soleil lors des matins sombres et nuageux. Lorsqu'ils sont définis, ils REMPLACENT la limite de coucher/lever astronomique du soleil (les décalages de coucher/lever de soleil sont ignorés). Un capteur indisponible ou inconnu est traité comme jour, de sorte que le suivi ne s'arrête jamais simplement parce qu'un capteur n'a pas signalé. Laissez vide pour utiliser le calcul de coucher/lever de soleil astronomique.",
-          "daytime_gate_template": "Modèle Jinja2 Home Assistant optionnel qui décide si c'est « jour » pour le suivi du soleil. Lorsqu'il s'évalue comme vrai (on/true/1), l'intégration assure le suivi du soleil ; lorsqu'il s'évalue comme faux, elle applique la Position de coucher de soleil. La manière dont il se combine avec les capteurs du filtre ci-dessus (OR ou AND) est définie par « Logique du filtre de jour » ci-dessous. Il peut fonctionner seul sans capteurs. Exemple : un modèle d'élévation Sun2, ou une comparaison lux. Un modèle qui ne peut pas être évalué est traité comme jour, de sorte qu'un modèle cassé ne force jamais un coucher de soleil prématuré. Lorsqu'il est défini (seul ou avec des capteurs), il REMPLACE la limite de coucher/lever astronomique du soleil. Laissez vide pour désactiver.",
-          "irradiance_entity": "Capteur d'irradiance solaire optionnel (extérieur) pour une détection précise du soleil. Mesure la puissance solaire en W/m². Quand le capteur lit une valeur inférieure au seuil, le soleil direct est absent et le contrôle de l'éblouissement est supprimé. Laissez vide si vous ne disposez pas de ce capteur.",
-          "is_sunny_sensor": "Capteur binaire, input_boolean, interrupteur ou planning optionnel qui rapporte de manière fiable si le soleil frappe la fenêtre. Lorsque ACTIVÉ, le soleil est supposé présent ; lorsque DÉSACTIVÉ, le soleil est supposé absent et la suppression des nuages se déclenche indépendamment de l'état météorologique. En cas d'indisponibilité ou d'état inconnu, l'intégration revient à la logique de l'entité météo / conditions météorologiques ci-dessous. Utilisez ceci si vous calculez le soleil-sur-fenêtre en amont (par exemple, irradiance filtrée par azimut) et que vous souhaitez fournir à Adaptive Pergola un booléen épuré.",
-          "is_sunny_template": "Modèle Jinja2 Home Assistant optionnel qui détermine si le soleil brille sur la fenêtre. Lorsqu'il s'évalue à vrai (on/true/1), le soleil est supposé présent ; lorsqu'il est faux, il est supposé absent et la suppression nuageuse s'active. La façon dont il se combine avec le capteur binaire Is Sunny ci-dessus (OU ou ET) est définie par la « logique du modèle Is Sunny » ci-dessous ; il peut fonctionner seul sans capteur. Exemple : une comparaison azimut/élévation ou un seuil de lux. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion, l'intégration revient donc au capteur, puis à la logique de l'entité météo / conditions météo. Laissez vide pour désactiver.",
-          "lux_entity": "Capteur d'éclairement optionnel (intérieur ou extérieur) pour une détection précise du soleil. Quand le capteur lit une valeur inférieure au seuil, le soleil direct est absent et le contrôle de l'éblouissement est supprimé. Valeurs typiques en plein soleil : 5 000-10 000 lux. Laissez vide si vous ne disposez pas de ce capteur.",
-          "outside_temp": "Capteur de température extérieure optionnel. Quand configuré, cette valeur (plutôt que le capteur intérieur) détermine la saison actuelle, et le seuil extérieur est appliqué pour éviter que le store se ferme comme en été lors d'une journée intérieure chaude mais extérieure froide.",
-          "sunrise_time_entity": "Entité optionnelle dont l'état est un datetime (par exemple Sun2 « lever du soleil à -4° d'élévation »). Quand défini, remplace l'heure de lever du soleil calculée par astral comme limite de fermeture de la fenêtre du matin. Accepte les entités sensor ou input_datetime. Le Décalage du lever du soleil s'applique toujours en plus. Revient à astral si l'entité n'est pas disponible.",
-          "sunset_time_entity": "Entité optionnelle dont l'état est un datetime (par exemple Sun2 « coucher du soleil à -4° d'élévation »). Quand défini, remplace l'heure de coucher du soleil calculée par astral comme limite de la fenêtre. Accepte les entités sensor ou input_datetime rapportant un datetime ISO-8601. Le Décalage du coucher du soleil s'applique toujours en plus. Revient à astral si l'entité n'est pas disponible.",
-          "weather_entity": "Intégration météo optionnelle utilisée pour détecter la couverture nuageuse. Quand l'état météo actuel ne figure pas dans la liste sélectionnée ci-dessous, le soleil direct est supposé absent et le contrôle de l'éblouissement est supprimé. Laissez vide pour ignorer l'état météo.",
-          "weather_is_raining_sensor": "Capteur binaire pour la détection de pluie. La dérogation s'active quand ce capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_is_raining_template": "Modèle Jinja2 Home Assistant optionnel qui détermine s'il pleut. Lorsqu'il s'évalue à vrai (on/true/1), la dérogation s'active. La façon dont il se combine avec le capteur binaire Is Raining ci-dessus (OU ou ET) est définie par la « logique du modèle Is Raining » ci-dessous ; il peut fonctionner seul sans capteur et réagit instantanément quand le modèle bascule. Exemple : dériver « pluie » d'un seuil de taux de pluie numérique. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion (pas de rétractation). Laissez vide pour désactiver.",
-          "weather_is_windy_sensor": "Capteur binaire pour la détection du vent. La dérogation s'active quand ce capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_is_windy_template": "Modèle Jinja2 Home Assistant optionnel qui détermine s'il fait du vent. Lorsqu'il s'évalue à vrai (on/true/1), la dérogation s'active. La façon dont il se combine avec le capteur binaire Is Windy ci-dessus (OU ou ET) est définie par la « logique du modèle Is Windy » ci-dessous ; il peut fonctionner seul sans capteur et réagit instantanément quand le modèle bascule. Exemple : dériver « venteux » d'un seuil de vitesse du vent numérique. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion (pas de rétractation). Laissez vide pour désactiver.",
-          "weather_rain_sensor": "Capteur numérique signalant le taux de pluie. La dérogation s'active quand la valeur atteint ou dépasse le seuil. Laissez vide pour ignorer le taux de pluie.",
-          "weather_severe_sensors": "Capteurs binaires pour les conditions graves (grêle, gel, tempête, etc.). La dérogation s'active quand N'IMPORTE QUEL capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_wind_direction_sensor": "Optionnel : ne déclenchez la dérogation vent que quand le vent souffle vers l'azimut de cette fenêtre (dans la tolérance de direction). Laissez vide pour déclencher uniquement sur la vitesse du vent indépendamment de la direction.",
-          "weather_wind_speed_sensor": "Capteur numérique signalant la vitesse du vent. La dérogation s'active quand la valeur atteint ou dépasse le seuil. Laissez vide pour ignorer la vitesse du vent."
-        }
-      },
-      "building_profile": {
-        "title": "Profil de bâtiment",
-        "description": "Associez ce volet à un Profil de bâtiment pour partager les capteurs à l'échelle du bâtiment entre les volets. L'association copie les capteurs du profil dans ce volet ; les champs de profil vides conservent les valeurs propres de ce volet.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "building_profile_id": "Profil de bâtiment"
-        },
-        "data_description": {
-          "building_profile_id": "Associez ce volet à un Profil de bâtiment pour hériter de ses capteurs partagés à l'échelle du bâtiment. Sélectionnez « Aucun (non lié) » pour ignorer l'association de profil et gérer les capteurs de ce volet localement."
-        }
       }
     },
     "abort": {
-      "user_cancelled": "Action annulée par l'utilisateur",
-      "source_not_found": "Le store source n'existe plus."
+      "user_cancelled": "Action annulée par l'utilisateur"
     }
   },
   "options": {
@@ -795,9 +611,6 @@
           "sun_tracking": "☀️ Suivi du soleil",
           "position": "📊 Paramètres de position",
           "behavior": "🎛️ Comportement & minuterie",
-          "blind_spot": "🌳 Zone cachée",
-          "glare_zones": "🔆 Zones d'éblouissement",
-          "interp": "📊 Étalonnage de position",
           "automation": "⏱️ Mouvement & horaires",
           "weather": "Conditions météorologiques",
           "manual_override": "✋ Dérogation manuelle",
@@ -805,18 +618,13 @@
           "motion_override": "🚶 Dérogation mouvement",
           "weather_override": "🌧️ Dérogation météo",
           "summary": "📋 Résumé de la configuration",
-          "sync": "🔄 Copier vers d'autres stores",
           "debug": "🔍 Débogage et diagnostics",
           "done": "✅ Enregistrer et fermer",
           "light_cloud": "☁️ Capteurs de lumière et nuages",
           "temperature_climate": "🌡️ Température et climat",
-          "pipeline_priorities": "🔀 Priorités des gestionnaires",
-          "building_profile": "🏢 Profil de bâtiment",
-          "profile_sensors": "📡 Capteurs partagés",
-          "profile_overview": "🏢 Aperçu du profil",
-          "profile_overrides": "🧹 Dérogations locales"
+          "pipeline_priorities": "🔀 Priorités des gestionnaires"
         },
-        "description": "Configuration : **{instance_name}**{profile_line}\n\nSi Adaptive Pergola vous a été utile, vous pouvez [☕ Buy Me a Coffee]({coffee_url})."
+        "description": "Configuration : **{instance_name}**\n\nSi Adaptive Pergola vous a été utile, vous pouvez [☕ Buy Me a Coffee]({coffee_url})."
       },
       "automation": {
         "title": "Mouvement & Programme",
@@ -967,8 +775,6 @@
           "sun_window_end": "Azimut de fin de la fenêtre solaire",
           "min_elevation": "Élévation minimale du soleil",
           "max_elevation": "Élévation maximale du soleil",
-          "blind_spot": "Configurer la zone cachée",
-          "enable_glare_zones": "Activer les zones d'éblouissement",
           "fov_compute": "Générer le champ de vision à partir des mesures"
         },
         "data_description": {
@@ -977,8 +783,6 @@
           "sun_window_end": "Relèvement au compas (0-359°) où se termine la fenêtre solaire. La fenêtre s'étend dans le sens horaire du début à la fin et peut passer par le nord (p. ex. 137° → 2°). Le début et la fin doivent différer d'au moins 1°.",
           "min_elevation": "Suivez le soleil uniquement quand l'élévation est AU-DESSUS de cet angle (degrés au-dessus de l'horizon). Élévation du soleil : 0°=horizon, 45°=mi-chemin vers le zénith, 90°=directement au-dessus. Utilisez ceci pour ignorer le soleil à certains moments. Exemple : réglez sur 15° pour ignorer le soleil bas du matin/soir. Laissez vide pour suivre le soleil à toutes les élévations.",
           "max_elevation": "Suivez le soleil uniquement quand l'élévation est AU-DESSOUS de cet angle (degrés au-dessus de l'horizon). Élévation du soleil : 0°=horizon, 45°=mi-chemin vers le zénith, 90°=directement au-dessus. Utilisez ceci pour ignorer le soleil à certains moments. Exemple : réglez sur 60° pour ignorer le soleil haut de midi. Laissez vide pour suivre le soleil à toutes les élévations.",
-          "blind_spot": "Activez si vous avez des obstacles bloquant le soleil dans une partie de la zone de suivi (arbres, bâtiments à proximité, surplomb de toit, balcon). Lorsqu'il est activé, vous définissez une plage azimut + élévation où le soleil est bloqué. Le store ignore la position du soleil quand elle se trouve dans cette « zone cachée ». Laissez désactivé si vous avez une vue dégagée du soleil toute la journée.",
-          "enable_glare_zones": "Protégez les zones de sol spécifiques de l'éblouissement direct du soleil (stores verticaux uniquement)",
           "fov_compute": "**{computed_fov}**\n\nRemplit les champs de vision gauche/droit à partir de la largeur de la fenêtre et de la profondeur de tableau — la profondeur de tableau est mesurée depuis le parement extérieur du mur, où se trouve la couverture. Définissez la largeur de la fenêtre et la profondeur de tableau sur la page Géométrie de la couverture, puis activez cette option et soumettez pour l'appliquer. Les curseurs restent modifiables, vous pouvez donc ajuster l'un ou l'autre angle par la suite."
         }
       },
@@ -1254,7 +1058,7 @@
       },
       "weather_override": {
         "title": "Dérogation météo",
-        "description": "Configurez les dérogations de sécurité basées sur la météo. N'importe quelle condition configurée déclenche la rétraction des protections. Les entrées non configurées sont ignorées.\n\n[En savoir plus]({learn_more})\n\n{profile_inherit}",
+        "description": "Configurez les dérogations de sécurité basées sur la météo. N'importe quelle condition configurée déclenche la rétraction des protections. Les entrées non configurées sont ignorées.\n\n[En savoir plus]({learn_more})",
         "data": {
           "weather_bypass_auto_control": "Actif quand le contrôle automatique est désactivé",
           "weather_wind_speed_sensor": "Capteur de vitesse du vent",
@@ -1306,112 +1110,6 @@
         "title": "Conditions météorologiques",
         "description": "Sélectionnez les états météorologiques qui comptent comme « le soleil est dehors » pour le mode climat. L'intégration compare l'état de l'entité météo en direct à cette liste — les états correspondants activent le contrôle de protection basé sur l'énergie solaire. Les états qui ne figurent pas dans la liste sont traités comme nuageux, donc les règles d'été/fermeture et d'hiver/ouverture s'appliquent uniquement lorsque la météo correspond.\n\nLes choix typiques sont « ensoleillé » et « partiellement nuageux ». Les états disponibles dépendent de votre intégration météo.\n\n[En savoir plus]({learn_more})"
       },
-      "blind_spot": {
-        "data": {
-          "blind_spot_left": "Bord gauche de la zone cachée (depuis FOV gauche)",
-          "blind_spot_right": "Bord droit de la zone cachée (depuis FOV gauche)",
-          "blind_spot_elevation": "Élévation zone cachée",
-          "blind_spot_left_2": "Bord gauche zone cachée 2 (depuis FOV gauche)",
-          "blind_spot_right_2": "Bord droit zone cachée 2 (depuis FOV gauche)",
-          "blind_spot_elevation_2": "Élévation zone cachée 2",
-          "blind_spot_left_3": "Bord gauche zone cachée 3 (depuis FOV gauche)",
-          "blind_spot_right_3": "Bord droit zone cachée 3 (depuis FOV gauche)",
-          "blind_spot_elevation_3": "Élévation zone cachée 3",
-          "blind_spot_elevation_mode": "Mode d'élévation zone cachée",
-          "blind_spot_elevation_mode_2": "Mode d'élévation zone cachée 2",
-          "blind_spot_elevation_mode_3": "Mode d'élévation zone cachée 3"
-        },
-        "data_description": {
-          "blind_spot_left": "Bord gauche de la zone de point aveugle (angle horizontal en degrés de votre limite FOV gauche). Où 0 = au bord FOV le plus à gauche. Exemple : Si votre FOV gauche est 45° et un arbre bloque le soleil de 10-20° par rapport à ce bord, réglez sur 10. Cela marque où l'obstruction commence horizontalement. Utilisez le capteur de position du soleil ou observez quand le soleil est bloqué pour trouver cette valeur.",
-          "blind_spot_right": "Bord droit de la zone de point aveugle (angle horizontal en degrés de votre limite FOV gauche, doit être > bord gauche). Exemple : Si votre FOV gauche est 45° et un arbre bloque le soleil de 10-20° par rapport à ce bord, réglez sur 20. Cela marque où l'obstruction se termine horizontalement. Crée une zone « ne pas suivre le soleil ici » entre les bords gauche et droit.",
-          "blind_spot_elevation": "Élévation solaire maximale (degrés au-dessus de l'horizon) où la zone cachée s'applique. Exemple : Le surplomb du toit bloque le soleil uniquement quand c'est bas (< 30°) donc réglez sur 30. Le soleil à plus haute élévation dégaze l'obstacle, donc la zone cachée ne s'applique pas. Si l'obstacle bloque toutes les élévations (bâtiment haut), réglez sur 90 ou laissez élevé. Élévation du soleil : 0°=horizon, 45°=mi-hauteur, 90°=directement au-dessus. Mesurez ou estimez en fonction de la hauteur et de la distance de l'obstacle.",
-          "blind_spot_left_2": "Slot zone cachée 2 facultatif. Bord gauche en degrés de votre limite FOV gauche. Laissez ce champ et le bord droit vides pour désactiver le slot 2.",
-          "blind_spot_right_2": "Bord droit du slot zone cachée 2 (degrés depuis FOV gauche, doit être supérieur au bord gauche du slot 2).",
-          "blind_spot_elevation_2": "Élévation solaire maximale où le slot 2 s'applique. Laissez vide pour s'appliquer à toutes les élévations.",
-          "blind_spot_left_3": "Slot zone cachée 3 facultatif. Bord gauche en degrés de votre limite FOV gauche. Laissez ce champ et le bord droit vides pour désactiver le slot 3.",
-          "blind_spot_right_3": "Bord droit du slot zone cachée 3 (degrés depuis FOV gauche, doit être supérieur au bord gauche du slot 3).",
-          "blind_spot_elevation_3": "Élévation solaire maximale où le slot 3 s'applique. Laissez vide pour s'appliquer à toutes les élévations.",
-          "blind_spot_elevation_mode": "De quel côté du seuil d'élévation se trouve la zone cachée. « En dessous » (par défaut) bloque le soleil BAS (un arbre ou avant-toit) ; « Au-dessus » bloque le soleil HAUT (un obstacle en surplomb comme un balcon ou une alcôve profonde). Ne s'applique que si une élévation est définie.",
-          "blind_spot_elevation_mode_2": "De quel côté du seuil d'élévation du slot 2 se trouve la zone : « En dessous » bloque le soleil bas, « Au-dessus » bloque le soleil haut. Ne s'applique que si l'élévation du slot 2 est définie.",
-          "blind_spot_elevation_mode_3": "De quel côté du seuil d'élévation du slot 3 se trouve la zone : « En dessous » bloque le soleil bas, « Au-dessus » bloque le soleil haut. Ne s'applique que si l'élévation du slot 3 est définie."
-        },
-        "title": "Zone cachée",
-        "description": "Définissez les zones où les obstacles bloquent le soleil (arbres, bâtiments, surplombs de toit). Ces valeurs angulaires sont relatives en degrés dans votre champ de vision, où 0 est la limite FOV la plus à gauche. La protection ignorera la position du soleil lorsqu'elle se trouve dans cette zone de point aveugle.\n\n[En savoir plus]({learn_more})"
-      },
-      "interp": {
-        "data": {
-          "interp_start": "Entrée de calibration 0 % correspond à (sortie %)",
-          "interp_end": "Entrée de calibration 100 % correspond à (sortie %)",
-          "interp_list": "Positions calculées (entrée)",
-          "interp_list_new": "Positions réelles à envoyer (sortie)"
-        },
-        "data_description": {
-          "interp_start": "Position de sortie envoyée au store quand l'intégration calcule 0 % (complètement fermé). Exemple : si votre store a besoin de 10 % pour être enregistré comme fermé, réglez ceci à 10. Calibration linéaire simple à 2 points — utilisée avec le mappage 100 % ci-dessous. Conservez la valeur par défaut sauf si votre store a une plage limitée.",
-          "interp_end": "Position de sortie envoyée au store quand l'intégration calcule 100 % (complètement ouvert). Exemple : si votre store est complètement ouvert à 90 %, réglez ceci à 90. Calibration linéaire simple à 2 points — utilisée avec le mappage 0 % ci-dessus. Conservez la valeur par défaut sauf si votre store a une plage limitée.",
-          "interp_list": "Positions d'entrée pour le mappage personnalisé d'interpolation (positions calculées par l'intégration). Entrez des valeurs espacées régulièrement comme : 0, 25, 50, 75, 100. Ce sont les positions théoriques que l'intégration calcule. Doit avoir 2+ valeurs et la même longueur que « Positions réelles à envoyer (sortie) ». Utilisé pour la calibration avancée non-linéaire. Laissez vide pour un fonctionnement normal.",
-          "interp_list_new": "Positions de sortie pour le mappage personnalisé d'interpolation (positions réelles envoyées au store). Entrez les positions réelles correspondantes comme : 0, 20, 40, 65, 100. C'est ce qui est réellement envoyé à votre entité store. Doit avoir la même longueur que « Positions calculées (entrée) ». Exemple d'utilisation : Rendez le store plus agressif en fermant en mappant 50 % calculé à 40 % réel. L'intégration interpole entre vos points. Laissez vide pour un fonctionnement normal."
-        },
-        "title": "Étalonnage de position",
-        "description": "Ajustez le mappage de position de protection pour les protections non-standard en mappant une position calculée (entrée) à une position réelle envoyée à la protection (sortie). Utilisez un étalonnage simple à 2 points (mappage 0% et 100%) pour les protections avec une plage limitée (par exemple, se déplace uniquement entre 10 et 90%). Utilisez le mappage de liste avancé pour les protections non-linéaires ou pour biaiser le comportement plus ouvert/fermé. La plupart des protections n'en ont pas besoin — activez uniquement si votre protection ne répond pas correctement aux commandes 0-100% standard.\n\n[En savoir plus]({learn_more})"
-      },
-      "glare_zones": {
-        "title": "Zones d'éblouissement",
-        "description": "Définissez jusqu'à 4 zones de plancher à protéger de la lumière directe du soleil. Lorsque l'angle du soleil projetterait la lumière directe sur une zone, le store s'abaisse pour l'ombrager. Laissez le nom d'une zone vide pour ignorer cet emplacement.\n\nLes coordonnées sont relatives au centre de la fenêtre projeté sur le sol. **X** est le décalage gauche/droite (positif = droite). **Y** est la distance dans la pièce. **Rayon** définit la zone protégée circulaire. Utilisez la carte Lovelace compagnon pour visualiser les positions des zones et vérifier la couverture.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "enable_glare_zones": "Activer les zones d'éblouissement",
-          "glare_zone_1_name": "Nom zone 1",
-          "glare_zone_1_x": "Position X zone 1",
-          "glare_zone_1_y": "Position Y zone 1",
-          "glare_zone_1_radius": "Rayon zone 1",
-          "glare_zone_2_name": "Nom zone 2",
-          "glare_zone_2_x": "Position X zone 2",
-          "glare_zone_2_y": "Position Y zone 2",
-          "glare_zone_2_radius": "Rayon zone 2",
-          "glare_zone_3_name": "Nom zone 3",
-          "glare_zone_3_x": "Position X zone 3",
-          "glare_zone_3_y": "Position Y zone 3",
-          "glare_zone_3_radius": "Rayon zone 3",
-          "glare_zone_4_name": "Nom zone 4",
-          "glare_zone_4_x": "Position X zone 4",
-          "glare_zone_4_y": "Position Y zone 4",
-          "glare_zone_4_radius": "Rayon zone 4",
-          "glare_zone_1_z": "Zone 1 hauteur Z",
-          "glare_zone_2_z": "Zone 2 hauteur Z",
-          "glare_zone_3_z": "Zone 3 hauteur Z",
-          "glare_zone_4_z": "Zone 4 hauteur Z"
-        },
-        "data_description": {
-          "enable_glare_zones": "Quand activé, le store s'abaisse pour ombrager toutes les zones actives du sol.",
-          "glare_zone_1_name": "Nom de cette zone (par ex. 'Bureau'). Laissez vide pour sauter.",
-          "glare_zone_1_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_1_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_1_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_name": "Nom de cette zone (par ex. 'Canapé'). Laissez vide pour sauter.",
-          "glare_zone_2_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_2_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_name": "Nom de cette zone (par ex. 'Table à manger'). Laissez vide pour sauter.",
-          "glare_zone_3_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_3_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_name": "Nom de cette zone (par ex. 'Lit'). Laissez vide pour sauter.",
-          "glare_zone_4_x": "Décalage gauche/droite par rapport au centre de la fenêtre. Affiché dans l'unité configurée dans Home Assistant. Positif = droite.",
-          "glare_zone_4_y": "Distance dans la pièce (perpendiculaire à la fenêtre). Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_radius": "Rayon de protection autour du centre de la zone. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_1_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_2_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_3_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant.",
-          "glare_zone_4_z": "Hauteur cible au-dessus du sol (par exemple surface du bureau ≈ 0,75 m, yeux assis ≈ 1,1 m, TV murale ≈ 1,5 m). La valeur par défaut 0 protège le sol. Affiché dans l'unité configurée dans Home Assistant."
-        }
-      },
-      "sync": {
-        "title": "Copier les paramètres vers d'autres stores",
-        "description": "Choisissez les stores vers lesquels copier les paramètres et les catégories à synchroniser. Seules les catégories sélectionnées seront écrasées sur les stores cibles.\n\n⚠️ **L'azimut est toujours exclu** — chaque store conserve son propre azimut de fenêtre.",
-        "data": {
-          "target_entries": "Stores cibles",
-          "sync_categories": "Catégories à synchroniser"
-        }
-      },
       "summary": {
         "title": "Résumé de la configuration",
         "description": "{summary}"
@@ -1432,16 +1130,9 @@
           "debug_event_buffer_size": "Nombre d'événements de diagnostic à conserver dans le tampon circulaire roulant. Le tampon capture les décisions et transitions d'état dans tous les sous-systèmes du pipeline — dérogation manuelle, mouvement, météo, programmation par fenêtre temporelle, commandes de protection et pipeline. Chaque événement est un petit dictionnaire (~200 octets). Augmentez pour les problèmes intermittents qui nécessitent des fenêtres d'observation plus longues. Le tampon est réinitialisé au rechargement de l'intégration."
         }
       },
-      "sync_confirm": {
-        "title": "Copier les paramètres — Confirmer",
-        "description": "Copie des paramètres depuis **{source_name}**. Vos paramètres actuels seront enregistrés avant la copie.\n\nLes catégories suivantes seront écrasées :\n\n{categories_summary}\n\nSur ces stores :\n\n{entries_summary}\n\nChaque store conservera son propre nom, ses entités, son azimut et son association d'appareil.",
-        "data": {
-          "confirm": "Confirmer la synchronisation"
-        }
-      },
       "light_cloud": {
         "title": "Capteurs de lumière et suppression des nuages",
-        "description": "**Suppression de l'éblouissement en faible luminosité.** Le premier curseur ci-dessous est l'interrupteur principal de cette fonction — laissez-le désactivé et le reste de cet écran sera ignoré. Lorsqu'il est activé, définissez la **position nuageuse** facultative vers laquelle la protection se déplacera lorsque la suppression se déclenche (laissez vide pour utiliser la position par défaut).\n\nLes capteurs restants indiquent à l'intégration *quand* le soleil est absent — l'un des états météorologiques, de la luminosité, du rayonnement solaire ou de la couverture nuageuse peut déclencher la suppression. Configurez uniquement les capteurs que vous avez réellement ; n'importe quelle correspondance suffit.\n\n[En savoir plus]({learn_more})\n\n{profile_inherit}",
+        "description": "**Suppression de l'éblouissement en faible luminosité.** Le premier curseur ci-dessous est l'interrupteur principal de cette fonction — laissez-le désactivé et le reste de cet écran sera ignoré. Lorsqu'il est activé, définissez la **position nuageuse** facultative vers laquelle la protection se déplacera lorsque la suppression se déclenche (laissez vide pour utiliser la position par défaut).\n\nLes capteurs restants indiquent à l'intégration *quand* le soleil est absent — l'un des états météorologiques, de la luminosité, du rayonnement solaire ou de la couverture nuageuse peut déclencher la suppression. Configurez uniquement les capteurs que vous avez réellement ; n'importe quelle correspondance suffit.\n\n[En savoir plus]({learn_more})",
         "data": {
           "weather_entity": "Entité météo (optionnelle)",
           "lux_entity": "Capteur de lux (optionnel)",
@@ -1475,7 +1166,7 @@
       },
       "temperature_climate": {
         "title": "Température et mode climatique",
-        "description": "Le mode climat ajuste la position de la protection en fonction de la température intérieure/extérieure, de la présence et de savoir si le soleil frappe réellement la fenêtre. Lorsqu'il est désactivé, la protection suit le suivi normal du soleil/éblouissement.\n\n**Comment la saison est choisie** — La température actuelle provient du capteur extérieur s'il est fourni, sinon du capteur intérieur.\n- **Hiver** — température actuelle est en dessous du seuil bas.\n- **Été** — température actuelle est au-dessus du seuil haut **et** température extérieure est au-dessus du seuil extérieur (empêche le comportement d'été par une journée froide).\n- **Intermédiaire** — aucun de ce qui précède ; le suivi normal du soleil/éblouissement s'exécute.\n\n**Ce que chaque mode fait**\n- **Hiver + soleil sur fenêtre** → ouverture complète (100%) pour capturer la chaleur solaire gratuite.\n- **Hiver, pas de soleil sur fenêtre**, *Mode d'isolation hivernale* actif → fermeture complète (0%) pour piéger la chaleur.\n- **Été** → fermeture complète (0%) pour bloquer le gain de chaleur.\n- **Faible luminosité** (nuageux / sombre / pas ensoleillé) → retour à la position par défaut, dérogation à la fermeture estivale pour que les protections ne se ferment pas inutilement.\n- **Intermédiaire / soleil valide avec présence** → suivi normal du contrôle de l'éblouissement.\n\n**Présence** contrôle le comportement : sans personne à la maison, une règle d'été/ouverture hivernale plus simple s'applique ; avec des occupants présents, le suivi de l'éblouissement s'exécute dans des conditions intermédiaires.\n\n**Les stores inclinables** suivent la même logique saisonnière mais utilisent les angles de lamelle au lieu des positions ouvertes/fermées.\n\nLaissez *Capteur de température extérieure* et *Entité de présence* vides pour ignorer ces vérifications. Le mode climat s'exécute après les dérogations forcées/météorologiques/manuelles/personnalisées mais avant le suivi normal du soleil.\n\n[En savoir plus]({learn_more})\n\n{profile_inherit}",
+        "description": "Le mode climat ajuste la position de la protection en fonction de la température intérieure/extérieure, de la présence et de savoir si le soleil frappe réellement la fenêtre. Lorsqu'il est désactivé, la protection suit le suivi normal du soleil/éblouissement.\n\n**Comment la saison est choisie** — La température actuelle provient du capteur extérieur s'il est fourni, sinon du capteur intérieur.\n- **Hiver** — température actuelle est en dessous du seuil bas.\n- **Été** — température actuelle est au-dessus du seuil haut **et** température extérieure est au-dessus du seuil extérieur (empêche le comportement d'été par une journée froide).\n- **Intermédiaire** — aucun de ce qui précède ; le suivi normal du soleil/éblouissement s'exécute.\n\n**Ce que chaque mode fait**\n- **Hiver + soleil sur fenêtre** → ouverture complète (100%) pour capturer la chaleur solaire gratuite.\n- **Hiver, pas de soleil sur fenêtre**, *Mode d'isolation hivernale* actif → fermeture complète (0%) pour piéger la chaleur.\n- **Été** → fermeture complète (0%) pour bloquer le gain de chaleur.\n- **Faible luminosité** (nuageux / sombre / pas ensoleillé) → retour à la position par défaut, dérogation à la fermeture estivale pour que les protections ne se ferment pas inutilement.\n- **Intermédiaire / soleil valide avec présence** → suivi normal du contrôle de l'éblouissement.\n\n**Présence** contrôle le comportement : sans personne à la maison, une règle d'été/ouverture hivernale plus simple s'applique ; avec des occupants présents, le suivi de l'éblouissement s'exécute dans des conditions intermédiaires.\n\n**Les stores inclinables** suivent la même logique saisonnière mais utilisent les angles de lamelle au lieu des positions ouvertes/fermées.\n\nLaissez *Capteur de température extérieure* et *Entité de présence* vides pour ignorer ces vérifications. Le mode climat s'exécute après les dérogations forcées/météorologiques/manuelles/personnalisées mais avant le suivi normal du soleil.\n\n[En savoir plus]({learn_more})",
         "data": {
           "climate_mode": "Activer le mode climatique",
           "temp_entity": "Entité de température intérieure",
@@ -1528,7 +1219,7 @@
           "sunset_offset": "Minutes pour décaler l'heure du coucher du soleil (± ajustement). Valeur positive : appliquer la position de coucher du soleil X minutes APRÈS le coucher du soleil. Valeur négative : appliquer la position de coucher du soleil X minutes AVANT le coucher du soleil. Zéro : exactement au coucher du soleil. Utilisez une valeur positive (par exemple 30) si vous voulez que les stores restent ouverts un peu après le coucher du soleil. Utilisez une valeur négative (par exemple -30) pour fermer tôt quand le soleil est encore bas.",
           "sunset_time_entity": "Entité optionnelle dont l'état est un datetime (par exemple Sun2 « coucher du soleil à -4° d'élévation »). Quand défini, remplace l'heure de coucher du soleil calculée par astral comme limite de la fenêtre. Accepte les entités sensor ou input_datetime rapportant un datetime ISO-8601. Le Décalage du coucher du soleil s'applique toujours en plus. Revient à astral si l'entité n'est pas disponible."
         },
-        "description": "Affinez le comportement du store une fois une position choisie : ajustements de synchronisation du coucher/lever du soleil, la tolérance de correspondance de position et le basculement de correspondance. Ce ne sont pas des positions cibles — chaque valeur en pourcentage vit sur l'étape Paramètres de Position ; cette étape ne contient que les boutons de synchronisation et seuil.\n\n[En savoir plus]({learn_more})\n\n{profile_inherit}",
+        "description": "Affinez le comportement du store une fois une position choisie : ajustements de synchronisation du coucher/lever du soleil, la tolérance de correspondance de position et le basculement de correspondance. Ce ne sont pas des positions cibles — chaque valeur en pourcentage vit sur l'étape Paramètres de Position ; cette étape ne contient que les boutons de synchronisation et seuil.\n\n[En savoir plus]({learn_more})",
         "title": "Comportement (Synchronisation & Seuils)"
       },
       "pipeline_priorities": {
@@ -1552,81 +1243,10 @@
           "glare_zone_priority": "1–99 ; valeur par défaut intégrée 45.",
           "solar_priority": "1–99 ; valeur par défaut intégrée 40. Le gestionnaire de suivi solaire de base — augmentez-le au-dessus du mode climatique pour que le suivi solaire surclasse le contrôle climatique."
         }
-      },
-      "building_profile": {
-        "title": "Profil de bâtiment",
-        "description": "Liez ce volet à un profil de bâtiment pour partager des capteurs à l'échelle du bâtiment entre les volets. La liaison copie les capteurs du profil dans ce volet ; les champs vides du profil conservent les valeurs propres à ce volet.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "building_profile_id": "Profil de bâtiment"
-        },
-        "data_description": {
-          "building_profile_id": "Liez ce volet à un profil de bâtiment pour hériter de ses capteurs partagés à l'échelle du bâtiment. Sélectionnez « Aucun (non lié) » pour gérer les capteurs de ce volet localement."
-        }
-      },
-      "profile_sensors": {
-        "title": "Profil de bâtiment — Capteurs Partagés",
-        "description": "Modifiez les ID d'entités de capteurs au niveau du bâtiment partagés entre les volets liés. Les volets liés héritent de ces capteurs ; laissez un champ vide pour que chaque volet conserve sa propre valeur locale.\n\n[En savoir plus]({learn_more})",
-        "data": {
-          "cloud_coverage_entity": "Capteur de couverture nuageuse (optionnel)",
-          "daytime_gate_sensors": "Capteurs du filtre de jour",
-          "daytime_gate_template": "Modèle du filtre de jour (optionnel)",
-          "irradiance_entity": "Capteur d'irradiance (optionnel)",
-          "is_sunny_sensor": "Capteur binaire « Ensoleillé » (optionnel)",
-          "is_sunny_template": "Modèle Is Sunny (optionnel)",
-          "lux_entity": "Capteur de lux (optionnel)",
-          "outside_temp": "Capteur de température extérieure (optionnel)",
-          "sunrise_time_entity": "Entité Heure de Lever du Soleil",
-          "sunset_time_entity": "Entité Heure de Coucher du Soleil",
-          "weather_entity": "Entité météo (optionnelle)",
-          "weather_is_raining_sensor": "Capteur binaire En train de pleuvoir",
-          "weather_is_raining_template": "Modèle Is Raining (optionnel)",
-          "weather_is_windy_sensor": "Capteur binaire Venteux",
-          "weather_is_windy_template": "Modèle Is Windy (optionnel)",
-          "weather_rain_sensor": "Capteur de taux de pluie",
-          "weather_severe_sensors": "Capteurs de conditions météorologiques graves (grêle, gel, tempête, etc.)",
-          "weather_wind_direction_sensor": "Capteur de direction du vent (optionnel)",
-          "weather_wind_speed_sensor": "Capteur de vitesse du vent"
-        },
-        "data_description": {
-          "cloud_coverage_entity": "Capteur de couverture nuageuse optionnel indiquant une valeur de 0 à 100 % (par ex. d'une intégration météo). Quand la valeur atteint le seuil, le contrôle de l'éblouissement est supprimé et le store revient à sa position par défaut. Laissez vide si vous ne disposez pas de ce capteur.",
-          "daytime_gate_sensors": "Capteurs binaires optionnels (ou input_boolean / switch / schedule) qui décident si c'est « jour » pour le suivi du soleil. Lorsqu'ils sont activés, l'intégration assure le suivi du soleil ; lorsqu'ils sont désactivés, elle applique la Position de coucher de soleil. Utilisez un capteur binaire « assez lumineux » basé sur le lux pour que la lumière réelle — et non l'horloge — ouvre et ferme la fenêtre de suivi : les protections continuent le suivi lors de soirées lumineuses après le coucher du soleil astronomique, et restent à la position de coucher de soleil lors des matins sombres et nuageux. Lorsqu'ils sont définis, ils REMPLACENT la limite de coucher/lever astronomique du soleil (les décalages de coucher/lever de soleil sont ignorés). Un capteur indisponible ou inconnu est traité comme jour, de sorte que le suivi ne s'arrête jamais simplement parce qu'un capteur n'a pas signalé. Laissez vide pour utiliser le calcul de coucher/lever de soleil astronomique.",
-          "daytime_gate_template": "Modèle Jinja2 Home Assistant optionnel qui décide si c'est « jour » pour le suivi du soleil. Lorsqu'il s'évalue comme vrai (on/true/1), l'intégration assure le suivi du soleil ; lorsqu'il s'évalue comme faux, elle applique la Position de coucher de soleil. La manière dont il se combine avec les capteurs du filtre ci-dessus (OR ou AND) est définie par « Logique du filtre de jour » ci-dessous. Il peut fonctionner seul sans capteurs. Exemple : un modèle d'élévation Sun2, ou une comparaison lux. Un modèle qui ne peut pas être évalué est traité comme jour, de sorte qu'un modèle cassé ne force jamais un coucher de soleil prématuré. Lorsqu'il est défini (seul ou avec des capteurs), il REMPLACE la limite de coucher/lever astronomique du soleil. Laissez vide pour désactiver.",
-          "irradiance_entity": "Capteur d'irradiance solaire optionnel (extérieur) pour une détection précise du soleil. Mesure la puissance solaire en W/m². Quand le capteur lit une valeur inférieure au seuil, le soleil direct est absent et le contrôle de l'éblouissement est supprimé. Laissez vide si vous ne disposez pas de ce capteur.",
-          "is_sunny_sensor": "Capteur binaire, input_boolean, interrupteur ou planning optionnel qui rapporte de manière fiable si le soleil frappe la fenêtre. Lorsque ACTIVÉ, le soleil est supposé présent ; lorsque DÉSACTIVÉ, le soleil est supposé absent et la suppression des nuages se déclenche indépendamment de l'état météorologique. En cas d'indisponibilité ou d'état inconnu, l'intégration revient à la logique de l'entité météo / conditions météorologiques ci-dessous. Utilisez ceci si vous calculez le soleil-sur-fenêtre en amont (par exemple, irradiance filtrée par azimut) et que vous souhaitez fournir à Adaptive Pergola un booléen épuré.",
-          "is_sunny_template": "Modèle Jinja2 Home Assistant optionnel qui détermine si le soleil brille sur la fenêtre. Lorsqu'il s'évalue à vrai (on/true/1), le soleil est supposé présent ; lorsqu'il est faux, il est supposé absent et la suppression nuageuse s'active. La façon dont il se combine avec le capteur binaire Is Sunny ci-dessus (OU ou ET) est définie par la « logique du modèle Is Sunny » ci-dessous ; il peut fonctionner seul sans capteur. Exemple : une comparaison azimut/élévation ou un seuil de lux. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion, l'intégration revient donc au capteur, puis à la logique de l'entité météo / conditions météo. Laissez vide pour désactiver.",
-          "lux_entity": "Capteur d'éclairement optionnel (intérieur ou extérieur) pour une détection précise du soleil. Quand le capteur lit une valeur inférieure au seuil, le soleil direct est absent et le contrôle de l'éblouissement est supprimé. Valeurs typiques en plein soleil : 5 000-10 000 lux. Laissez vide si vous ne disposez pas de ce capteur.",
-          "outside_temp": "Capteur de température extérieure optionnel. Quand configuré, cette valeur (plutôt que le capteur intérieur) détermine la saison actuelle, et le seuil extérieur est appliqué pour éviter que le store se ferme comme en été lors d'une journée intérieure chaude mais extérieure froide.",
-          "sunrise_time_entity": "Entité optionnelle dont l'état est un datetime (par exemple Sun2 « lever du soleil à -4° d'élévation »). Quand défini, remplace l'heure de lever du soleil calculée par astral comme limite de fermeture de la fenêtre du matin. Accepte les entités sensor ou input_datetime. Le Décalage du lever du soleil s'applique toujours en plus. Revient à astral si l'entité n'est pas disponible.",
-          "sunset_time_entity": "Entité optionnelle dont l'état est un datetime (par exemple Sun2 « coucher du soleil à -4° d'élévation »). Quand défini, remplace l'heure de coucher du soleil calculée par astral comme limite de la fenêtre. Accepte les entités sensor ou input_datetime rapportant un datetime ISO-8601. Le Décalage du coucher du soleil s'applique toujours en plus. Revient à astral si l'entité n'est pas disponible.",
-          "weather_entity": "Intégration météo optionnelle utilisée pour détecter la couverture nuageuse. Quand l'état météo actuel ne figure pas dans la liste sélectionnée ci-dessous, le soleil direct est supposé absent et le contrôle de l'éblouissement est supprimé. Laissez vide pour ignorer l'état météo.",
-          "weather_is_raining_sensor": "Capteur binaire pour la détection de pluie. La dérogation s'active quand ce capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_is_raining_template": "Modèle Jinja2 Home Assistant optionnel qui détermine s'il pleut. Lorsqu'il s'évalue à vrai (on/true/1), la dérogation s'active. La façon dont il se combine avec le capteur binaire Is Raining ci-dessus (OU ou ET) est définie par la « logique du modèle Is Raining » ci-dessous ; il peut fonctionner seul sans capteur et réagit instantanément quand le modèle bascule. Exemple : dériver « pluie » d'un seuil de taux de pluie numérique. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion (pas de rétractation). Laissez vide pour désactiver.",
-          "weather_is_windy_sensor": "Capteur binaire pour la détection du vent. La dérogation s'active quand ce capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_is_windy_template": "Modèle Jinja2 Home Assistant optionnel qui détermine s'il fait du vent. Lorsqu'il s'évalue à vrai (on/true/1), la dérogation s'active. La façon dont il se combine avec le capteur binaire Is Windy ci-dessus (OU ou ET) est définie par la « logique du modèle Is Windy » ci-dessous ; il peut fonctionner seul sans capteur et réagit instantanément quand le modèle bascule. Exemple : dériver « venteux » d'un seuil de vitesse du vent numérique. Un modèle vide ou qui ne s'évalue pas n'exprime aucune opinion (pas de rétractation). Laissez vide pour désactiver.",
-          "weather_rain_sensor": "Capteur numérique signalant le taux de pluie. La dérogation s'active quand la valeur atteint ou dépasse le seuil. Laissez vide pour ignorer le taux de pluie.",
-          "weather_severe_sensors": "Capteurs binaires pour les conditions graves (grêle, gel, tempête, etc.). La dérogation s'active quand N'IMPORTE QUEL capteur est « activé ». Laissez vide pour ignorer.",
-          "weather_wind_direction_sensor": "Optionnel : ne déclenchez la dérogation vent que quand le vent souffle vers l'azimut de cette fenêtre (dans la tolérance de direction). Laissez vide pour déclencher uniquement sur la vitesse du vent indépendamment de la direction.",
-          "weather_wind_speed_sensor": "Capteur numérique signalant la vitesse du vent. La dérogation s'active quand la valeur atteint ou dépasse le seuil. Laissez vide pour ignorer la vitesse du vent."
-        }
-      },
-      "profile_overview": {
-        "title": "Profil de bâtiment — Aperçu",
-        "description": "{overview}"
-      },
-      "profile_overrides": {
-        "data": {
-          "clear_overrides": "Effacer les dérogations sélectionnées"
-        },
-        "title": "Profil de bâtiment — Dérogations locales",
-        "description": "Capteurs qu'une couverture liée a dérogée, ou définis localement lorsque ce profil les laisse vides. Sélectionnez-en un pour réinitialiser — un capteur dérogaté réhérite la valeur du profil; un capteur local est effacé.\n\n{overrides}"
       }
     },
     "abort": {
-      "no_covers_to_sync": "Aucun autre store du même type n'existe pour la synchronisation.",
-      "no_targets_selected": "Aucun store n'a été sélectionné comme cible.",
-      "no_categories_selected": "Aucune catégorie n'a été sélectionnée pour la synchronisation.",
-      "user_cancelled": "Synchronisation annulée.",
-      "sync_complete": "Paramètres synchronisés avec succès."
+      "user_cancelled": "Synchronisation annulée."
     }
   },
   "entity": {
@@ -1768,36 +1388,6 @@
         "reconciliation": "Réconciliation (boucle de nouvelle tentative de position toutes les minutes)",
         "pipeline": "Pipeline (décisions de la chaîne de gestionnaires prioritaires)",
         "motion": "Mouvement (événements des capteurs, état du délai d'inactivité)"
-      }
-    },
-    "sync_categories": {
-      "options": {
-        "geometry": "Géométrie du store (dimensions, profondeur, appui)",
-        "sun_tracking": "Suivi du soleil (champ de vision, limites d'élévation)",
-        "blind_spot": "Configuration zone cachée",
-        "position": "Paramètres de position (valeurs par défaut, coucher du soleil, décalages)",
-        "interp": "Étalonnage de position",
-        "automation": "Horaires et synchronisation (seuils, heures de début/fin)",
-        "manual_override": "Dérogation manuelle",
-        "custom_position_values": "Positions personnalisées — Valeurs et priorités",
-        "custom_position_sensors": "Positions personnalisées — Capteurs de déclenchement",
-        "motion_override_values": "Dérogation mouvement — Délai d'inactivité",
-        "motion_override_sensors": "Dérogation mouvement — Capteurs",
-        "weather_override_values": "Dérogation météo — Seuils et position",
-        "weather_override_sensors": "Dérogation météo — Capteurs",
-        "light_cloud_values": "Lumière et nuages — Seuils",
-        "light_cloud_sensors": "Lumière et nuages — Capteurs",
-        "temperature_climate_values": "Mode climatique — Seuils et paramètres",
-        "temperature_climate_sensors": "Mode climatique — Capteurs de pièce",
-        "glare_zones": "Zones d'éblouissement",
-        "climate": "Configuration climatique (température, présence, lux)",
-        "weather": "Conditions météorologiques",
-        "light_cloud": "Capteurs de lumière et suppression des nuages",
-        "temperature_climate": "Température et mode climatique",
-        "force_override": "Dérogation forcée",
-        "custom_position": "Positions personnalisées",
-        "motion_override": "Dérogation mouvement",
-        "weather_override": "Dérogation météo"
       }
     },
     "motion_timeout_mode": {

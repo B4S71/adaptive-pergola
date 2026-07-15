@@ -24,7 +24,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_AWNING_MAX_ANGLE,
     CONF_AWNING_MIN_ANGLE,
     CONF_AZIMUTH,
-    CONF_BUILDING_PROFILE_ID,
     CONF_CLIMATE_MODE,
     CONF_DEFAULT_HEIGHT,
     CONF_DELTA_POSITION,
@@ -85,14 +84,11 @@ _SUN_TRACKING = {
     CONF_SUN_WINDOW_START: 135,
     CONF_SUN_WINDOW_END: 225,
     # CONF_MIN_ELEVATION / CONF_MAX_ELEVATION are Optional — omit to use defaults
-    # CONF_DISTANCE (distance_shaded_area) left the pergola-facing form (stage 3)
-    "blind_spot": False,
+    # CONF_DISTANCE (distance_shaded_area) left the pergola-facing form (stage 3);
+    # the blind-spot and glare-zone toggles left with their UI (stage 4).
 }
 
-_SUN_TRACKING_VERTICAL = {
-    **_SUN_TRACKING,
-    "enable_glare_zones": False,
-}
+_SUN_TRACKING_VERTICAL = dict(_SUN_TRACKING)
 
 # L2a positions step (% values only, #613).
 _POSITION = {
@@ -361,10 +357,10 @@ async def test_full_setup_skips_building_profile_step_when_no_profiles(
 async def test_quick_setup_skips_building_profile_step_even_when_profiles_exist(
     hass: HomeAssistant,
 ) -> None:
-    """Quick-setup path bypasses the building_profile step even when profiles exist."""
+    """Creation ignores stale building-profile entries (subsystem deleted, stage 4)."""
     profile = MockConfigEntry(
         domain=DOMAIN,
-        data={"name": "Bldg", CONF_SENSOR_TYPE: CoverType.BUILDING_PROFILE},
+        data={"name": "Bldg", CONF_SENSOR_TYPE: "cover_building_profile"},
         options={},
         entry_id="test_profile_quick",
         title="Bldg",
@@ -604,8 +600,8 @@ def test_get_geometry_schema_unknown_type_returns_louvered():
 @pytest.mark.unit
 def test_build_glare_zones_schema_with_no_options():
     """_build_glare_zones_schema with options=None uses default values."""
-    from custom_components.adaptive_pergola.config_flow import (
-        _build_glare_zones_schema,
+    from custom_components.adaptive_pergola.config_dynamic import (
+        glare_zones_schema as _build_glare_zones_schema,
     )
     import voluptuous as vol
 
@@ -618,8 +614,8 @@ def test_build_glare_zones_schema_with_no_options():
 @pytest.mark.unit
 def test_build_glare_zones_schema_with_existing_options():
     """_build_glare_zones_schema uses existing option values as defaults."""
-    from custom_components.adaptive_pergola.config_flow import (
-        _build_glare_zones_schema,
+    from custom_components.adaptive_pergola.config_dynamic import (
+        glare_zones_schema as _build_glare_zones_schema,
     )
     import voluptuous as vol
 
@@ -1075,7 +1071,7 @@ async def test_options_flow_sun_tracking_step(hass: HomeAssistant) -> None:
     assert result["step_id"] == "sun_tracking"
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {**_SUN_TRACKING, "enable_glare_zones": False}
+        result["flow_id"], dict(_SUN_TRACKING)
     )
     assert result["type"] in ("form", "menu", "create_entry")
 
@@ -1105,7 +1101,6 @@ async def test_options_flow_sun_tracking_validation_error(hass: HomeAssistant) -
 
     bad_input = {
         **_SUN_TRACKING,
-        "enable_glare_zones": False,
         CONF_MIN_ELEVATION: 40.0,
         CONF_MAX_ELEVATION: 30.0,  # max < min → error
     }
@@ -1980,8 +1975,6 @@ async def test_full_setup_persists_fov_and_window_width(
         {
             CONF_SUN_WINDOW_START: 90,  # 180° ± 90° window
             CONF_SUN_WINDOW_END: 270,
-            "blind_spot": False,
-            "enable_glare_zones": False,
             CONF_FOV_COMPUTE: True,
         },
     )
@@ -1994,8 +1987,6 @@ async def test_full_setup_persists_fov_and_window_width(
         {
             CONF_SUN_WINDOW_START: 135,
             CONF_SUN_WINDOW_END: 225,
-            "blind_spot": False,
-            "enable_glare_zones": False,
         },
     )
     # Condensed flow: position → summary (handlers configured via options).

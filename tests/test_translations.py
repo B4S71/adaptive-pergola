@@ -201,24 +201,6 @@ def test_no_invisible_unicode_chars(lang_file: Path) -> None:
             )
 
 
-# ---------------------------------------------------------------------------
-# Issue #211 Option 2 — blind_spot labels are FOV-relative, not azimuth-relative
-# ---------------------------------------------------------------------------
-
-
-def test_en_blind_spot_labels_name_fov_frame() -> None:
-    """EN labels for blind_spot_left/right must name the FOV reference frame."""
-    en = _load(TRANSLATIONS_DIR / "en.json")
-    for step_key in ("options", "config"):
-        bs = en[step_key]["step"]["blind_spot"]["data"]
-        assert (
-            "FOV" in bs["blind_spot_left"]
-        ), f"{step_key}.blind_spot.data.blind_spot_left label must mention 'FOV'"
-        assert (
-            "FOV" in bs["blind_spot_right"]
-        ), f"{step_key}.blind_spot.data.blind_spot_right label must mention 'FOV'"
-
-
 def test_enforce_delta_at_endpoints_strings_present() -> None:
     """en.json carries the label + description on both config and options steps (#679)."""
     en = _load(TRANSLATIONS_DIR / "en.json")
@@ -233,18 +215,6 @@ def test_enforce_delta_at_endpoints_strings_present() -> None:
         )
         assert pos["data"]["enforce_delta_at_endpoints"].strip()
         assert pos["data_description"]["enforce_delta_at_endpoints"].strip()
-
-
-def test_en_blind_spot_descriptions_do_not_mention_window_azimuth() -> None:
-    """Helper text must not contradict services.yaml by saying 'from window azimuth'."""
-    en = _load(TRANSLATIONS_DIR / "en.json")
-    for step_key in ("options", "config"):
-        dd = en[step_key]["step"]["blind_spot"]["data_description"]
-        for key in ("blind_spot_left", "blind_spot_right"):
-            assert "window azimuth" not in dd[key].lower(), (
-                f"{step_key}.blind_spot.data_description.{key} still references "
-                f"'window azimuth' — Option 2 requires FOV-left-edge framing"
-            )
 
 
 # ---------------------------------------------------------------------------
@@ -380,33 +350,6 @@ def test_geometry_description_no_field_enumeration() -> None:
         f"options.step.geometry.description still contains per-cover-type enumeration "
         f"(found {enumeration_marker!r}). Remove the second paragraph (issue #564)."
     )
-
-
-# ---------------------------------------------------------------------------
-# Issue #733 — duplicate_configure translation keys must match schema field names
-# ---------------------------------------------------------------------------
-
-
-def test_duplicate_configure_translation_keys_match_schema() -> None:
-    """duplicate_configure.data keys must match the actual schema field names.
-
-    CONF_ENTITIES = 'group', CONF_AZIMUTH = 'set_azimuth'. If these don't match,
-    HA renders the raw key as the label (regression guard for issue #733).
-    """
-    en = _load(TRANSLATIONS_DIR / "en.json")
-    data = en["config"]["step"]["duplicate_configure"]["data"]
-    assert (
-        "group" in data
-    ), "duplicate_configure.data must have key 'group' (CONF_ENTITIES = 'group')"
-    assert (
-        "set_azimuth" in data
-    ), "duplicate_configure.data must have key 'set_azimuth' (CONF_AZIMUTH = 'set_azimuth')"
-    assert (
-        "entities" not in data
-    ), "Wrong key 'entities' in duplicate_configure.data — must be 'group' (CONF_ENTITIES)"
-    assert (
-        "azimuth" not in data
-    ), "Wrong key 'azimuth' in duplicate_configure.data — must be 'set_azimuth' (CONF_AZIMUTH)"
 
 
 # ---------------------------------------------------------------------------

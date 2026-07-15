@@ -9,13 +9,15 @@ from homeassistant.helpers import selector
 from homeassistant.util.unit_system import METRIC_SYSTEM, US_CUSTOMARY_SYSTEM
 
 from custom_components.adaptive_pergola import unit_system
+from custom_components.adaptive_pergola.config_dynamic import (
+    glare_zones_schema as _build_glare_zones_schema,
+    glare_zone_length_keys as _glare_zone_length_keys,
+)
 from custom_components.adaptive_pergola.config_flow import (
     light_cloud_schema,
     sun_tracking_schema,
     temperature_climate_schema,
     weather_override_schema,
-    _build_glare_zones_schema,
-    _glare_zone_length_keys,
     _stringify_templatable,
 )
 from custom_components.adaptive_pergola.const import (

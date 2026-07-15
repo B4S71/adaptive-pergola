@@ -1,15 +1,16 @@
-"""Sync/duplicate coverage tests.
+"""Option-schema key guard.
 
-These tests are a safety net: adding a new CONF_* option to any option schema
-in config_flow.py will cause test_all_option_schema_keys_are_in_sync_categories_or_excluded
-to fail unless you also:
-  - Add the key to the appropriate SYNC_CATEGORIES entry in config_flow.py, OR
-  - Add it to _DUPLICATE_ONLY_KEYS below (for options that intentionally copy
-    only via the Duplicate flow and are not selectively syncable, e.g. debug flags).
+Every key rendered by a pergola-facing option-schema must be listed in
+``_KNOWN_OPTION_KEYS`` (or in ``_TRANSIENT_FORM_KEYS`` for form-only fields
+that are never persisted). The test fails when a new CONF_* option is added
+to any schema without updating this file — making every new persisted option
+a conscious, reviewed decision.
 
-Adding a key to _SHARED_OPTIONS_EXCLUDED instead will be caught by
-test_shared_options_excluded_is_exact — that set is intentionally small and
-rarely changes.
+This replaces the pre-stage-4 sync/duplicate coverage scaffolding (the
+selective-sync and duplicate flows were deleted with the rest of the
+Adaptive-Cover-Pro heritage, docs/CONFIG_FLOW_REWORK.md): the old
+``SYNC_CATEGORIES`` / duplicate-only bookkeeping collapsed into this single
+known-keys list.
 """
 
 import voluptuous as vol
@@ -19,53 +20,131 @@ from custom_components.adaptive_pergola.config_flow import (
     CUSTOM_POSITION_SCHEMA,
     DEBUG_SCHEMA,
     GEOMETRY_LOUVERED_ROOF_SCHEMA,
-    INTERPOLATION_OPTIONS,
     LIGHT_CLOUD_SCHEMA,
     MANUAL_OVERRIDE_SCHEMA,
     MOTION_OVERRIDE_SCHEMA,
     POSITION_SCHEMA,
-    SYNC_CATEGORIES,
     SUN_TRACKING_SCHEMA,
     TEMPERATURE_CLIMATE_SCHEMA,
     WEATHER_OPTIONS,
     WEATHER_OVERRIDE_SCHEMA,
-    _SHARED_OPTIONS_EXCLUDED,
-    _build_glare_zones_schema,
 )
 from custom_components.adaptive_pergola.const import (
-    BLIND_SPOT_SLOTS,
-    CONF_AZIMUTH,
-    CONF_DEBUG_CATEGORIES,
-    CONF_DEBUG_EVENT_BUFFER_SIZE,
-    CONF_DEBUG_MODE,
-    CONF_DEVICE_ID,
-    CONF_DRY_RUN,
-    CONF_ENABLE_GLARE_ZONES,
-    CONF_ENTITIES,
     CONF_SUN_WINDOW_END,
     CONF_SUN_WINDOW_START,
 )
 
-# Options intentionally in the Duplicate flow (copy-all) but NOT in selective sync.
-# Only add here when the option is genuinely non-transferable across covers
-# (e.g. per-instance debug flags). All other options should be in SYNC_CATEGORIES.
-_DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
+# Transient form-only fields: rendered on a step but popped on submit and never
+# persisted (stage 2 sun-window presentation of the canonical azimuth/fov keys).
+_TRANSIENT_FORM_KEYS: frozenset[str] = frozenset(
     {
-        # Transient-only sun-window form fields (docs/CONFIG_FLOW_REWORK.md,
-        # stage 2): shown on the sun-tracking step but popped on submit and
-        # converted to the canonical set_azimuth / fov_left / fov_right keys.
-        # Never persisted, so never synced or duplicated.
         CONF_SUN_WINDOW_START,
         CONF_SUN_WINDOW_END,
-        CONF_DRY_RUN,
-        CONF_DEBUG_MODE,
-        CONF_DEBUG_CATEGORIES,
-        CONF_DEBUG_EVENT_BUFFER_SIZE,
-        # Louvered-roof geometry + behaviour keys. Upstream (Adaptive Cover
-        # Pro) never listed the louvered geometry schema in SYNC_CATEGORIES,
-        # so these copy via the Duplicate flow only. Listed here to preserve
-        # that behaviour byte-for-byte in the pergola split; promoting them
-        # to a SYNC_CATEGORIES entry is a deliberate future product change.
+    }
+)
+
+# Every key any pergola-facing option schema may render. Includes the inline
+# cover-entities keys ("group", "device_id") that have no module-level schema.
+_KNOWN_OPTION_KEYS: frozenset[str] = frozenset(
+    {
+        "climate_mode",
+        "cloud_coverage_entity",
+        "cloud_coverage_threshold",
+        "cloud_suppression",
+        "cloudy_position",
+        "custom_position_1",
+        "custom_position_10",
+        "custom_position_2",
+        "custom_position_3",
+        "custom_position_4",
+        "custom_position_5",
+        "custom_position_6",
+        "custom_position_7",
+        "custom_position_8",
+        "custom_position_9",
+        "custom_position_min_mode_1",
+        "custom_position_min_mode_10",
+        "custom_position_min_mode_2",
+        "custom_position_min_mode_3",
+        "custom_position_min_mode_4",
+        "custom_position_min_mode_5",
+        "custom_position_min_mode_6",
+        "custom_position_min_mode_7",
+        "custom_position_min_mode_8",
+        "custom_position_min_mode_9",
+        "custom_position_priority_1",
+        "custom_position_priority_10",
+        "custom_position_priority_2",
+        "custom_position_priority_3",
+        "custom_position_priority_4",
+        "custom_position_priority_5",
+        "custom_position_priority_6",
+        "custom_position_priority_7",
+        "custom_position_priority_8",
+        "custom_position_priority_9",
+        "custom_position_sensors_1",
+        "custom_position_sensors_10",
+        "custom_position_sensors_2",
+        "custom_position_sensors_3",
+        "custom_position_sensors_4",
+        "custom_position_sensors_5",
+        "custom_position_sensors_6",
+        "custom_position_sensors_7",
+        "custom_position_sensors_8",
+        "custom_position_sensors_9",
+        "custom_position_template_1",
+        "custom_position_template_10",
+        "custom_position_template_2",
+        "custom_position_template_3",
+        "custom_position_template_4",
+        "custom_position_template_5",
+        "custom_position_template_6",
+        "custom_position_template_7",
+        "custom_position_template_8",
+        "custom_position_template_9",
+        "custom_position_template_mode_1",
+        "custom_position_template_mode_10",
+        "custom_position_template_mode_2",
+        "custom_position_template_mode_3",
+        "custom_position_template_mode_4",
+        "custom_position_template_mode_5",
+        "custom_position_template_mode_6",
+        "custom_position_template_mode_7",
+        "custom_position_template_mode_8",
+        "custom_position_template_mode_9",
+        "custom_position_use_my_1",
+        "custom_position_use_my_10",
+        "custom_position_use_my_2",
+        "custom_position_use_my_3",
+        "custom_position_use_my_4",
+        "custom_position_use_my_5",
+        "custom_position_use_my_6",
+        "custom_position_use_my_7",
+        "custom_position_use_my_8",
+        "custom_position_use_my_9",
+        "debug_categories",
+        "debug_event_buffer_size",
+        "debug_mode",
+        "default_percentage",
+        "delta_position",
+        "delta_time",
+        "device_id",
+        "dry_run",
+        "enable_max_position",
+        "enable_min_position",
+        "enable_my_position_entities",
+        "enable_sun_tracking",
+        "end_entity",
+        "end_of_window_position",
+        "end_time",
+        "endpoint_use_open_close",
+        "enforce_delta_at_endpoints",
+        "group",
+        "irradiance_entity",
+        "irradiance_threshold",
+        "is_sunny_sensor",
+        "is_sunny_template",
+        "is_sunny_template_mode",
         "lr_airflow_by_temp",
         "lr_axis_azimuth",
         "lr_footprint_x",
@@ -86,9 +165,68 @@ _DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
         "lr_theta_max",
         "lr_theta_min",
         "lr_tilt_vertical_pct",
+        "lux_entity",
+        "lux_threshold",
+        "manual_ignore_external",
+        "manual_ignore_intermediate",
+        "manual_override_duration",
+        "manual_override_input_entities",
+        "manual_override_reset",
+        "manual_threshold",
+        "max_coverage_steps",
+        "max_elevation",
+        "max_position",
+        "min_elevation",
+        "min_position",
+        "min_position_sun_tracking",
+        "minimize_movements",
         "morning_position",
         "morning_position_hold",
         "morning_position_lead",
+        "motion_media_players",
+        "motion_sensors",
+        "motion_template",
+        "motion_template_mode",
+        "motion_timeout",
+        "motion_timeout_mode",
+        "my_position_value",
+        "open_close_threshold",
+        "outside_temp",
+        "outside_threshold",
+        "presence_entity",
+        "presence_template",
+        "presence_template_mode",
+        "resync_travel_threshold",
+        "start_entity",
+        "start_time",
+        "summer_close_bypass_sun_floor",
+        "sunset_position",
+        "sunset_use_my",
+        "temp_entity",
+        "temp_high",
+        "temp_low",
+        "transit_timeout",
+        "weather_bypass_auto_control",
+        "weather_enabled",
+        "weather_entity",
+        "weather_is_raining_sensor",
+        "weather_is_raining_template",
+        "weather_is_raining_template_mode",
+        "weather_is_windy_sensor",
+        "weather_is_windy_template",
+        "weather_is_windy_template_mode",
+        "weather_override_min_mode",
+        "weather_override_position",
+        "weather_rain_sensor",
+        "weather_rain_threshold",
+        "weather_severe_sensors",
+        "weather_state",
+        "weather_timeout",
+        "weather_wind_direction_sensor",
+        "weather_wind_direction_tolerance",
+        "weather_wind_speed_sensor",
+        "weather_wind_speed_threshold",
+        "winter_close_insulation",
     }
 )
 
@@ -96,10 +234,7 @@ _DUPLICATE_ONLY_KEYS: frozenset[str] = frozenset(
 # CONFIG_SCHEMA (data-step, has "name"/"mode") is intentionally excluded.
 _OPTION_SCHEMAS: list[vol.Schema] = [
     GEOMETRY_LOUVERED_ROOF_SCHEMA,
-    # Renders the transient sun_window_start/end fields (stage 2); the canonical
-    # CONF_AZIMUTH they map to stays in _SHARED_OPTIONS_EXCLUDED, the canonical
-    # fov_left/fov_right stay in SYNC_CATEGORIES["sun_tracking"].
-    SUN_TRACKING_SCHEMA,
+    SUN_TRACKING_SCHEMA,  # renders the transient sun_window_* fields (stage 2)
     POSITION_SCHEMA,
     AUTOMATION_SCHEMA,
     MANUAL_OVERRIDE_SCHEMA,
@@ -110,7 +245,6 @@ _OPTION_SCHEMAS: list[vol.Schema] = [
     LIGHT_CLOUD_SCHEMA,
     TEMPERATURE_CLIMATE_SCHEMA,
     WEATHER_OPTIONS,
-    INTERPOLATION_OPTIONS,
 ]
 
 
@@ -127,92 +261,37 @@ def _keys(schema: vol.Schema) -> frozenset[str]:
 
 
 def _all_option_schema_keys() -> frozenset[str]:
-    """Return every option key that can end up in config_entry.options."""
+    """Return every option key any pergola-facing schema renders."""
     keys: set[str] = set()
-
-    # Keys from all named module-level schemas
     for schema in _OPTION_SCHEMAS:
         keys |= _keys(schema)
-
-    # Glare zone slot keys — dynamic schema, must call the builder to enumerate
-    keys |= _keys(_build_glare_zones_schema())
-
-    # Keys that only appear in inline schemas (not importable module-level constants).
-    # Update this set if you add a new option directly inside an async_step_* method.
-    keys.update(
-        {
-            CONF_ENABLE_GLARE_ZONES,  # added by _get_sun_tracking_schema() extension
-            # Blind-spot slots 1–3 are rendered inline by blind_spot_schema (#701).
-            *(
-                keys[sub]
-                for keys in BLIND_SPOT_SLOTS.values()
-                for sub in ("left", "right", "elevation")
-            ),
-            CONF_ENTITIES,  # inline in _build_cover_entity_schema
-            CONF_DEVICE_ID,
-        }
-    )
-
+    # Inline in _build_cover_entity_schema (no module-level constant).
+    keys.update({"group", "device_id"})
     return frozenset(keys)
 
 
-class TestSyncCoverage:
-    """Verify all option schema keys are covered by the duplicate/sync flows."""
+class TestOptionSchemaKeysAreKnown:
+    """Every option-schema key must be a known key or an explicit transient."""
 
-    def test_all_option_schema_keys_are_in_sync_categories_or_excluded(self):
-        """Every option schema key must be covered by selective sync or an explicit exemption.
-
-        Fails when a new CONF_* is added to a schema but SYNC_CATEGORIES is not updated.
-        """
-        all_sync_keys = frozenset().union(*SYNC_CATEGORIES.values())
-        intentionally_uncovered = _SHARED_OPTIONS_EXCLUDED | _DUPLICATE_ONLY_KEYS
-
-        schema_keys = _all_option_schema_keys()
-        uncovered = schema_keys - all_sync_keys - intentionally_uncovered
-
-        assert not uncovered, (
-            f"Option keys not in SYNC_CATEGORIES or a known exclusion set: {sorted(uncovered)}\n"
-            "Fix: add the key to the right SYNC_CATEGORIES entry in config_flow.py,\n"
-            "or add it to _DUPLICATE_ONLY_KEYS in this file if it should only copy via Duplicate."
+    def test_every_schema_key_is_known_or_transient(self):
+        unknown = _all_option_schema_keys() - _KNOWN_OPTION_KEYS - _TRANSIENT_FORM_KEYS
+        assert not unknown, (
+            f"Option keys not in the known-keys list: {sorted(unknown)}\n"
+            "Fix: add the key to _KNOWN_OPTION_KEYS in this file (persisted "
+            "option) or to _TRANSIENT_FORM_KEYS (form-only, popped on submit)."
         )
 
-    def test_shared_options_excluded_is_exact(self):
-        """_SHARED_OPTIONS_EXCLUDED must stay exactly {CONF_ENTITIES, CONF_AZIMUTH, CONF_DEVICE_ID}.
-
-        Catches an option accidentally added to the exclusion set, which would
-        silently drop it from the Duplicate flow as well as selective sync.
-        If you genuinely need a new per-window exclusion, update this assertion
-        with an explanation comment.
-        """
-        assert (
-            frozenset({CONF_ENTITIES, CONF_AZIMUTH, CONF_DEVICE_ID})
-            == _SHARED_OPTIONS_EXCLUDED
+    def test_known_keys_list_carries_no_dead_entries(self):
+        # The reverse direction: a key removed from every schema must also be
+        # removed here, so the list never drifts into fiction.
+        dead = _KNOWN_OPTION_KEYS - _all_option_schema_keys()
+        assert not dead, (
+            f"_KNOWN_OPTION_KEYS entries no longer rendered by any schema: {sorted(dead)}\n"
+            "Remove them from this file (storage stays readable regardless)."
         )
 
-    def test_duplicate_only_keys_are_not_in_sync_categories(self):
-        """Keys listed as duplicate-only must not also appear in SYNC_CATEGORIES.
-
-        If a debug option is later promoted to a sync-able setting, remove it
-        from _DUPLICATE_ONLY_KEYS.
-        """
-        all_sync_keys = frozenset().union(*SYNC_CATEGORIES.values())
-        incorrectly_in_sync = _DUPLICATE_ONLY_KEYS & all_sync_keys
-
-        assert not incorrectly_in_sync, (
-            f"Keys are in both _DUPLICATE_ONLY_KEYS and SYNC_CATEGORIES: {sorted(incorrectly_in_sync)}.\n"
-            "Remove them from _DUPLICATE_ONLY_KEYS in this file."
-        )
-
-    def test_shared_options_excluded_not_in_sync_categories(self):
-        """Per-window excluded keys must not appear in SYNC_CATEGORIES either.
-
-        These keys are intentionally skipped in both flows; putting them in
-        SYNC_CATEGORIES would be contradictory.
-        """
-        all_sync_keys = frozenset().union(*SYNC_CATEGORIES.values())
-        overlap = _SHARED_OPTIONS_EXCLUDED & all_sync_keys
-
+    def test_transient_keys_never_overlap_known(self):
+        overlap = _TRANSIENT_FORM_KEYS & _KNOWN_OPTION_KEYS
         assert not overlap, (
-            f"Keys in _SHARED_OPTIONS_EXCLUDED are also in SYNC_CATEGORIES: {sorted(overlap)}.\n"
-            "Remove them from one or the other."
+            f"Keys marked transient are also listed as persisted: {sorted(overlap)}"
         )

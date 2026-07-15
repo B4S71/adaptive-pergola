@@ -23,16 +23,13 @@ from custom_components.adaptive_pergola.config_flow import (
     ConfigFlowHandler,
     LIGHT_CLOUD_SCHEMA,
     POSITION_SCHEMA,
-    SYNC_CATEGORIES,
     TEMPERATURE_CLIMATE_SCHEMA,
     WEATHER_OVERRIDE_SCHEMA,
     _build_config_summary,
     _build_custom_position_schema_dict,
     _CUSTOM_POSITION_OPTIONAL_KEYS,
-    _extract_shared_options,
     _LIGHT_CLOUD_OPTIONAL_KEYS,
     _POSITION_OPTIONAL_KEYS,
-    _SYNC_UI_CATEGORIES,
     _TEMPERATURE_CLIMATE_OPTIONAL_KEYS,
     _WEATHER_OVERRIDE_OPTIONAL_KEYS,
 )
@@ -201,107 +198,6 @@ class TestCloudSuppressionNoRuntimeChange:
 
 # ---------------------------------------------------------------------------
 # Sync categories for split screens
-# ---------------------------------------------------------------------------
-
-
-class TestSyncCategoriesSplit:
-    """Test that sync categories correctly handle the split."""
-
-    def test_light_cloud_category_exists(self):
-        """SYNC_CATEGORIES has light_cloud category."""
-        assert "light_cloud" in SYNC_CATEGORIES
-
-    def test_temperature_climate_category_exists(self):
-        """SYNC_CATEGORIES has temperature_climate category."""
-        assert "temperature_climate" in SYNC_CATEGORIES
-
-    def test_legacy_climate_category_still_exists(self):
-        """Legacy 'climate' category remains for backward compat."""
-        assert "climate" in SYNC_CATEGORIES
-
-    def test_light_cloud_includes_weather_state(self):
-        """Light cloud category includes weather_state key."""
-        assert CONF_WEATHER_STATE in SYNC_CATEGORIES["light_cloud"]
-
-    def test_light_cloud_includes_lux(self):
-        """Light cloud category includes lux settings."""
-        assert CONF_LUX_ENTITY in SYNC_CATEGORIES["light_cloud"]
-        assert CONF_LUX_THRESHOLD in SYNC_CATEGORIES["light_cloud"]
-
-    def test_temperature_climate_includes_temp_settings(self):
-        """Temperature climate category includes temperature settings."""
-        assert CONF_CLIMATE_MODE in SYNC_CATEGORIES["temperature_climate"]
-        assert CONF_TEMP_LOW in SYNC_CATEGORIES["temperature_climate"]
-        assert CONF_TEMP_HIGH in SYNC_CATEGORIES["temperature_climate"]
-
-    def test_extract_shared_light_cloud_only(self):
-        """_extract_shared_options returns only light_cloud keys."""
-        entry = MagicMock()
-        entry.options = {
-            CONF_ENTITIES: ["cover.test"],
-            CONF_AZIMUTH: 180,
-            CONF_LUX_ENTITY: "sensor.lux",
-            CONF_CLIMATE_MODE: True,
-            CONF_TEMP_LOW: 18,
-        }
-        result = _extract_shared_options(entry, categories=["light_cloud"])
-        assert CONF_LUX_ENTITY in result
-        assert CONF_CLIMATE_MODE not in result
-        assert CONF_TEMP_LOW not in result
-
-    def test_extract_shared_temperature_climate_only(self):
-        """_extract_shared_options returns only temperature_climate keys."""
-        entry = MagicMock()
-        entry.options = {
-            CONF_ENTITIES: ["cover.test"],
-            CONF_AZIMUTH: 180,
-            CONF_LUX_ENTITY: "sensor.lux",
-            CONF_CLIMATE_MODE: True,
-            CONF_TEMP_LOW: 18,
-        }
-        result = _extract_shared_options(entry, categories=["temperature_climate"])
-        assert CONF_CLIMATE_MODE in result
-        assert CONF_TEMP_LOW in result
-        assert CONF_LUX_ENTITY not in result
-
-    def test_sync_ui_excludes_legacy_climate(self):
-        """Sync UI categories list does NOT contain legacy 'climate'."""
-        assert "climate" not in _SYNC_UI_CATEGORIES
-
-    def test_sync_ui_excludes_legacy_weather(self):
-        """Sync UI categories list does NOT contain legacy 'weather'."""
-        assert "weather" not in _SYNC_UI_CATEGORIES
-
-    def test_sync_ui_includes_light_cloud_split_keys(self):
-        """Sync UI uses light_cloud_values / light_cloud_sensors instead of the mixed key."""
-        assert "light_cloud_values" in _SYNC_UI_CATEGORIES
-        assert "light_cloud_sensors" in _SYNC_UI_CATEGORIES
-        assert "light_cloud" not in _SYNC_UI_CATEGORIES
-
-    def test_sync_ui_includes_temperature_climate_split_keys(self):
-        """Sync UI uses temperature_climate_values / temperature_climate_sensors instead of the mixed key."""
-        assert "temperature_climate_values" in _SYNC_UI_CATEGORIES
-        assert "temperature_climate_sensors" in _SYNC_UI_CATEGORIES
-        assert "temperature_climate" not in _SYNC_UI_CATEGORIES
-
-    def test_sync_ui_categories_all_exist_in_sync_categories(self):
-        """Every UI category must have a matching key in SYNC_CATEGORIES."""
-        for cat in _SYNC_UI_CATEGORIES:
-            assert cat in SYNC_CATEGORIES, f"{cat} missing from SYNC_CATEGORIES"
-
-    def test_sync_ui_covers_all_non_legacy_keys(self):
-        """Sync UI categories cover every config key that the legacy categories covered."""
-        legacy_keys = SYNC_CATEGORIES["climate"] | SYNC_CATEGORIES["weather"]
-        ui_keys = (
-            SYNC_CATEGORIES["light_cloud"] | SYNC_CATEGORIES["temperature_climate"]
-        )
-        assert (
-            legacy_keys <= ui_keys
-        ), f"Keys in legacy but not in UI categories: {legacy_keys - ui_keys}"
-
-
-# ---------------------------------------------------------------------------
-# Position map in summary
 # ---------------------------------------------------------------------------
 
 
