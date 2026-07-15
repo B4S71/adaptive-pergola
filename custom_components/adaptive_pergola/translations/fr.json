@@ -600,6 +600,9 @@
     },
     "abort": {
       "user_cancelled": "Action annulée par l'utilisateur"
+    },
+    "error": {
+      "sun_window_span": "La fenêtre solaire doit couvrir au moins 1° — le début et la fin doivent différer."
     }
   },
   "options": {
@@ -1247,6 +1250,9 @@
     },
     "abort": {
       "user_cancelled": "Synchronisation annulée."
+    },
+    "error": {
+      "sun_window_span": "La fenêtre solaire doit couvrir au moins 1° — le début et la fin doivent différer."
     }
   },
   "entity": {

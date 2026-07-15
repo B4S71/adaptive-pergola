@@ -600,6 +600,9 @@
     },
     "abort": {
       "user_cancelled": "Action cancelled by user"
+    },
+    "error": {
+      "sun_window_span": "The sun window must span at least 1° — start and end must differ."
     }
   },
   "options": {
@@ -1247,6 +1250,9 @@
     },
     "abort": {
       "user_cancelled": "Sync cancelled."
+    },
+    "error": {
+      "sun_window_span": "The sun window must span at least 1° — start and end must differ."
     }
   },
   "entity": {

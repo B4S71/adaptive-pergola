@@ -600,6 +600,9 @@
     },
     "abort": {
       "user_cancelled": "Aktion vom Benutzer abgebrochen"
+    },
+    "error": {
+      "sun_window_span": "Das Sonnenfenster muss mindestens 1° umfassen — Start und Ende müssen sich unterscheiden."
     }
   },
   "options": {
@@ -1247,6 +1250,9 @@
     },
     "abort": {
       "user_cancelled": "Synchronisierung abgebrochen."
+    },
+    "error": {
+      "sun_window_span": "Das Sonnenfenster muss mindestens 1° umfassen — Start und Ende müssen sich unterscheiden."
     }
   },
   "entity": {

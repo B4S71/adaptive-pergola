@@ -120,7 +120,7 @@ class TestApplySunWindowSubmit:
         # re-render shows the user's own input instead of resetting the form.
         user_input = {CONF_SUN_WINDOW_START: 137, CONF_SUN_WINDOW_END: 137}
         errors = _apply_sun_window_submit(user_input)
-        assert errors == {CONF_SUN_WINDOW_END: "window must span at least 1°"}
+        assert errors == {CONF_SUN_WINDOW_END: "sun_window_span"}
         assert user_input[CONF_SUN_WINDOW_START] == 137
         assert user_input[CONF_SUN_WINDOW_END] == 137
         assert CONF_AZIMUTH not in user_input

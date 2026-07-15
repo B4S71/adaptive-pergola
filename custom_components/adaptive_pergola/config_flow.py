@@ -2641,7 +2641,9 @@ def _apply_sun_window_submit(user_input: dict[str, Any]) -> dict[str, str] | Non
     try:
         azimuth, fov_left, fov_right = sun_window_to_canonical(start, end)
     except ValueError:
-        return {CONF_SUN_WINDOW_END: "window must span at least 1°"}
+        # Translation KEY (resolved via translations' config/options ``error``
+        # section), NOT a message — HA renders an unknown key verbatim.
+        return {CONF_SUN_WINDOW_END: "sun_window_span"}
     user_input.pop(CONF_SUN_WINDOW_START, None)
     user_input.pop(CONF_SUN_WINDOW_END, None)
     user_input[CONF_AZIMUTH] = azimuth
