@@ -69,9 +69,9 @@ class AdaptivePergolaBaseEntity(CoordinatorEntity["AdaptiveDataUpdateCoordinator
             entry_type=DeviceEntryType.SERVICE,
             identifiers={(DOMAIN, self._device_id)},
             name=self._name,
-            manufacturer="BasHeijermans",
+            manufacturer="B4S71",
             model=f"Adaptive {type_display} Cover",
-            configuration_url="https://github.com/jrhubott/adaptive-cover-pro",
+            configuration_url="https://github.com/B4S71/adaptive-pergola",
         )
 
     @staticmethod

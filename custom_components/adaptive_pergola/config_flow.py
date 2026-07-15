@@ -196,7 +196,7 @@ _STANDALONE_SENTINEL = "__standalone__"
 # cover's device (no cover picked, or the entity has no device).
 _DEFAULT_INSTANCE_NAME = "Pergola"
 
-_WIKI_BASE_URL = "https://github.com/jrhubott/adaptive-cover-pro/wiki"
+_WIKI_BASE_URL = "https://github.com/B4S71/adaptive-pergola"
 
 
 def _geometry_wiki_link(sensor_type: str | None) -> str:
@@ -781,7 +781,7 @@ def _get_azimuth_edges(data) -> int:
 
 
 _WEATHER_SAFETY_WIKI = (
-    "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Weather-Safety"
+    "https://github.com/B4S71/adaptive-pergola"
 )
 
 
@@ -2541,7 +2541,7 @@ def _fov_compute_supported(sensor_type: str | None) -> bool:
 
 
 _SUN_TRACKING_WIKI = (
-    "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Sun-Tracking"
+    "https://github.com/B4S71/adaptive-pergola"
 )
 
 
@@ -2848,7 +2848,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                         schema, self.config
                     ),
                     description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/First-Time-Setup"
+                        "learn_more": "https://github.com/B4S71/adaptive-pergola"
                     },
                 )
             return await self.async_step_geometry()
@@ -2860,7 +2860,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="cover_entities",
             data_schema=schema,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/First-Time-Setup"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -2962,7 +2962,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="position",
             data_schema=POSITION_SCHEMA,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -2977,8 +2977,8 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="behavior",
             data_schema=_behavior_schema(self.config),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
-                "position_matching_wiki": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position-Matching",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
+                "position_matching_wiki": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -2996,7 +2996,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="automation",
             data_schema=AUTOMATION_SCHEMA,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Automation"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3012,7 +3012,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="manual_override",
             data_schema=MANUAL_OVERRIDE_SCHEMA,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3034,7 +3034,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="custom_position",
             data_schema=schema,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Custom-Position",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
                 "priority_scale": _render_priority_scale(
                     self.config, get_policy(self.type_blind)
                 ),
@@ -3053,7 +3053,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="motion_override",
             data_schema=MOTION_OVERRIDE_SCHEMA,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3084,7 +3084,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="light_cloud",
             data_schema=light_cloud_schema(self.hass, self.config),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3102,7 +3102,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     data_schema=temperature_climate_schema(self.hass, user_input),
                     errors={CONF_TEMP_ENTITY: "Required when climate mode is enabled"},
                     description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode"
+                        "learn_more": "https://github.com/B4S71/adaptive-pergola"
                     },
                 )
             self.config.update(user_input)
@@ -3112,7 +3112,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="temperature_climate",
             data_schema=temperature_climate_schema(self.hass, self.config),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3125,7 +3125,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             step_id="weather",
             data_schema=WEATHER_OPTIONS,
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3256,7 +3256,6 @@ class OptionsFlowHandler(OptionsFlow):
             menu_options=menu_options,
             description_placeholders={
                 "instance_name": self.config_entry.title,
-                "coffee_url": "https://www.buymeacoffee.com/jrhubott",
             },
         )
 
@@ -3283,7 +3282,7 @@ class OptionsFlowHandler(OptionsFlow):
             step_id="cover_entities",
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/First-Time-Setup"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3391,7 +3390,7 @@ class OptionsFlowHandler(OptionsFlow):
                 POSITION_SCHEMA, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -3407,8 +3406,8 @@ class OptionsFlowHandler(OptionsFlow):
                 _behavior_schema(self.options), user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position",
-                "position_matching_wiki": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Position-Matching",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
+                "position_matching_wiki": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -3435,7 +3434,7 @@ class OptionsFlowHandler(OptionsFlow):
                 AUTOMATION_SCHEMA, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Automation"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3453,7 +3452,7 @@ class OptionsFlowHandler(OptionsFlow):
                 MANUAL_OVERRIDE_SCHEMA, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3476,7 +3475,7 @@ class OptionsFlowHandler(OptionsFlow):
                 schema, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Custom-Position",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
                 "priority_scale": _render_priority_scale(
                     self.options, get_policy(sensor_type)
                 ),
@@ -3496,7 +3495,7 @@ class OptionsFlowHandler(OptionsFlow):
                 MOTION_OVERRIDE_SCHEMA, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3537,7 +3536,7 @@ class OptionsFlowHandler(OptionsFlow):
                 config_fields.pipeline_priorities_schema(), user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
                 "priority_scale": _render_priority_scale(
                     self.options, get_policy(sensor_type)
                 ),
@@ -3557,7 +3556,7 @@ class OptionsFlowHandler(OptionsFlow):
                 light_cloud_schema(self.hass, suggested), suggested
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/How-It-Decides",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -3578,7 +3577,7 @@ class OptionsFlowHandler(OptionsFlow):
                     ),
                     errors={CONF_TEMP_ENTITY: "Required when climate mode is enabled"},
                     description_placeholders={
-                        "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode",
+                        "learn_more": "https://github.com/B4S71/adaptive-pergola",
                     },
                 )
             self.options.update(user_input)
@@ -3589,7 +3588,7 @@ class OptionsFlowHandler(OptionsFlow):
                 temperature_climate_schema(self.hass, suggested), suggested
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 
@@ -3604,7 +3603,7 @@ class OptionsFlowHandler(OptionsFlow):
                 WEATHER_OPTIONS, user_input or self.options
             ),
             description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Climate-Mode"
+                "learn_more": "https://github.com/B4S71/adaptive-pergola"
             },
         )
 
@@ -3644,7 +3643,7 @@ class OptionsFlowHandler(OptionsFlow):
             ),
             description_placeholders={
                 "cover_capabilities": caps_text,
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/Configuration-Debug-Diagnostics",
+                "learn_more": "https://github.com/B4S71/adaptive-pergola",
             },
         )
 

@@ -610,7 +610,7 @@
           "temperature_climate": "🌡️ Temperatur und Klima",
           "pipeline_priorities": "🔀 Handler-Prioritäten"
         },
-        "description": "Konfiguration: **{instance_name}**\n\nWenn Adaptive Pergola hilfreich für dich war, kannst du [☕ Buy Me a Coffee]({coffee_url}) unterstützen."
+        "description": "Konfiguration: **{instance_name}**"
       },
       "automation": {
         "title": "Bewegung & Zeitplan",
