@@ -188,12 +188,13 @@ _LOGGER = logging.getLogger(__name__)
 # that drive no cover (Building Profile) are filtered out via the
 # ``controls_cover`` discriminator — they get their own top-level create option,
 # not a cover-type dropdown entry.
-from .cover_types import POLICY_REGISTRY as _POLICY_REGISTRY  # noqa: E402
-from .cover_types import get_policy as _get_policy  # noqa: E402
 
-SENSOR_TYPE_MENU = [k for k in _POLICY_REGISTRY if _get_policy(k).controls_cover]
 
 _STANDALONE_SENTINEL = "__standalone__"
+
+# Instance name used when the create flow cannot derive one from the selected
+# cover's device (no cover picked, or the entity has no device).
+_DEFAULT_INSTANCE_NAME = "Pergola"
 
 _WIKI_BASE_URL = "https://github.com/jrhubott/adaptive-cover-pro/wiki"
 
@@ -212,17 +213,6 @@ def _geometry_wiki_link(sensor_type: str | None) -> str:
     )
     return f"[Learn more]({_WIKI_BASE_URL}/{anchor})"
 
-
-CONFIG_SCHEMA = vol.Schema(
-    {
-        vol.Required("name"): selector.TextSelector(),
-        vol.Optional(CONF_MODE): selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=SENSOR_TYPE_MENU, translation_key="mode"
-            )
-        ),
-    }
-)
 
 # ---------------------------------------------------------------------------
 # Step-specific schemas (replace old monolithic OPTIONS / VERTICAL_OPTIONS / etc.)
@@ -2455,11 +2445,24 @@ async def _get_device_name_for_entity(
 def _build_cover_entity_schema(
     sensor_type: str,
     devices: dict[str, str] | None = None,
+    *,
+    attach_device_by_default: bool = False,
+    include_proxy_toggle: bool = True,
 ) -> vol.Schema:
     """Build entity selector schema based on cover type.
 
     When devices is provided and non-empty, a device association selector is
     appended so both fields appear on the same form.
+
+    ``attach_device_by_default`` preselects the first associated device rather
+    than "standalone": a pergola's slats always belong to their physical box,
+    so the create flow attaches by default (the user can still pick
+    standalone). The options flow leaves it False and drives the selection via
+    suggested values from the stored option instead.
+
+    ``include_proxy_toggle`` False omits the proxy-cover switch entirely — the
+    create flow always enables the proxy cover, so it has nothing to ask. The
+    options flow keeps the toggle so an existing entry can still turn it off.
     """
     entity_selector = selector.EntitySelector(
         selector.EntitySelectorConfig(
@@ -2474,7 +2477,10 @@ def _build_cover_entity_schema(
         ]
         for device_id, device_name in devices.items():
             options_list.append({"value": device_id, "label": device_name})
-        schema_dict[vol.Required(CONF_DEVICE_ID, default=_STANDALONE_SENTINEL)] = (
+        device_default = (
+            next(iter(devices)) if attach_device_by_default else _STANDALONE_SENTINEL
+        )
+        schema_dict[vol.Required(CONF_DEVICE_ID, default=device_default)] = (
             selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=options_list,
@@ -2482,9 +2488,10 @@ def _build_cover_entity_schema(
                 )
             )
         )
-    schema_dict[
-        vol.Optional(CONF_ENABLE_PROXY_COVER, default=DEFAULT_ENABLE_PROXY_COVER)
-    ] = selector.BooleanSelector()
+    if include_proxy_toggle:
+        schema_dict[
+            vol.Optional(CONF_ENABLE_PROXY_COVER, default=DEFAULT_ENABLE_PROXY_COVER)
+        ] = selector.BooleanSelector()
     return vol.Schema(schema_dict)
 
 
@@ -2747,7 +2754,6 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self.config: dict[str, Any] = {}
         self.mode: str = "basic"
         self.selected_source_entry_id: str | None = None
-        self.setup_mode: str = "quick"  # "quick" or "full"
         self._has_device_options: bool = False
         self._cover_devices: dict[str, str] = {}
 
@@ -2764,47 +2770,19 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         return OptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
-        """Handle the initial step — straight to the pergola form.
+        """Handle the initial step — straight to the cover-entity form.
 
-        Condensed flow (docs/CONFIG_FLOW_REWORK.md): no create-menu. The
-        building-profile and duplicate-existing entry points were deleted in
-        stage 4 — creating a pergola is the only flow.
+        Condensed flow (docs/CONFIG_FLOW_REWORK.md): no create-menu (the
+        building-profile and duplicate-existing entry points died in stage 4)
+        and no name/type step — the louvered roof is the only cover type this
+        integration ships, so there is nothing to choose, and the name is
+        derived from the selected cover's device in ``async_step_cover_entities``.
+        The lean path is: cover → geometry → sun window → positions → summary;
+        everything else is configured later via the options menu.
         """
-        return await self.async_step_create_new(user_input)
-
-    async def async_step_create_new(self, user_input: dict[str, Any] | None = None):
-        """Handle create new cover flow."""
-        if user_input:
-            self.config = user_input
-            self.type_blind = self.config[CONF_MODE]
-            # Condensed flow: no quick/full fork — the lean path (name → cover
-            # → geometry → sun window → positions → summary) is the only flow;
-            # everything else is configured later via the options menu.
-            return await self.async_step_cover_entities()
-        return self.async_show_form(
-            step_id="create_new",
-            data_schema=CONFIG_SCHEMA,
-        )
-
-    async def async_step_setup_mode(self, user_input: dict[str, Any] | None = None):
-        """Choose between quick and full setup."""
-        return self.async_show_menu(
-            step_id="setup_mode",
-            menu_options=["quick_setup", "full_setup"],
-            description_placeholders={
-                "learn_more": "https://github.com/jrhubott/adaptive-cover-pro/wiki/First-Time-Setup"
-            },
-        )
-
-    async def async_step_quick_setup(self, user_input: dict[str, Any] | None = None):
-        """Start quick setup — minimal steps."""
-        self.setup_mode = "quick"
-        return await self.async_step_cover_entities()
-
-    async def async_step_full_setup(self, user_input: dict[str, Any] | None = None):
-        """Start full setup — all configuration steps."""
-        self.setup_mode = "full"
-        return await self.async_step_cover_entities()
+        self.type_blind = CoverType.LOUVERED_ROOF
+        self.config = {}
+        return await self.async_step_cover_entities(user_input)
 
     async def async_step_cover_entities(self, user_input: dict[str, Any] | None = None):
         """Select cover entities and optionally link to a physical device.
@@ -2823,10 +2801,14 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     self.config[CONF_DEVICE_ID] = device_id
                 else:
                     self.config.pop(CONF_DEVICE_ID, None)
+                self.config[CONF_ENABLE_PROXY_COVER] = True
                 return await self.async_step_geometry()
 
             # Pass 1: store entities, auto-name, check for associated devices
             self.config.update(user_input)
+            # The create flow always ships the proxy cover — it is the entity
+            # the dashboard drives, so there is no toggle to read back.
+            self.config[CONF_ENABLE_PROXY_COVER] = True
             if CONF_ENTITIES in user_input and user_input[CONF_ENTITIES]:
                 first_entity_id = user_input[CONF_ENTITIES][0]
                 entity_reg = er.async_get(self.hass)
@@ -2845,13 +2827,21 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                             or first_entity_id.split(".")[-1].replace("_", " ").title()
                         )
                         self.config["name"] = f"Adaptive {entity_name}"
+            # No name step any more, so nothing else can supply one: fall back
+            # when the user picked no cover (or an unregistered one).
+            self.config.setdefault("name", _DEFAULT_INSTANCE_NAME)
 
             entity_ids = self.config.get(CONF_ENTITIES, [])
             devices = await _get_devices_from_entities(self.hass, entity_ids)
             if devices:
                 self._has_device_options = True
                 self._cover_devices = devices
-                schema = _build_cover_entity_schema(self.type_blind, devices=devices)
+                schema = _build_cover_entity_schema(
+                    self.type_blind,
+                    devices=devices,
+                    attach_device_by_default=True,
+                    include_proxy_toggle=False,
+                )
                 return self.async_show_form(
                     step_id="cover_entities",
                     data_schema=self.add_suggested_values_to_schema(
@@ -2863,7 +2853,9 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 )
             return await self.async_step_geometry()
 
-        schema = _build_cover_entity_schema(self.type_blind)
+        schema = _build_cover_entity_schema(
+            self.type_blind, include_proxy_toggle=False
+        )
         return self.async_show_form(
             step_id="cover_entities",
             data_schema=schema,
@@ -2963,10 +2955,9 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             self.optional_entities(_POSITION_OPTIONAL_KEYS, user_input)
             self.config.update(user_input)
             # Quick setup: skip optional screens, go straight to summary
-            if self.setup_mode == "quick":
-                return await self.async_step_summary()
-            # L2a positions → L2b behavior.
-            return await self.async_step_behavior()
+            # Condensed flow: position is the last create step — behavior and
+            # every handler are configured later via the options menu.
+            return await self.async_step_summary()
         return self.async_show_form(
             step_id="position",
             data_schema=POSITION_SCHEMA,

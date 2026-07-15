@@ -2,25 +2,16 @@
   "title": "Adaptive Pergola",
   "config": {
     "step": {
-      "create_new": {
-        "title": "Neue Beschattung erstellen",
-        "data": {
-          "name": "Name",
-          "mode": "Art der Jalousie"
-        }
-      },
       "cover_entities": {
         "title": "Beschattungen & Gerät",
         "description": "Wählen Sie die Beschattungselemente aus, die diese Instanz steuert, und ordnen Sie sie optional einem physischen Gerät in HA zu. Mehrere Beschattungselemente können eine Instanz teilen — sie verwenden die gleichen Einstellungen und bewegen sich unabhängig. Um Beschattungselemente mit unterschiedlichen Fensterorientierungen zu steuern, erstellen Sie eine separate Instanz für jedes.\n\n[Weitere Informationen]({learn_more})",
         "data": {
           "group": "Beschattungsentitäten",
-          "linked_device_id": "An Gerät anhängen",
-          "enable_proxy_cover": "Proxy-Beschattungsentität freigeben"
+          "linked_device_id": "An Gerät anhängen"
         },
         "data_description": {
           "group": "Wählen Sie die Beschattungsentitäten aus, die über diese Integrationsinstanz gesteuert werden sollen. Sie können mehrere Beschattungen auswählen, um sie als Gruppe zu steuern (alle erhalten die gleichen Positionsbefehle). Wählen Sie nur Beschattungen aus, die diesem bestimmten Fenster dienen - erstellen Sie separate Integrationsinstanzen für verschiedene Fenster.",
-          "linked_device_id": "Wählen Sie ein physisches Gerät aus, um die Entitäten dieser Integration in dieses einzufügen. Die Sensoren, Schalter und Schaltflächen der Integration werden direkt unter dem Gerät in Home Assistant angezeigt. Wählen Sie 'Keine (eigenständiges Gerät)', um zu einem separaten virtuellen Adaptive-Cover-Gerät zurückzukehren. Es werden nur Geräte angezeigt, die die ausgewählten Beschattungsentitäten besitzen.",
-          "enable_proxy_cover": "Geben Sie eine Proxy-Beschattungsentität pro physischer Beschattung frei. Verwenden Sie diese auf Dashboards statt der physischen Beschattung, damit manuelle Befehle die Mindestpositionen respektieren. Standard: aus."
+          "linked_device_id": "Wählen Sie ein physisches Gerät aus, um die Entitäten dieser Integration in dieses einzufügen. Die Sensoren, Schalter und Schaltflächen der Integration werden direkt unter dem Gerät in Home Assistant angezeigt. Wählen Sie 'Keine (eigenständiges Gerät)', um zu einem separaten virtuellen Adaptive-Cover-Gerät zurückzukehren. Es werden nur Geräte angezeigt, die die ausgewählten Beschattungsentitäten besitzen."
         }
       },
       "geometry": {
@@ -496,14 +487,6 @@
       "summary": {
         "title": "Konfigurationszusammenfassung",
         "description": "{summary}"
-      },
-      "setup_mode": {
-        "title": "Setup-Modus",
-        "description": "Wählen Sie, wie viel Sie jetzt konfigurieren möchten. Sie können alle Einstellungen später im Optionsmenü anpassen.\n\n[Weitere Informationen]({learn_more})",
-        "menu_options": {
-          "quick_setup": "Schnelles Setup - Fenstergrundlagen + Sonnenverfolgung (empfohlen für erstmalige Einrichtung)",
-          "full_setup": "Vollständiges Setup - Alle Optionen einschließlich Klima, Übersteuerungen und Automatisierung"
-        }
       },
       "light_cloud": {
         "title": "Lichtsensoren und Wolkenunterdrückung",
@@ -1371,17 +1354,6 @@
     }
   },
   "selector": {
-    "mode": {
-      "options": {
-        "cover_blind": "Vertikale Jalousie",
-        "cover_awning": "Horizontale Markise",
-        "cover_tilt": "Dreh-Jalousie",
-        "cover_venetian": "Jalousette (zweiachsig)",
-        "cover_oscillating_awning": "Gelenkarmmarkise (drop-arm)",
-        "cover_roof_window": "Dachfenster",
-        "cover_louvered_roof": "Lamellendach (Pergola)"
-      }
-    },
     "tilt_mode": {
       "options": {
         "mode1": "einzelne Richtung (0% = geschlossen / 100% = offen)",

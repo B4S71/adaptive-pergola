@@ -2,25 +2,16 @@
   "title": "Adaptive Pergola",
   "config": {
     "step": {
-      "create_new": {
-        "title": "Create New Cover",
-        "data": {
-          "name": "Name",
-          "mode": "Type of blind"
-        }
-      },
       "cover_entities": {
         "title": "Covers & Device",
         "description": "Select the covers this instance controls and optionally attach them to a physical device in HA. Multiple covers can share one instance — they use the same settings and move independently. To control covers with different window orientations, create a separate instance for each.\n\n[Learn more]({learn_more})",
         "data": {
           "group": "Cover Entities",
-          "linked_device_id": "Attach to Device",
-          "enable_proxy_cover": "Expose Proxy Cover Entity"
+          "linked_device_id": "Attach to Device"
         },
         "data_description": {
           "group": "Select the cover entities to control via this integration instance. You can select multiple covers to control them as a group (all will receive the same position commands). Only select covers that serve this particular window - create separate integration instances for different windows.",
-          "linked_device_id": "Select a physical device to merge this integration's entities into. The integration's sensors, switches, and buttons will appear directly under that device in Home Assistant. Select 'None (standalone device)' to revert to a separate virtual Adaptive Pergola device. Only devices that own the selected cover entities are shown.",
-          "enable_proxy_cover": "Expose a proxy cover entity per physical cover. Use this on dashboards instead of the physical cover so manual commands respect min-mode floors. Default: off."
+          "linked_device_id": "Select a physical device to merge this integration's entities into. The integration's sensors, switches, and buttons will appear directly under that device in Home Assistant. Select 'None (standalone device)' to revert to a separate virtual Adaptive Pergola device. Only devices that own the selected cover entities are shown."
         }
       },
       "geometry": {
@@ -524,14 +515,6 @@
       "summary": {
         "title": "Configuration Summary",
         "description": "{summary}"
-      },
-      "setup_mode": {
-        "title": "Setup Mode",
-        "description": "Choose how much to configure now. You can always adjust all settings later from the options menu.\n\n[Learn more]({learn_more})",
-        "menu_options": {
-          "quick_setup": "Quick Setup — Window basics + sun tracking only (recommended for first-time setup)",
-          "full_setup": "Full Setup — All options including climate, overrides, and automation"
-        }
       },
       "light_cloud": {
         "title": "Light Sensors & Cloud Suppression",
@@ -1371,17 +1354,6 @@
     }
   },
   "selector": {
-    "mode": {
-      "options": {
-        "cover_blind": "Vertical blind",
-        "cover_awning": "Horizontal blind",
-        "cover_tilt": "Tilted blind",
-        "cover_venetian": "Venetian blind (dual-axis)",
-        "cover_oscillating_awning": "Oscillating awning (drop-arm)",
-        "cover_roof_window": "Roof window",
-        "cover_louvered_roof": "Louvered roof (pergola)"
-      }
-    },
     "tilt_mode": {
       "options": {
         "mode1": "single direction (0% = closed / 100% = open)",

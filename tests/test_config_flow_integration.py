@@ -20,9 +20,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from unittest.mock import patch
 
 from custom_components.adaptive_pergola.const import (
-    CONF_ARM_LENGTH,
-    CONF_AWNING_MAX_ANGLE,
-    CONF_AWNING_MIN_ANGLE,
     CONF_AZIMUTH,
     CONF_CLIMATE_MODE,
     CONF_DEFAULT_HEIGHT,
@@ -31,6 +28,7 @@ from custom_components.adaptive_pergola.const import (
     CONF_DEVICE_ID,
     CONF_ENABLE_BLIND_SPOT,
     CONF_ENABLE_GLARE_ZONES,
+    CONF_ENABLE_PROXY_COVER,
     CONF_ENTITIES,
     CONF_FOV_COMPUTE,
     CONF_FOV_LEFT,
@@ -43,13 +41,10 @@ from custom_components.adaptive_pergola.const import (
     CONF_MANUAL_OVERRIDE_RESET,
     CONF_MAX_ELEVATION,
     CONF_MAX_POSITION,
-    CONF_OUTSIDETEMP_ENTITY,
-    CONF_VENETIAN_MODE,
     CONF_ENABLE_MAX_POSITION,
     CONF_MIN_ELEVATION,
     CONF_MIN_POSITION,
     CONF_ENABLE_MIN_POSITION,
-    CONF_MODE,
     CONF_RETURN_SUNSET,
     CONF_SENSOR_TYPE,
     CONF_SILL_HEIGHT,
@@ -72,11 +67,11 @@ pytestmark = pytest.mark.integration
 # Helpers
 # ---------------------------------------------------------------------------
 
-_VERTICAL_GEOMETRY = {
-    CONF_HEIGHT_WIN: 2.1,
-    CONF_WINDOW_DEPTH: 0.0,
-    CONF_SILL_HEIGHT: 0.0,
-}
+# Create-flow geometry payload. The flow always builds a louvered roof (the
+# only shipped cover type), and its geometry schema supplies every field from
+# defaults — so an empty submit is valid and keeps these walkthroughs focused
+# on routing rather than on restating the roof's dimensions.
+_GEOMETRY: dict = {}
 
 _SUN_TRACKING = {
     # Transient sun-window presentation (stage 2): 135°→225° converts to the
@@ -168,26 +163,18 @@ _TEMPERATURE_CLIMATE = {
 
 
 @pytest.mark.integration
-async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
-    """Quick-setup path for a vertical blind creates a config entry with safe defaults."""
+async def test_create_flow_creates_entry(hass: HomeAssistant) -> None:
+    """The lean create flow builds a louvered-roof entry with safe defaults.
+
+    No name/type step: the louvered roof is the only cover type, and with no
+    cover picked there is no device to derive a name from, so the fallback
+    instance name applies.
+    """
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    # The create menu is always shown (cover vs building profile); pick create_new.
-    assert result["type"] in ("form", "menu")
-
-    # Step: create_new
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
     assert result["type"] == "form"
-    assert result["step_id"] == "create_new"
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Test Blind", CONF_MODE: CoverType.BLIND},
-    )
     # Step: cover_entities
     assert result["type"] == "form"
     assert result["step_id"] == "cover_entities"
@@ -200,7 +187,7 @@ async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
     assert result["step_id"] == "geometry"
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
+        result["flow_id"], _GEOMETRY
     )
     # Step: sun_tracking
     assert result["type"] == "form"
@@ -224,8 +211,10 @@ async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
     # Should be "create_entry"
     assert result["type"] == "create_entry"
     entry = result["result"]
-    assert entry.data[CONF_SENSOR_TYPE] == CoverType.BLIND
-    assert entry.data["name"] == "Test Blind"
+    assert entry.data[CONF_SENSOR_TYPE] == CoverType.LOUVERED_ROOF
+    assert entry.data["name"] == "Pergola"
+    # Proxy cover is always shipped by the create flow (no toggle to answer).
+    assert entry.options[CONF_ENABLE_PROXY_COVER] is True
 
     # Quick-setup critical keys must have safe non-None values (regression #133)
     options = entry.options
@@ -242,180 +231,17 @@ async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.integration
-async def test_quick_setup_horizontal_creates_entry(hass: HomeAssistant) -> None:
-    """Quick-setup path for a horizontal awning creates a config entry."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Test Awning", CONF_MODE: CoverType.AWNING},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    assert result["step_id"] == "geometry"
-    # Awning geometry needs length + angle
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"length_awning": 2.1, "angle": 0}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] == "create_entry"
-    assert result["result"].data[CONF_SENSOR_TYPE] == CoverType.AWNING
-
-
-@pytest.mark.integration
-async def test_quick_setup_tilt_creates_entry(hass: HomeAssistant) -> None:
-    """Quick-setup path for a tilt cover creates a config entry."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Test Tilt", CONF_MODE: CoverType.TILT},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    assert result["step_id"] == "geometry"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        # Tilt geometry schema uses cm (0.1-15), not metres
-        {"slat_depth": 3.0, "slat_distance": 2.0, "tilt_mode": "mode1"},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] == "create_entry"
-    assert result["result"].data[CONF_SENSOR_TYPE] == CoverType.TILT
-
-
-# ---------------------------------------------------------------------------
-# Phase 2a: Quick-setup — oscillating awning (cover_oscillating_awning)
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Phase 2a: Full-setup — vertical only (demonstrates all steps)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-async def test_full_setup_skips_building_profile_step_when_no_profiles(
-    hass: HomeAssistant,
-) -> None:
-    """Full-setup create flow skips building_profile step when no profiles exist.
-
-    When _building_profile_entries(hass) is empty the flow jumps directly to
-    position (or blind_spot), preserving the pre-#693 path.
-    """
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "No Profile Blind", CONF_MODE: CoverType.BLIND},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    # No profiles registered → skip directly to position.
-    assert result["step_id"] == "position"
-
-
-@pytest.mark.integration
-async def test_quick_setup_skips_building_profile_step_even_when_profiles_exist(
-    hass: HomeAssistant,
-) -> None:
-    """Creation ignores stale building-profile entries (subsystem deleted, stage 4)."""
-    profile = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "Bldg", CONF_SENSOR_TYPE: "cover_building_profile"},
-        options={},
-        entry_id="test_profile_quick",
-        title="Bldg",
-    )
-    profile.add_to_hass(hass)
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Quick Blind", CONF_MODE: CoverType.BLIND},
-    )
-    # Quick setup
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    # Quick setup never shows the building_profile step.
-    assert result["step_id"] == "position"
-
-
-# ---------------------------------------------------------------------------
-# Phase 2c: Validation errors
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
 async def test_sun_tracking_max_elevation_must_exceed_min(hass: HomeAssistant) -> None:
     """Sun tracking step rejects max_elevation <= min_elevation."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Err Test", CONF_MODE: CoverType.BLIND}
-    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
+        result["flow_id"], _GEOMETRY
     )
     # Submit invalid elevation: max <= min
     bad_tracking = dict(_SUN_TRACKING_VERTICAL)
@@ -439,18 +265,11 @@ async def test_quick_setup_critical_keys_never_none(hass: HomeAssistant) -> None
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Regression", CONF_MODE: CoverType.BLIND}
-    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
+        result["flow_id"], _GEOMETRY
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], _SUN_TRACKING
@@ -1187,13 +1006,6 @@ async def test_config_flow_cover_entities_no_devices_skips_device_selector(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
-    )
     assert result["step_id"] == "cover_entities"
 
     with patch(
@@ -1214,13 +1026,6 @@ async def test_config_flow_cover_entities_with_devices_shows_device_selector(
     """When entities have associated devices, cover_entities re-renders with device selector."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
     )
     assert result["step_id"] == "cover_entities"
 
@@ -1250,13 +1055,6 @@ async def test_config_flow_cover_entities_standalone_selection_proceeds_to_geome
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
-    )
 
     devices = {"device_abc123": "My Blind Motor"}
 
@@ -1283,13 +1081,6 @@ async def test_config_flow_cover_entities_real_device_selection_stores_device_id
     """Selecting a real device stores CONF_DEVICE_ID and proceeds to geometry."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
     )
 
     devices = {"device_abc123": "My Blind Motor"}
@@ -1651,14 +1442,7 @@ async def test_create_flow_title_uses_device_name_when_attached(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
     # Submit create_new with an empty name — triggers auto-naming downstream
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "", CONF_MODE: CoverType.BLIND}
-    )
     assert result["step_id"] == "cover_entities"
 
     # Pass 1: submit the cover entity. The flow looks up the device and stores the
@@ -1676,7 +1460,7 @@ async def test_create_flow_title_uses_device_name_when_attached(
     )
     # Walk the remaining quick-setup steps
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
+        result["flow_id"], _GEOMETRY
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], _SUN_TRACKING
@@ -1712,20 +1496,13 @@ async def test_create_flow_title_falls_back_to_adaptive_prefix_without_device(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "", CONF_MODE: CoverType.BLIND}
-    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: [entity_id]}
     )
     # No device → step proceeds straight to geometry
     assert result["step_id"] == "geometry"
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
+        result["flow_id"], _GEOMETRY
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], _SUN_TRACKING
@@ -1736,65 +1513,8 @@ async def test_create_flow_title_falls_back_to_adaptive_prefix_without_device(
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] == "create_entry"
     entry = result["result"]
-    assert entry.title == "Vertical Blind Adaptive Living Room Blind"
+    assert entry.title == "Louvered Roof Adaptive Living Room Blind"
     assert entry.data["name"] == "Adaptive Living Room Blind"
-
-
-@pytest.mark.integration
-async def test_create_flow_user_typed_name_overrides_device_name(
-    hass: HomeAssistant,
-) -> None:
-    """If the user types a name in create_new, it is respected and the type prefix
-    is applied as usual — device-derived naming does NOT kick in.
-    """
-    entity_id = _register_cover_with_device(
-        hass,
-        device_name="Patio Stairs Shade",
-        entity_original_name="Patio Stairs",
-        unique_id="0x0003",
-        object_id="patio_stairs_shade_user",
-    )
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    # User explicitly provides a name
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "My Cover", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: [entity_id]}
-    )
-    # Device exists → form re-renders with device picker
-    assert result["step_id"] == "cover_entities"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {CONF_ENTITIES: [entity_id], CONF_DEVICE_ID: "__standalone__"},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] == "create_entry"
-    entry = result["result"]
-    # User name wins — device name is ignored
-    assert entry.title == "Vertical Blind My Cover"
-    assert entry.data["name"] == "My Cover"
-
-
-# ---------------------------------------------------------------------------
-# OptionsFlow: position step exposes the My-preset entities toggle
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration
@@ -1938,50 +1658,29 @@ async def test_options_flow_position_step_clears_sunset_pos_when_omitted(
 
 
 @pytest.mark.integration
-async def test_full_setup_persists_fov_and_window_width(
+async def test_create_flow_persists_derived_fov(
     hass: HomeAssistant,
 ) -> None:
-    """Create flow must persist CONF_FOV_* and CONF_WINDOW_WIDTH to entry.options.
+    """Create flow must persist the sun-window-derived CONF_FOV_* to entry.options.
 
     Regression guard for issue #565 Defect A: the hardcoded 73-key allowlist in
     async_step_update silently dropped keys not in the list, including the fov
-    values and window_width. This also exercises the FOV-from-measurements button
-    re-render path (a transient ``fov_compute`` toggle that must NOT persist).
+    values. The window-reveal half of the original guard (CONF_WINDOW_WIDTH and
+    the FOV-from-measurements button) is gone with the vertical-blind form: the
+    louvered policy leaves ``supports_fov_compute`` False, so that toggle is not
+    in the pergola's schema at all.
     """
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Persist Test Blind", CONF_MODE: CoverType.BLIND},
-    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
-    # Feed CONF_WINDOW_WIDTH (+ a reveal depth) in the geometry step.
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {**_VERTICAL_GEOMETRY, CONF_WINDOW_WIDTH: 1.6, CONF_WINDOW_DEPTH: 0.5},
+        result["flow_id"], _GEOMETRY
     )
-    # First sun_tracking submit: tick the "Generate FOV from measurements" button.
-    # This triggers a re-render with the derived fov values filled in.
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            CONF_SUN_WINDOW_START: 90,  # 180° ± 90° window
-            CONF_SUN_WINDOW_END: 270,
-            CONF_FOV_COMPUTE: True,
-        },
-    )
-    assert (
-        result.get("step_id") == "sun_tracking"
-    ), f"expected re-render on button press, got {result!r}"
-    # Second submit without the button: narrow the window (180° ± 45°) and advance.
+    # 135°→225° converts to the canonical azimuth 180, fov 45/45.
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
@@ -2003,13 +1702,11 @@ async def test_full_setup_persists_fov_and_window_width(
         f"CONF_FOV_LEFT was dropped by async_step_update allowlist; "
         f"got {opts.get(CONF_FOV_LEFT)!r}"
     )
-    assert opts.get(CONF_WINDOW_WIDTH) == 1.6, (
-        f"CONF_WINDOW_WIDTH was dropped by async_step_update allowlist; "
-        f"got {opts.get(CONF_WINDOW_WIDTH)!r}"
-    )
-    # The transient toggle must never reach persisted options.
-    assert CONF_FOV_COMPUTE not in opts
-    assert "fov_mode" not in opts
+    assert opts.get(CONF_FOV_RIGHT) == 45
+    assert opts.get(CONF_AZIMUTH) == 180
+    # The transient sun-window fields must never reach persisted options.
+    assert CONF_SUN_WINDOW_START not in opts
+    assert CONF_SUN_WINDOW_END not in opts
 
 
 @pytest.mark.asyncio
@@ -2092,7 +1789,6 @@ async def test_create_flow_ignores_stale_unknown_type_entry(hass: HomeAssistant)
     # Condensed flow: no create menu — the cover form must render (no crash
     # from enumerating the stale entry).
     assert result["type"] == "form"
-    assert result["step_id"] == "create_new"
 
 
 async def test_stale_unknown_type_entry_setup_fails_cleanly(hass: HomeAssistant) -> None:

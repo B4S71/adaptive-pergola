@@ -55,7 +55,7 @@ from .const import (
     _LOGGER,
 )
 from .coordinator import AdaptiveConfigEntry, AdaptiveDataUpdateCoordinator
-from .cover_types import POLICY_REGISTRY, get_policy
+from .cover_types import POLICY_REGISTRY
 from .frontend import async_register_frontend
 from .helpers import (
     copy_legacy_slot_sensors_to_list,
