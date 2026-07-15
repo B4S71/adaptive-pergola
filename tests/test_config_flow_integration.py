@@ -30,7 +30,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_DELTA_POSITION,
     CONF_DELTA_TIME,
     CONF_DEVICE_ID,
-    CONF_DISTANCE,
     CONF_ENABLE_BLIND_SPOT,
     CONF_ENABLE_GLARE_ZONES,
     CONF_ENTITIES,
@@ -59,7 +58,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_END_TIME,
     CONF_SUNRISE_OFFSET,
     CONF_SUNSET_OFFSET,
-    CONF_INVERSE_STATE,
     CONF_IS_SUNNY_SENSOR,
     CONF_WINDOW_DEPTH,
     CONF_WINDOW_WIDTH,
@@ -87,7 +85,7 @@ _SUN_TRACKING = {
     CONF_SUN_WINDOW_START: 135,
     CONF_SUN_WINDOW_END: 225,
     # CONF_MIN_ELEVATION / CONF_MAX_ELEVATION are Optional — omit to use defaults
-    CONF_DISTANCE: 0.5,
+    # CONF_DISTANCE (distance_shaded_area) left the pergola-facing form (stage 3)
     "blind_spot": False,
 }
 
@@ -104,7 +102,7 @@ _POSITION = {
     CONF_MAX_POSITION: 100,
     CONF_ENABLE_MAX_POSITION: False,
     # CONF_SUNSET_POS is Optional — omit to use default
-    "interp": False,
+    # "interp" master toggle left the pergola-facing form (stage 3)
     "open_close_threshold": 50,
 }
 
@@ -113,7 +111,7 @@ _BEHAVIOR = {
     CONF_SUNSET_OFFSET: 0,
     CONF_SUNRISE_OFFSET: 0,
     CONF_RETURN_SUNSET: False,
-    CONF_INVERSE_STATE: False,
+    # CONF_INVERSE_STATE left the pergola-facing form (stage 3)
 }
 
 _AUTOMATION = {
@@ -919,7 +917,6 @@ def test_config_flow_does_not_use_system_language() -> None:
                 CONF_ENABLE_MIN_POSITION: False,
                 CONF_MAX_POSITION: 100,
                 CONF_ENABLE_MAX_POSITION: False,
-                "interp": False,
                 "open_close_threshold": 50,
             },
         ),
@@ -929,7 +926,6 @@ def test_config_flow_does_not_use_system_language() -> None:
                 CONF_SUNSET_OFFSET: 0,
                 CONF_SUNRISE_OFFSET: 0,
                 CONF_RETURN_SUNSET: False,
-                CONF_INVERSE_STATE: False,
             },
         ),
         (
@@ -1040,7 +1036,6 @@ async def test_options_flow_position_saves_position_tolerance(
                 CONF_SUNSET_OFFSET: 0,
                 CONF_SUNRISE_OFFSET: 0,
                 CONF_RETURN_SUNSET: False,
-                CONF_INVERSE_STATE: False,
                 CONF_POSITION_TOLERANCE: 8,
             },
         )
@@ -1861,7 +1856,6 @@ async def test_options_flow_position_step_exposes_my_position_toggle(
             CONF_ENABLE_MIN_POSITION: False,
             CONF_MAX_POSITION: 100,
             CONF_ENABLE_MAX_POSITION: False,
-            "interp": False,
             "open_close_threshold": 50,
             CONF_ENABLE_MY_POSITION_ENTITIES: True,
         },
@@ -1925,7 +1919,6 @@ async def test_options_flow_position_step_clears_sunset_pos_when_omitted(
             CONF_ENABLE_MIN_POSITION: False,
             CONF_MAX_POSITION: 100,
             CONF_ENABLE_MAX_POSITION: False,
-            "interp": False,
             "open_close_threshold": 50,
             CONF_ENABLE_MY_POSITION_ENTITIES: False,
             CONF_SUNSET_USE_MY: False,
@@ -1987,7 +1980,6 @@ async def test_full_setup_persists_fov_and_window_width(
         {
             CONF_SUN_WINDOW_START: 90,  # 180° ± 90° window
             CONF_SUN_WINDOW_END: 270,
-            CONF_DISTANCE: 0.5,
             "blind_spot": False,
             "enable_glare_zones": False,
             CONF_FOV_COMPUTE: True,
@@ -2002,7 +1994,6 @@ async def test_full_setup_persists_fov_and_window_width(
         {
             CONF_SUN_WINDOW_START: 135,
             CONF_SUN_WINDOW_END: 225,
-            CONF_DISTANCE: 0.5,
             "blind_spot": False,
             "enable_glare_zones": False,
         },
@@ -2064,7 +2055,6 @@ async def test_create_flow_sun_tracking_rerender_keeps_typed_azimuth() -> None:
             CONF_SUN_WINDOW_START: 107,
             CONF_SUN_WINDOW_END: 167,
             CONF_FOV_COMPUTE: True,
-            CONF_DISTANCE: 0.5,
         }
     )
     assert result["type"] == "form", "expected re-render on button press"

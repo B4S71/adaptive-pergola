@@ -484,7 +484,10 @@ POSITION_SCHEMA = vol.Schema(
                 unit_of_measurement="%",
             )
         ),
-        vol.Optional(CONF_INTERP, default=False): selector.BooleanSelector(),
+        # CONF_INTERP (position-calibration master toggle) removed from the
+        # pergola-facing form — heritage key, meaningless for a tilt-only
+        # pergola (docs/CONFIG_FLOW_REWORK.md, stage 3). Stored values on old
+        # entries stay readable; runtime keeps its default.
     }
 )
 
@@ -542,7 +545,10 @@ BEHAVIOR_SCHEMA = vol.Schema(
             CONF_ENABLE_POSITION_MATCHING,
             default=DEFAULT_ENABLE_POSITION_MATCHING,
         ): selector.BooleanSelector(),
-        vol.Optional(CONF_INVERSE_STATE, default=False): selector.BooleanSelector(),
+        # CONF_INVERSE_STATE removed from the pergola-facing form — heritage
+        # key for covers reporting 0=open/100=closed; meaningless for the
+        # louvered roof (docs/CONFIG_FLOW_REWORK.md, stage 3). Stored values
+        # on old entries stay readable; runtime keeps its default.
     }
 )
 

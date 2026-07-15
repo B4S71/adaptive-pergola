@@ -13,7 +13,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import voluptuous as vol
-from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 
 from custom_components.adaptive_pergola.config_flow import (
     ConfigFlowHandler,
@@ -22,7 +21,6 @@ from custom_components.adaptive_pergola.config_flow import (
     _sun_tracking_placeholders,
 )
 from custom_components.adaptive_pergola.const import (
-    CONF_DISTANCE,
     CONF_FOV_COMPUTE,
     CONF_FOV_LEFT,
     CONF_FOV_RIGHT,
@@ -32,7 +30,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_WINDOW_WIDTH,
     CoverType,
 )
-from custom_components.adaptive_pergola.unit_system import options_to_display
 
 
 def _keys(schema) -> set[str]:
@@ -138,7 +135,6 @@ async def test_button_press_derives_fov_and_rerenders():
             CONF_FOV_COMPUTE: True,
             CONF_SUN_WINDOW_START: 90,  # 180° ± 90°
             CONF_SUN_WINDOW_END: 270,
-            "distance_shaded_area": 0.5,
         }
     )
     assert advanced is False
@@ -160,7 +156,6 @@ async def test_button_not_pressed_saves_typed_values():
             CONF_FOV_COMPUTE: False,
             CONF_SUN_WINDOW_START: 150,  # span 70 → azimuth 185, fov 35/35
             CONF_SUN_WINDOW_END: 220,
-            "distance_shaded_area": 0.5,
         }
     )
     assert result["type"] == "menu"  # advanced (saved)
@@ -179,7 +174,6 @@ async def test_absent_toggle_saves_typed_values():
         {
             CONF_SUN_WINDOW_START: 100,  # span 140 → azimuth 170, fov 70/70
             CONF_SUN_WINDOW_END: 240,
-            "distance_shaded_area": 0.5,
         }
     )
     assert flow.options[CONF_FOV_LEFT] == 70
@@ -197,49 +191,9 @@ async def test_legacy_fov_mode_key_dropped_on_save():
         {
             CONF_SUN_WINDOW_START: 135,
             CONF_SUN_WINDOW_END: 225,
-            "distance_shaded_area": 0.5,
         }
     )
     assert "fov_mode" not in flow.options
-
-
-# ----------------------------------------------------------------------------
-# Imperial round-trip stability across the button re-render (#565)
-# ----------------------------------------------------------------------------
-
-
-def _imperial_options_flow(options: dict) -> OptionsFlowHandler:
-    flow = _options_flow(options)
-    flow.hass.config.units = US_CUSTOMARY_SYSTEM
-    flow.hass.states.get.return_value = None
-    return flow
-
-
-@pytest.mark.asyncio
-async def test_imperial_shaded_area_stable_across_button_rerender():
-    # The button press re-renders the form. On an imperial hass the "shaded
-    # area" (distance) value must NOT be re-converted metres->inches a second
-    # time, or it compounds on each rerender until the slider overruns.
-    flow = _imperial_options_flow({CONF_WINDOW_WIDTH: 2.0, CONF_WINDOW_DEPTH: 0.5})
-    expected_in = options_to_display(
-        flow.hass, {CONF_DISTANCE: 0.5}, length_keys=(CONF_DISTANCE,)
-    )[CONF_DISTANCE]
-
-    result1 = await flow.async_step_sun_tracking(
-        {CONF_FOV_COMPUTE: True, CONF_DISTANCE: expected_in}
-    )
-    assert result1["type"] == "form"
-    s1 = _suggested(result1, CONF_DISTANCE)
-    assert s1 == pytest.approx(expected_in, abs=0.1)
-
-    # Second submit without the button: saves rather than looping.
-    result2 = await flow.async_step_sun_tracking(
-        {CONF_DISTANCE: s1, CONF_SUN_WINDOW_START: 104, CONF_SUN_WINDOW_END: 256}
-    )
-    assert result2["type"] == "menu"
-    import math
-
-    assert math.isclose(flow.options[CONF_DISTANCE], 0.5, abs_tol=0.05)
 
 
 # ----------------------------------------------------------------------------
@@ -271,7 +225,7 @@ async def test_create_flow_button_press_then_save():
     # Button press → re-render, no advance. The derived 76° halves surface via
     # the sun-window fields around the default azimuth 180 → 104..256.
     result1 = await flow.async_step_sun_tracking(
-        {CONF_FOV_COMPUTE: True, "distance_shaded_area": 0.5}
+        {CONF_FOV_COMPUTE: True}
     )
     assert result1["type"] == "form"
     assert result1["step_id"] == "sun_tracking"
@@ -283,7 +237,6 @@ async def test_create_flow_button_press_then_save():
         {
             CONF_SUN_WINDOW_START: 104,
             CONF_SUN_WINDOW_END: 256,
-            "distance_shaded_area": 0.5,
         }
     )
     assert result2["step_id"] == "position"

@@ -35,7 +35,6 @@
         "description": "Enter your cover and window measurements. The integration uses these to calculate exactly how far to lower or extend the cover to block direct sunlight while maximising natural light.\n\n{geometry_wiki_link}",
         "data": {
           "window_height": "Window Height",
-          "distance_shaded_area": "Shaded area",
           "window_depth": "Window Depth (Reveal)",
           "sill_height": "Window Sill Height",
           "window_width": "Window Width",
@@ -84,7 +83,6 @@
         },
         "data_description": {
           "window_height": "Height of your window (from bottom to top of the glass area). Shown in the unit Home Assistant is configured for. Examples: Standard door = 2.0 m / 79 in, Small window = 1.5 m / 59 in, Floor-to-ceiling = 2.5 m / 98 in. Measure from where the cover starts to where it ends when fully extended.",
-          "distance_shaded_area": "How far you want to ALLOW direct sunlight to reach into the room. Shown in the unit Home Assistant is configured for. This defines your acceptable 'glare zone' — the area where sunlight can reach the floor. The cover position adjusts to maintain this boundary as the sun moves across the sky. Common configurations: Zero (0 m / 0 in) keeps direct sun from passing the glass plane (full closure on hot days); Small glare zone (0.3–0.5 m / 12–20 in) keeps sunlight very close to the window; Medium glare zone (0.5–1.0 m / 20–40 in) allows sun to reach desk or seating area; Large glare zone (2.0–3.0 m / 79–118 in) allows sunlight deep into the room. KEY CONCEPT: LARGER value = MORE sunlight allowed farther into room = cover stays HIGHER/MORE OPEN; SMALLER value = LESS sunlight into room = cover drops LOWER/MORE CLOSED. Measure from the inside of your window to where you want the sun boundary to be.",
           "window_depth": "Depth of window reveal/frame from the wall surface. Shown in the unit Home Assistant is configured for. Optional parameter for advanced accuracy — set to 0 (default) to disable. Typical values: Flush mount = 0.05 m / 2 in, Standard frame = 0.10 m / 4 in, Deep reveal = 0.15 m / 6 in. Provides additional sun blocking at angled sun positions. Measure from the outer wall surface to the inner edge of the window frame. Only affects calculation at angles >10°.",
           "sill_height": "Height from the floor to the bottom of your window. Shown in the unit Home Assistant is configured for. Set to 0 (default) for floor-level windows or when unknown. Example: for a sill 1 m / 39 in above the floor, enter that value. Improves calculation accuracy for raised windows — without it, the blind closes slightly more than necessary. Range: 0–50 m / 0–1968 in. Measure from the floor to the bottom edge of the glass area (the sill). Note: Window Height is still measured from bottom to top of glass — these are independent measurements.",
           "window_width": "Width of the window opening. Shown in the unit Home Assistant is configured for. Used by glare zones to determine which floor zones can receive direct sunlight based on the sun's horizontal angle. Measure the inside width of the glass area. Examples: Standard window = 0.9–1.2 m / 35–47 in, Double window = 1.5–1.8 m / 59–71 in, Patio door = 2.0–3.0 m / 79–118 in. Only relevant when glare zones are enabled.",
@@ -143,8 +141,7 @@
           "min_elevation": "Minimum Elevation of the sun",
           "max_elevation": "Maximum Elevation of the sun",
           "blind_spot": "Setup Blindspot",
-          "enable_glare_zones": "Enable Glare Zones",
-          "distance_shaded_area": "Shaded area"
+          "enable_glare_zones": "Enable Glare Zones"
         },
         "data_description": {
           "enable_sun_tracking": "When enabled, covers track the sun within the configured FOV and elevation limits (solar positioning). Disable to skip distance-based solar positioning while keeping glare zones (controlled by their own switch), climate, motion, manual override, custom positions, and other overrides active. Default: enabled.",
@@ -154,8 +151,7 @@
           "min_elevation": "Track sun only when elevation is ABOVE this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 15° to ignore low morning/evening sun. Leave empty to track sun at all elevations.",
           "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations.",
           "blind_spot": "Enable if you have obstacles blocking sun in part of the tracking area (trees, nearby buildings, roof overhang, balcony). When enabled, you define an azimuth + elevation range where sun is blocked. Cover ignores sun position when it's in this 'blind spot'. Leave disabled if you have clear view to sun all day.",
-          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)",
-          "distance_shaded_area": "How far you want to ALLOW direct sunlight to reach into the room. Shown in the unit Home Assistant is configured for. This defines your acceptable 'glare zone' — the area where sunlight can reach the floor. The cover position adjusts to maintain this boundary as the sun moves across the sky. Common configurations: Zero (0 m / 0 in) keeps direct sun from passing the glass plane (full closure on hot days); Small glare zone (0.3–0.5 m / 12–20 in) keeps sunlight very close to the window; Medium glare zone (0.5–1.0 m / 20–40 in) allows sun to reach desk or seating area; Large glare zone (2.0–3.0 m / 79–118 in) allows sunlight deep into the room. KEY CONCEPT: LARGER value = MORE sunlight allowed farther into room = cover stays HIGHER/MORE OPEN; SMALLER value = LESS sunlight into room = cover drops LOWER/MORE CLOSED. Measure from the inside of your window to where you want the sun boundary to be."
+          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)"
         }
       },
       "position": {
@@ -175,8 +171,7 @@
           "enable_my_position_entities": "Enable My-preset entities",
           "my_position_value": "My position value",
           "sunset_use_my": "Use My at sunset",
-          "open_close_threshold": "Open/Close threshold",
-          "interp": "Enable Position Calibration (custom open/close position mapping)"
+          "open_close_threshold": "Open/Close threshold"
         },
         "data_description": {
           "default_percentage": "Cover position when sun is not in front of window (0-100%). 0% = closed (blinds lowered / awning retracted), 50% = half open (balanced light and privacy), 100% = open (blinds raised / awning extended). This is the 'rest position' used when sun tracking is not active (sun is behind the window, blocked by obstacles, or outside tracking hours).",
@@ -192,13 +187,12 @@
           "enable_my_position_entities": "Create the Managed My Position button and the Managed My Position Value number entity. Off by default — turn on if you use the Somfy-style 'My' preset and want to recall or edit the value from a dashboard.",
           "my_position_value": "The position (1–99%) you programmed on the motor remote (My/favorite preset). Leave blank to disable My-position triggering for this cover.",
           "sunset_use_my": "When the sunset/end-time window activates, trigger the cover's My preset (via stop_cover) instead of the normal open/close fallback. Requires My position value to be set. Only affects non-position-capable covers (e.g. Somfy RTS).",
-          "open_close_threshold": "Position threshold for covers that only support open/close commands (not position control). When the calculated position is greater than or equal to this threshold, the cover opens; when below, it closes. Default: 50% (opens at midpoint or above). Higher values (60-70%) keep cover closed more often, lower values (30-40%) open more often. Only affects covers without position support - covers with position control ignore this setting and use exact calculated positions.",
-          "interp": "Enable custom position mapping to calibrate covers that don't respond linearly to 0–100% commands. When enabled, a \"Position Calibration\" section will appear in the options menu (under Position Settings) where you can configure the mapping values. Use cases: cover doesn't move linearly, prefer certain ranges (more closed or more open), calibrate for unusual cover behavior. Leave disabled for normal operation."
+          "open_close_threshold": "Position threshold for covers that only support open/close commands (not position control). When the calculated position is greater than or equal to this threshold, the cover opens; when below, it closes. Default: 50% (opens at midpoint or above). Higher values (60-70%) keep cover closed more often, lower values (30-40%) open more often. Only affects covers without position support - covers with position control ignore this setting and use exact calculated positions."
         }
       },
       "behavior": {
         "title": "Behaviour (Timing & Thresholds)",
-        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, the position-match tolerance and matching toggle, and inverse-state. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})",
+        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, and the position-match tolerance and matching toggle. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})",
         "data": {
           "sunset_time_entity": "Sunset Time Entity",
           "sunrise_time_entity": "Sunrise Time Entity",
@@ -209,8 +203,7 @@
           "daytime_gate_template": "Daytime gate template (optional)",
           "daytime_gate_template_mode": "Daytime gate template logic",
           "position_tolerance": "Position match tolerance",
-          "enable_position_matching": "Enable position matching",
-          "inverse_state": "Inverse the state (needed for some covers that don't follow HA guidelines)"
+          "enable_position_matching": "Enable position matching"
         },
         "data_description": {
           "sunset_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunset at -4° elevation'). When set, replaces the astral-computed sunset time as the window boundary. Accepts sensor or input_datetime entities reporting an ISO-8601 datetime. Sunset Offset still applies on top. Falls back to astral if the entity is unavailable.",
@@ -222,8 +215,7 @@
           "daytime_gate_template": "Optional Home Assistant Jinja2 template that decides 'daytime' for sun tracking. When it renders truthy (on/true/1) the integration sun-tracks; when falsy it applies the Sunset Position. How it combines with the gate sensors above (OR or AND) is set by 'Daytime gate template logic' below. It can stand alone with no sensors. Example: a Sun2 elevation template, or a lux comparison. A template that fails to render is treated as daytime, so a broken template never forces a premature sunset. When set (alone or with sensors), this REPLACES the astronomical sunset/sunrise boundary. Leave empty to disable.",
           "daytime_gate_template_mode": "How the daytime gate template combines with the gate sensors above. 'OR' (default) — daytime when the template is truthy OR any sensor is ON. 'AND' — daytime only when the template is truthy AND a sensor is ON, so the template must hold for tracking to run. With no sensors configured, the template alone decides in either mode. Only has an effect when a daytime gate template is set above.",
           "position_tolerance": "Allowed gap (%) between the commanded position and the position the cover reports back before the integration treats it as 'not arrived' and resends the command. This is distinct from the movement delta on the Schedule & Timing step: the delta decides whether to send a new command, while this tolerance decides whether an already-sent command was honored. The default of 3% covers normal motor rounding (e.g. a cover that settles at 98% when told 100%). Raise it for actuators that consistently under- or overshoot — for example, set 6% if a cover commanded to 100% reports 95% and would otherwise click and retry every minute.",
-          "enable_position_matching": "Off by default: the integration commands the cover once, then leaves it where it lands. A cover that settles past the Position match tolerance is treated as a manual override (automatic control pauses for the override duration) instead of being re-sent. Turn this on if your cover sometimes stops short of the commanded position and you want the integration to keep re-sending the target until it arrives. Leave it off for covers that reliably reach the target on the first command, that self-heal, or that you stop with a physical remote and want the stop to stick. See [When to enable position matching]({position_matching_wiki}).",
-          "inverse_state": "Enable for covers where position logic is reversed. Standard: 0 = closed/lowered, 100 = open/raised. Inverted: 0 = open/raised, 100 = closed/lowered. Check this ONLY if your cover shows opposite behavior, 100% closes instead of opens, or documentation says 'inverted' or 'reversed'. Test your cover manually first to confirm. Most covers don't need this."
+          "enable_position_matching": "Off by default: the integration commands the cover once, then leaves it where it lands. A cover that settles past the Position match tolerance is treated as a manual override (automatic control pauses for the override duration) instead of being re-sent. Turn this on if your cover sometimes stops short of the commanded position and you want the integration to keep re-sending the target until it arrives. Leave it off for covers that reliably reach the target on the first command, that self-heal, or that you stop with a physical remote and want the stop to stick. See [When to enable position matching]({position_matching_wiki})."
         }
       },
       "automation": {
@@ -702,7 +694,7 @@
       },
       "temperature_climate": {
         "title": "Temperature & Climate Mode",
-        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain. For blinds, this only happens with presence if *Transparent blind* is on; without presence it always closes.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions and transparent blinds still close in summer.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})",
+        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})",
         "data": {
           "climate_mode": "Enable climate mode",
           "temp_entity": "Inside temperature entity",
@@ -713,7 +705,6 @@
           "presence_entity": "Presence entity (optional)",
           "presence_template": "Presence template (optional)",
           "presence_template_mode": "Presence template logic",
-          "transparent_blind": "Transparent blind",
           "winter_close_insulation": "Winter insulation mode",
           "summer_close_bypass_sun_floor": "Full close in summer heat"
         },
@@ -727,7 +718,6 @@
           "presence_entity": "Optional presence sensor, device tracker, or zone. When someone is home, the cover uses glare-control tracking in intermediate conditions; when nobody is home a simpler summer-closed / winter-open rule applies. Leave blank to always treat the space as occupied.",
           "presence_template": "Optional Home Assistant Jinja2 template that reports occupancy. When it renders truthy (on/true/1) the space counts as occupied; when falsy it is treated as empty. How it combines with the Presence entity above (OR or AND) is set by 'Presence template logic' below; it can stand alone with no entity. Use this for composite occupancy (e.g. anyone home AND awake). A template that is empty or fails to render gives no opinion, so the Presence entity logic decides. Leave empty to disable.",
           "presence_template_mode": "How the Presence template combines with the Presence entity above. 'OR' (default) — occupied when the template is truthy OR the entity is active. 'AND' — occupied only when the template is truthy AND the entity is active. With no entity configured, the template alone decides in either mode. Only has an effect when a Presence template is set above.",
-          "transparent_blind": "Closes the blind fully in summer even when occupants are present. Without this, an opaque blind follows glare-control sun tracking in summer instead of closing. Enable it for sheer or translucent material — or for any blind you want fully closed for heat protection when people are home.",
           "winter_close_insulation": "When enabled, the cover closes fully (0%) during winter when the sun is not directly hitting the window, helping to trap heat indoors. Has no effect when the sun is on the window (the cover opens to capture solar heat).",
           "summer_close_bypass_sun_floor": "When enabled, summer heat-blocking closes the cover all the way to the global minimum position, ignoring the higher 'minimum position when sun is in view' floor. Use this for full heat protection in summer even while the sun is directly on the window. Has no effect outside summer, and the maximum-position limit still applies."
         }
@@ -895,7 +885,6 @@
         "description": "Enter your cover and window measurements. The integration uses these to calculate exactly how far to lower or extend the cover to block direct sunlight while maximising natural light.\n\n{geometry_wiki_link}",
         "data": {
           "window_height": "Window Height",
-          "distance_shaded_area": "Shaded area",
           "window_depth": "Window Depth (Reveal)",
           "sill_height": "Window Sill Height",
           "window_width": "Window Width",
@@ -944,7 +933,6 @@
         },
         "data_description": {
           "window_height": "Height of your window (from bottom to top of the glass area). Shown in the unit Home Assistant is configured for. Examples: Standard door = 2.0 m / 79 in, Small window = 1.5 m / 59 in, Floor-to-ceiling = 2.5 m / 98 in. Measure from where the cover starts to where it ends when fully extended.",
-          "distance_shaded_area": "How far you want to ALLOW direct sunlight to reach into the room. Shown in the unit Home Assistant is configured for. This defines your acceptable 'glare zone' — the area where sunlight can reach the floor. The cover position adjusts to maintain this boundary as the sun moves across the sky. Common configurations: Zero (0 m / 0 in) keeps direct sun from passing the glass plane (full closure on hot days); Small glare zone (0.3–0.5 m / 12–20 in) keeps sunlight very close to the window; Medium glare zone (0.5–1.0 m / 20–40 in) allows sun to reach desk or seating area; Large glare zone (2.0–3.0 m / 79–118 in) allows sunlight deep into the room. KEY CONCEPT: LARGER value = MORE sunlight allowed farther into room = cover stays HIGHER/MORE OPEN; SMALLER value = LESS sunlight into room = cover drops LOWER/MORE CLOSED. Measure from the inside of your window to where you want the sun boundary to be.",
           "window_depth": "Depth of window reveal/frame from the wall surface. Shown in the unit Home Assistant is configured for. Optional parameter for advanced accuracy — set to 0 (default) to disable. Typical values: Flush mount = 0.05 m / 2 in, Standard frame = 0.10 m / 4 in, Deep reveal = 0.15 m / 6 in. Provides additional sun blocking at angled sun positions. Measure from the outer wall surface to the inner edge of the window frame. Only affects calculation at angles >10°.",
           "sill_height": "Height from the floor to the bottom of your window. Shown in the unit Home Assistant is configured for. Set to 0 (default) for floor-level windows or when unknown. Example: for a sill 1 m / 39 in above the floor, enter that value. Improves calculation accuracy for raised windows — without it, the blind closes slightly more than necessary. Range: 0–50 m / 0–1968 in. Measure from the floor to the bottom edge of the glass area (the sill). Note: Window Height is still measured from bottom to top of glass — these are independent measurements.",
           "window_width": "Width of the window opening. Shown in the unit Home Assistant is configured for. Used by glare zones to determine which floor zones can receive direct sunlight based on the sun's horizontal angle. Measure the inside width of the glass area. Examples: Standard window = 0.9–1.2 m / 35–47 in, Double window = 1.5–1.8 m / 59–71 in, Patio door = 2.0–3.0 m / 79–118 in. Only relevant when glare zones are enabled.",
@@ -1003,8 +991,7 @@
           "min_elevation": "Minimum Elevation of the sun",
           "max_elevation": "Maximum Elevation of the sun",
           "blind_spot": "Setup Blindspot",
-          "enable_glare_zones": "Enable Glare Zones",
-          "distance_shaded_area": "Shaded area"
+          "enable_glare_zones": "Enable Glare Zones"
         },
         "data_description": {
           "enable_sun_tracking": "When enabled, covers track the sun within the configured FOV and elevation limits (solar positioning). Disable to skip distance-based solar positioning while keeping glare zones (controlled by their own switch), climate, motion, manual override, custom positions, and other overrides active. Default: enabled.",
@@ -1014,8 +1001,7 @@
           "min_elevation": "Track sun only when elevation is ABOVE this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 15° to ignore low morning/evening sun. Leave empty to track sun at all elevations.",
           "max_elevation": "Track sun only when elevation is BELOW this angle (degrees above horizon). Sun elevation: 0°=horizon, 45°=halfway to zenith, 90°=directly overhead. Use this to ignore sun at certain times. Example: Set to 60° to ignore high midday sun. Leave empty to track sun at all elevations.",
           "blind_spot": "Enable if you have obstacles blocking sun in part of the tracking area (trees, nearby buildings, roof overhang, balcony). When enabled, you define an azimuth + elevation range where sun is blocked. Cover ignores sun position when it's in this 'blind spot'. Leave disabled if you have clear view to sun all day.",
-          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)",
-          "distance_shaded_area": "How far you want to ALLOW direct sunlight to reach into the room. Shown in the unit Home Assistant is configured for. This defines your acceptable 'glare zone' — the area where sunlight can reach the floor. The cover position adjusts to maintain this boundary as the sun moves across the sky. Common configurations: Zero (0 m / 0 in) keeps direct sun from passing the glass plane (full closure on hot days); Small glare zone (0.3–0.5 m / 12–20 in) keeps sunlight very close to the window; Medium glare zone (0.5–1.0 m / 20–40 in) allows sun to reach desk or seating area; Large glare zone (2.0–3.0 m / 79–118 in) allows sunlight deep into the room. KEY CONCEPT: LARGER value = MORE sunlight allowed farther into room = cover stays HIGHER/MORE OPEN; SMALLER value = LESS sunlight into room = cover drops LOWER/MORE CLOSED. Measure from the inside of your window to where you want the sun boundary to be."
+          "enable_glare_zones": "Protect specific floor areas from direct sun glare (vertical covers only)"
         }
       },
       "position": {
@@ -1035,8 +1021,7 @@
           "enable_my_position_entities": "Enable My-preset entities",
           "my_position_value": "My position value",
           "sunset_use_my": "Use My at sunset",
-          "open_close_threshold": "Open/Close threshold",
-          "interp": "Enable Position Calibration (custom open/close position mapping)"
+          "open_close_threshold": "Open/Close threshold"
         },
         "data_description": {
           "default_percentage": "Cover position when sun is not in front of window (0-100%). 0% = closed (blinds lowered / awning retracted), 50% = half open (balanced light and privacy), 100% = open (blinds raised / awning extended). This is the 'rest position' used when sun tracking is not active (sun is behind the window, blocked by obstacles, or outside tracking hours).",
@@ -1052,13 +1037,12 @@
           "enable_my_position_entities": "Create the Managed My Position button and the Managed My Position Value number entity. Off by default — turn on if you use the Somfy-style 'My' preset and want to recall or edit the value from a dashboard.",
           "my_position_value": "The position (1–99%) you programmed on the motor remote (My/favorite preset). Leave blank to disable My-position triggering for this cover.",
           "sunset_use_my": "When the sunset/end-time window activates, trigger the cover's My preset (via stop_cover) instead of the normal open/close fallback. Requires My position value to be set. Only affects non-position-capable covers (e.g. Somfy RTS).",
-          "open_close_threshold": "Position threshold for covers that only support open/close commands (not position control). When the calculated position is greater than or equal to this threshold, the cover opens; when below, it closes. Default: 50% (opens at midpoint or above). Higher values (60-70%) keep cover closed more often, lower values (30-40%) open more often. Only affects covers without position support - covers with position control ignore this setting and use exact calculated positions.",
-          "interp": "Enable custom position mapping to calibrate covers that don't respond linearly to 0–100% commands. When enabled, a \"Position Calibration\" section will appear in the options menu (under Position Settings) where you can configure the mapping values. Use cases: cover doesn't move linearly, prefer certain ranges (more closed or more open), calibrate for unusual cover behavior. Leave disabled for normal operation."
+          "open_close_threshold": "Position threshold for covers that only support open/close commands (not position control). When the calculated position is greater than or equal to this threshold, the cover opens; when below, it closes. Default: 50% (opens at midpoint or above). Higher values (60-70%) keep cover closed more often, lower values (30-40%) open more often. Only affects covers without position support - covers with position control ignore this setting and use exact calculated positions."
         }
       },
       "behavior": {
         "title": "Behaviour (Timing & Thresholds)",
-        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, the position-match tolerance and matching toggle, and inverse-state. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "Tune how the cover behaves once a position is chosen: sunset/sunrise timing adjustments, and the position-match tolerance and matching toggle. These are not target positions — every percentage value lives on the Position Settings step; this step holds only the timing and threshold knobs.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
         "data": {
           "sunset_time_entity": "Sunset Time Entity",
           "sunrise_time_entity": "Sunrise Time Entity",
@@ -1069,8 +1053,7 @@
           "daytime_gate_template": "Daytime gate template (optional)",
           "daytime_gate_template_mode": "Daytime gate template logic",
           "position_tolerance": "Position match tolerance",
-          "enable_position_matching": "Enable position matching",
-          "inverse_state": "Inverse the state (needed for some covers that don't follow HA guidelines)"
+          "enable_position_matching": "Enable position matching"
         },
         "data_description": {
           "sunset_time_entity": "Optional entity whose state is a datetime (e.g. Sun2 'sunset at -4° elevation'). When set, replaces the astral-computed sunset time as the window boundary. Accepts sensor or input_datetime entities reporting an ISO-8601 datetime. Sunset Offset still applies on top. Falls back to astral if the entity is unavailable.",
@@ -1082,8 +1065,7 @@
           "daytime_gate_template": "Optional Home Assistant Jinja2 template that decides 'daytime' for sun tracking. When it renders truthy (on/true/1) the integration sun-tracks; when falsy it applies the Sunset Position. How it combines with the gate sensors above (OR or AND) is set by 'Daytime gate template logic' below. It can stand alone with no sensors. Example: a Sun2 elevation template, or a lux comparison. A template that fails to render is treated as daytime, so a broken template never forces a premature sunset. When set (alone or with sensors), this REPLACES the astronomical sunset/sunrise boundary. Leave empty to disable.",
           "daytime_gate_template_mode": "How the daytime gate template combines with the gate sensors above. 'OR' (default) — daytime when the template is truthy OR any sensor is ON. 'AND' — daytime only when the template is truthy AND a sensor is ON, so the template must hold for tracking to run. With no sensors configured, the template alone decides in either mode. Only has an effect when a daytime gate template is set above.",
           "position_tolerance": "Allowed gap (%) between the commanded position and the position the cover reports back before the integration treats it as 'not arrived' and resends the command. This is distinct from the movement delta on the Schedule & Timing step: the delta decides whether to send a new command, while this tolerance decides whether an already-sent command was honored. The default of 3% covers normal motor rounding (e.g. a cover that settles at 98% when told 100%). Raise it for actuators that consistently under- or overshoot — for example, set 6% if a cover commanded to 100% reports 95% and would otherwise click and retry every minute.",
-          "enable_position_matching": "Off by default: the integration commands the cover once, then leaves it where it lands. A cover that settles past the Position match tolerance is treated as a manual override (automatic control pauses for the override duration) instead of being re-sent. Turn this on if your cover sometimes stops short of the commanded position and you want the integration to keep re-sending the target until it arrives. Leave it off for covers that reliably reach the target on the first command, that self-heal, or that you stop with a physical remote and want the stop to stick. See [When to enable position matching]({position_matching_wiki}).",
-          "inverse_state": "Enable for covers where position logic is reversed. Standard: 0 = closed/lowered, 100 = open/raised. Inverted: 0 = open/raised, 100 = closed/lowered. Check this ONLY if your cover shows opposite behavior, 100% closes instead of opens, or documentation says 'inverted' or 'reversed'. Test your cover manually first to confirm. Most covers don't need this."
+          "enable_position_matching": "Off by default: the integration commands the cover once, then leaves it where it lands. A cover that settles past the Position match tolerance is treated as a manual override (automatic control pauses for the override duration) instead of being re-sent. Turn this on if your cover sometimes stops short of the commanded position and you want the integration to keep re-sending the target until it arrives. Leave it off for covers that reliably reach the target on the first command, that self-heal, or that you stop with a physical remote and want the stop to stick. See [When to enable position matching]({position_matching_wiki})."
         }
       },
       "manual_override": {
@@ -1543,7 +1525,7 @@
       },
       "temperature_climate": {
         "title": "Temperature & Climate Mode",
-        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain. For blinds, this only happens with presence if *Transparent blind* is on; without presence it always closes.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions and transparent blinds still close in summer.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
+        "description": "Climate mode adjusts cover position based on indoor/outdoor temperature, presence, and whether the sun is actually hitting the window. When disabled, the cover follows normal sun/glare tracking.\n\n**How the season is chosen** — The current temperature is the outside sensor if provided, otherwise the inside sensor.\n- **Winter** — current temp is below the low threshold.\n- **Summer** — current temp is above the high threshold **and** outside temp is above the outside threshold (prevents summer behavior on a cold day).\n- **Intermediate** — neither of the above; normal solar/glare tracking runs.\n\n**What each mode does**\n- **Winter + sun on window** → open fully (100%) to capture free solar heat.\n- **Winter, sun not on window**, *Winter insulation mode* on → close fully (0%) to trap heat.\n- **Summer** → close fully (0%) to block heat gain.\n- **Low light** (cloudy / dark / not sunny) → returns to the default position, overriding summer-close so covers don't close needlessly.\n- **Intermediate / sun valid with presence** → normal glare-control tracking.\n\n**Presence** gates the behavior: with nobody home, a simpler summer-closed / winter-open rule applies; with occupants present, glare tracking runs in intermediate conditions.\n\n**Tilt covers** follow the same seasonal logic but use slat angles instead of open/closed positions.\n\nLeave *Outside temperature sensor* and *Presence entity* blank to skip those checks. Climate mode runs after force/weather/manual/custom overrides but before normal solar tracking.\n\n[Learn more]({learn_more})\n\n{profile_inherit}",
         "data": {
           "climate_mode": "Enable climate mode",
           "temp_entity": "Inside temperature entity",
@@ -1554,7 +1536,6 @@
           "presence_entity": "Presence entity (optional)",
           "presence_template": "Presence template (optional)",
           "presence_template_mode": "Presence template logic",
-          "transparent_blind": "Transparent blind",
           "winter_close_insulation": "Winter insulation mode",
           "summer_close_bypass_sun_floor": "Full close in summer heat"
         },
@@ -1568,7 +1549,6 @@
           "presence_entity": "Optional presence sensor, device tracker, or zone. When someone is home, the cover uses glare-control tracking in intermediate conditions; when nobody is home a simpler summer-closed / winter-open rule applies. Leave blank to always treat the space as occupied.",
           "presence_template": "Optional Home Assistant Jinja2 template that reports occupancy. When it renders truthy (on/true/1) the space counts as occupied; when falsy it is treated as empty. How it combines with the Presence entity above (OR or AND) is set by 'Presence template logic' below; it can stand alone with no entity. Use this for composite occupancy (e.g. anyone home AND awake). A template that is empty or fails to render gives no opinion, so the Presence entity logic decides. Leave empty to disable.",
           "presence_template_mode": "How the Presence template combines with the Presence entity above. 'OR' (default) — occupied when the template is truthy OR the entity is active. 'AND' — occupied only when the template is truthy AND the entity is active. With no entity configured, the template alone decides in either mode. Only has an effect when a Presence template is set above.",
-          "transparent_blind": "Closes the blind fully in summer even when occupants are present. Without this, an opaque blind follows glare-control sun tracking in summer instead of closing. Enable it for sheer or translucent material — or for any blind you want fully closed for heat protection when people are home.",
           "winter_close_insulation": "When enabled, the cover closes fully (0%) during winter when the sun is not directly hitting the window, helping to trap heat indoors. Has no effect when the sun is on the window (the cover opens to capture solar heat).",
           "summer_close_bypass_sun_floor": "When enabled, summer heat-blocking closes the cover all the way to the global minimum position, ignoring the higher 'minimum position when sun is in view' floor. Use this for full heat protection in summer even while the sun is directly on the window. Has no effect outside summer, and the maximum-position limit still applies."
         }

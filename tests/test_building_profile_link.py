@@ -183,7 +183,8 @@ def test_behavior_schema_shows_profile_keys_on_linked_cover() -> None:
     ):
         assert key in bh_linked, f"{key} should render for a linked cover"
 
-    assert CONF_INVERSE_STATE in bh_linked
+    # CONF_INVERSE_STATE left the pergola-facing behavior form (stage 3).
+    assert CONF_INVERSE_STATE not in bh_linked
     assert CONF_SUNSET_OFFSET in bh_linked
     assert CONF_SUNRISE_OFFSET in bh_linked
 

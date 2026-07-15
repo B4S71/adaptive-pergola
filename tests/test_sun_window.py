@@ -105,7 +105,7 @@ class TestApplySunWindowSubmit:
         user_input = {
             CONF_SUN_WINDOW_START: 137,
             CONF_SUN_WINDOW_END: 2,
-            "distance_shaded_area": 0.5,
+            "min_elevation": 20,  # unrelated keys pass through untouched
         }
         assert _apply_sun_window_submit(user_input) is None
         assert CONF_SUN_WINDOW_START not in user_input
@@ -113,7 +113,7 @@ class TestApplySunWindowSubmit:
         assert user_input[CONF_AZIMUTH] == 249
         assert user_input[CONF_FOV_LEFT] == 112
         assert user_input[CONF_FOV_RIGHT] == 113
-        assert user_input["distance_shaded_area"] == 0.5
+        assert user_input["min_elevation"] == 20
 
     def test_zero_span_returns_error_and_keeps_keys(self):
         # start == end → field error; the transient keys stay so the error

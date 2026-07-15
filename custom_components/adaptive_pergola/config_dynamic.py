@@ -177,10 +177,13 @@ def _condition_template_schema(template_key: str, mode_key: str) -> dict:
 
 
 def sun_tracking_schema(hass: HomeAssistant | None = None) -> vol.Schema:
-    """Sun-tracking schema. ``hass=None`` → metric labels.
+    """Sun-tracking schema. Every field is angles or booleans.
 
-    Only ``CONF_DISTANCE`` is unit-dependent; every other field is angles or
-    booleans.
+    ``hass`` is accepted for call-site symmetry with the other locale-aware
+    builders; nothing here is unit-dependent since the vertical-cover
+    ``CONF_DISTANCE`` ("distance of shaded area") field left the pergola-facing
+    form (docs/CONFIG_FLOW_REWORK.md, stage 3 — the vertical engine kept for
+    the compat-policy tests still reads stored values).
     """
     return vol.Schema(
         {
@@ -231,14 +234,6 @@ def sun_tracking_schema(hass: HomeAssistant | None = None) -> vol.Schema:
                     mode=selector.NumberSelectorMode.SLIDER,
                     unit_of_measurement="°",
                 )
-            ),
-            vol.Required(
-                CONF_DISTANCE, default=length_default(0.5, hass)
-            ): length_selector(
-                hass,
-                min_m=0.0,
-                max_m=50,
-                metric_step=0.1,
             ),
             vol.Optional(
                 CONF_ENABLE_BLIND_SPOT, default=False
@@ -519,7 +514,10 @@ def temperature_climate_schema(
         vol.Optional(CONF_TEMP_LOW, default="21"): _threshold_selector(),
         vol.Optional(CONF_TEMP_HIGH, default="25"): _threshold_selector(),
         vol.Optional(CONF_OUTSIDE_THRESHOLD, default="25"): _threshold_selector(),
-        vol.Optional(CONF_TRANSPARENT_BLIND, default=False): selector.BooleanSelector(),
+        # CONF_TRANSPARENT_BLIND removed from the pergola-facing form —
+        # heritage key for see-through fabric blinds; meaningless for the
+        # louvered roof (docs/CONFIG_FLOW_REWORK.md, stage 3). Stored values
+        # on old entries stay readable; runtime keeps its default.
         vol.Optional(
             CONF_WINTER_CLOSE_INSULATION, default=False
         ): selector.BooleanSelector(),
@@ -539,7 +537,7 @@ def behavior_schema(options: dict | None = None) -> vol.Schema:
     ``CONF_DAYTIME_GATE_SENSORS``, ``CONF_DAYTIME_GATE_TEMPLATE``,
     ``CONF_DAYTIME_GATE_TEMPLATE_MODE``) are rendered for linked covers too under
     the inherit/override model (pre-filled with the inherited value). Per-cover
-    fields (``CONF_SUNSET_OFFSET``, ``CONF_SUNRISE_OFFSET``, ``CONF_INVERSE_STATE``,
+    fields (``CONF_SUNSET_OFFSET``, ``CONF_SUNRISE_OFFSET``,
     ``CONF_POSITION_TOLERANCE``, ``CONF_ENABLE_POSITION_MATCHING``) are always
     rendered.
     """
@@ -587,7 +585,10 @@ def behavior_schema(options: dict | None = None) -> vol.Schema:
             CONF_ENABLE_POSITION_MATCHING,
             default=DEFAULT_ENABLE_POSITION_MATCHING,
         ): selector.BooleanSelector(),
-        vol.Optional(CONF_INVERSE_STATE, default=False): selector.BooleanSelector(),
+        # CONF_INVERSE_STATE removed from the pergola-facing form — heritage
+        # key for covers reporting 0=open/100=closed; meaningless for the
+        # louvered roof (docs/CONFIG_FLOW_REWORK.md, stage 3). Stored values
+        # on old entries stay readable; runtime keeps its default.
     }
     return vol.Schema(schema)
 

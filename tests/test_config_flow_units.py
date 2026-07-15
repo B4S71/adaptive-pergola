@@ -125,16 +125,15 @@ class TestLouveredSlatLabels:
 
 
 @pytest.mark.unit
-class TestSunTrackingDistance:
-    """CONF_DISTANCE follows the length-unit locale."""
+class TestSunTrackingSchemaHasNoLengthFields:
+    """CONF_DISTANCE (distance_shaded_area) left the pergola-facing sun-tracking
+    form (docs/CONFIG_FLOW_REWORK.md, stage 3) — nothing on the step is
+    unit-dependent any more, in either locale."""
 
-    def test_metric(self):
-        cfg = _selector_for(sun_tracking_schema(_hass(imperial=False)), CONF_DISTANCE)
-        assert cfg["unit_of_measurement"] == "m"
-
-    def test_imperial(self):
-        cfg = _selector_for(sun_tracking_schema(_hass(imperial=True)), CONF_DISTANCE)
-        assert cfg["unit_of_measurement"] == "in"
+    def test_absent_in_both_locales(self):
+        for imperial in (False, True):
+            keys = {str(m) for m in sun_tracking_schema(_hass(imperial=imperial)).schema}
+            assert CONF_DISTANCE not in keys
 
 
 @pytest.mark.unit
