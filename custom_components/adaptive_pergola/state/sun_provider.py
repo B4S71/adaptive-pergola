@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.helpers.sun import get_astral_location
+from homeassistant.helpers.sun import get_astral_observer
 
 from ..sun import SunData
 
@@ -26,8 +26,7 @@ class SunProvider:
             timezone: Timezone string for solar calculations.
 
         Returns:
-            SunData instance with location and elevation from HA config.
+            SunData instance with the observer (lat/lon/elevation) from HA config.
 
         """
-        location, elevation = get_astral_location(self._hass)
-        return SunData(timezone, location, elevation)
+        return SunData(timezone, get_astral_observer(self._hass))

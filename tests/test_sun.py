@@ -14,25 +14,57 @@ on day rollover.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
+from astral import Observer
+
 from custom_components.adaptive_pergola.sun import SunData
 
 
-def _make_sun_data() -> SunData:
-    """Build a SunData backed by a MagicMock astral location.
+@pytest.fixture(autouse=True)
+def _clear_day_cache():
+    """Isolate the module-level day cache between tests.
 
-    The mock returns deterministic azimuth/elevation values so we can
-    assert call counts and shapes without depending on the real astral
-    library.
+    ``_DAY_CACHE`` is keyed on (tz, lat, lon, elevation, today) and shared
+    across SunData instances by design. These tests now build real
+    ``Observer``s, so they all share one key and would otherwise inherit each
+    other's fills — masking the ``pd.date_range`` call counts asserted below.
+    (The old MagicMock locations were isolated only by accident: each mock's
+    ``.latitude`` was a distinct object, so every test got its own key.)
     """
-    location = MagicMock()
-    location.solar_azimuth = MagicMock(return_value=180.0)
-    location.solar_elevation = MagicMock(return_value=30.0)
-    return SunData(timezone="UTC", location=location, elevation=0)
+    from custom_components.adaptive_pergola.sun import _DAY_CACHE
+
+    _DAY_CACHE.clear()
+    yield
+    _DAY_CACHE.clear()
+
+
+def _make_sun_data() -> SunData:
+    """Build a SunData backed by a real astral Observer.
+
+    The angle walk now goes through the ``astral.sun`` module functions
+    rather than methods on the location object, so tests that need to count
+    or stub those calls patch ``sun.astral.sun.azimuth`` / ``.elevation``
+    (see ``_patch_angles``) instead of mocking an object.
+    """
+    return SunData(timezone="UTC", observer=Observer(48.0, 14.0, 0.0))
+
+
+def _patch_angles(azimuth: float = 180.0, elevation: float = 30.0):
+    """Patch the astral angle functions the day-walk calls, as a context manager pair."""
+    return (
+        patch(
+            "custom_components.adaptive_pergola.sun.astral.sun.azimuth",
+            return_value=azimuth,
+        ),
+        patch(
+            "custom_components.adaptive_pergola.sun.astral.sun.elevation",
+            return_value=elevation,
+        ),
+    )
 
 
 @pytest.mark.unit
@@ -100,7 +132,7 @@ def test_times_invalidates_on_day_rollover():
 
 @pytest.mark.unit
 def test_solar_elevation_called_once_per_sample_per_day():
-    """`location.solar_elevation` is called exactly N times across the entire day.
+    """`astral.sun.elevation` is called exactly N times across the entire day.
 
     Where N is the number of 5-minute samples (289). Pre-fix, every
     `.solar_elevation` access on the property re-walked the timeline
@@ -109,12 +141,16 @@ def test_solar_elevation_called_once_per_sample_per_day():
     reads in the same day would push the call count into the thousands.
     """
     sd = _make_sun_data()
-    _ = sd.times  # warm cache
-    _ = sd.solar_elevation
-    _ = sd.solar_elevation  # second read must not re-walk
-    _ = sd.solar_elevation
-    n_expected = len(sd.times)
-    assert sd.location.solar_elevation.call_count == n_expected
+    with patch(
+        "custom_components.adaptive_pergola.sun.astral.sun.elevation",
+        return_value=30.0,
+    ) as spy:
+        _ = sd.times  # warm cache
+        _ = sd.solar_elevation
+        _ = sd.solar_elevation  # second read must not re-walk
+        _ = sd.solar_elevation
+        n_expected = len(sd.times)
+    assert spy.call_count == n_expected
 
 
 @pytest.mark.unit
@@ -134,11 +170,18 @@ def test_solar_azimuth_and_elevation_share_one_timeline_build():
 def test_polar_sentinels_still_work():
     """Date-cached refactor must preserve the polar midnight-sun / polar-night fallbacks."""
     sd = _make_sun_data()
-    sd.location.sunset.side_effect = ValueError("never sets")
-    sd.location.sunrise.side_effect = ValueError("never rises")
-
-    result_sunset = sd.sunset()
-    result_sunrise = sd.sunrise()
+    with (
+        patch(
+            "custom_components.adaptive_pergola.sun.astral.sun.sunset",
+            side_effect=ValueError("never sets"),
+        ),
+        patch(
+            "custom_components.adaptive_pergola.sun.astral.sun.sunrise",
+            side_effect=ValueError("never rises"),
+        ),
+    ):
+        result_sunset = sd.sunset()
+        result_sunrise = sd.sunrise()
 
     today = date.today()
     assert result_sunset == datetime(today.year, today.month, today.day, 23, 59, 59)

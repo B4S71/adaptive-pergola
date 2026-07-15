@@ -1163,13 +1163,9 @@ def test_build_forecast_with_real_sun_data_caches_timeline():
 
     from custom_components.adaptive_pergola.sun import SunData
 
-    location = MagicMock()
-    # Real astral returns floats; the value doesn't matter for this test.
-    location.solar_azimuth = MagicMock(return_value=180.0)
-    location.solar_elevation = MagicMock(return_value=45.0)
-    location.sunset = MagicMock(side_effect=ValueError("ignore"))
-    location.sunrise = MagicMock(side_effect=ValueError("ignore"))
-    sd = SunData(timezone="UTC", location=location, elevation=0)
+    from astral import Observer
+
+    sd = SunData(timezone="UTC", observer=Observer(48.0, 14.0, 0.0))
 
     with patch(
         "custom_components.adaptive_pergola.sun.pd.date_range",
@@ -1293,15 +1289,14 @@ def _clear_sun_day_cache():
 def _make_real_sun_data(
     *, latitude: float = 37.0, longitude: float = -122.0, elevation: float = 0.0
 ):
-    """Build a real SunData instance backed by a mock astral Location."""
+    """Build a real SunData instance backed by a real astral Observer."""
+    from astral import Observer
+
     from custom_components.adaptive_pergola.sun import SunData
 
-    location = MagicMock()
-    location.latitude = latitude
-    location.longitude = longitude
-    location.solar_azimuth = MagicMock(return_value=180.0)
-    location.solar_elevation = MagicMock(return_value=45.0)
-    return SunData(timezone="UTC", location=location, elevation=elevation)
+    return SunData(
+        timezone="UTC", observer=Observer(latitude, longitude, elevation)
+    )
 
 
 class TestSunDataModuleCache:
@@ -1375,12 +1370,12 @@ class TestSunDataModuleCache:
         """_cache_key is importable and returns the same tuple on repeated calls."""
         from custom_components.adaptive_pergola.sun import _cache_key
 
-        location = MagicMock()
-        location.latitude = 37.0
-        location.longitude = -122.0
+        from astral import Observer
 
-        key1 = _cache_key("UTC", location, 0.0)
-        key2 = _cache_key("UTC", location, 0.0)
+        observer = Observer(37.0, -122.0, 0.0)
+
+        key1 = _cache_key("UTC", observer)
+        key2 = _cache_key("UTC", observer)
 
         assert key1 == key2
         # Key is a tuple with at least 5 elements: tz, lat, lon, elevation, date.
