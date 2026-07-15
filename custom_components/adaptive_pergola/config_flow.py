@@ -3147,23 +3147,23 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         return OptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
-        """Handle the initial step — always show the create menu.
+        """Handle the initial step — straight to the pergola form.
 
-        Creating a cover and creating a building profile are distinct top-level
-        choices. The duplicate option only appears when prior entries exist.
+        Condensed flow (docs/CONFIG_FLOW_REWORK.md): no create-menu. Building-
+        profile creation and duplicate-existing are heritage entry points; the
+        handlers remain callable but are no longer reachable from the UI.
         """
-        acp_entries = _cover_entries(self.hass)
-        menu_options = ["create_new", "create_building_profile"] + (
-            ["duplicate_existing"] if acp_entries else []
-        )
-        return self.async_show_menu(step_id="user", menu_options=menu_options)
+        return await self.async_step_create_new(user_input)
 
     async def async_step_create_new(self, user_input: dict[str, Any] | None = None):
         """Handle create new cover flow."""
         if user_input:
             self.config = user_input
             self.type_blind = self.config[CONF_MODE]
-            return await self.async_step_setup_mode()
+            # Condensed flow: no quick/full fork — the lean path (name → cover
+            # → geometry → sun window → positions → summary) is the only flow;
+            # everything else is configured later via the options menu.
+            return await self.async_step_cover_entities()
         return self.async_show_form(
             step_id="create_new",
             data_schema=CONFIG_SCHEMA,
@@ -3918,20 +3918,13 @@ class OptionsFlowHandler(OptionsFlow):
             "geometry",
             "sun_tracking",
         ]
-        # Link this cover to a Building Profile (shared sensor IDs). Only shown
-        # for real covers, and only when at least one profile exists to link to.
-        if get_policy(self.sensor_type).controls_cover and _building_profile_entries(
-            self.hass
-        ):
-            keys.append("building_profile")
-        if self.options.get(CONF_ENABLE_BLIND_SPOT):
-            keys.append("blind_spot")
+        # Condensed flow (docs/CONFIG_FLOW_REWORK.md): building-profile
+        # linking, blind-spot and interpolation are heritage — their step
+        # handlers remain callable but are no longer offered in the menu.
 
         # ── Layer 2: Where can I go? / how do I behave? ──────────────
         keys.append("position")  # L2a positions (% values)
         keys.append("behavior")  # L2b timing & thresholds
-        if self.options.get(CONF_INTERP):
-            keys.append("interp")
 
         # ── Layer 3: How do I decide? (handlers, priority high → low) ─
         keys.extend(
@@ -3944,10 +3937,8 @@ class OptionsFlowHandler(OptionsFlow):
                 "temperature_climate",  # Climate, priority 50
             ]
         )
-        if get_policy(self.sensor_type).supports_glare_zones and self.options.get(
-            CONF_ENABLE_GLARE_ZONES
-        ):
-            keys.append("glare_zones")  # Priority 45
+        # Condensed flow: glare zones and multi-cover sync are heritage —
+        # not offered for pergolas.
 
         # Re-order the whole handler chain (built-in priority overrides).
         keys.append("pipeline_priorities")
@@ -3956,7 +3947,6 @@ class OptionsFlowHandler(OptionsFlow):
         keys.append("automation")
 
         # ── Admin ────────────────────────────────────────────────────
-        keys.append("sync")  # Multi-cover management
         keys.extend(["summary", "debug", "done"])
 
         # Use a list so HA translates labels client-side using the user's language preference.

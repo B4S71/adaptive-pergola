@@ -43,36 +43,6 @@ def _select_options(schema, key):
 
 
 @pytest.mark.integration
-async def test_create_building_profile(hass: HomeAssistant) -> None:
-    """Building-profile creation is its own top-level menu option whose combined
-    form collects the name and the building-level sensors in one step.
-    """
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    # The cover-vs-profile menu is always shown.
-    assert result["type"] == "menu"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "create_building_profile"}
-    )
-    assert result["type"] == "form"
-    assert result["step_id"] == "create_building_profile"
-    # One combined form: the name field plus the building-profile sensor pickers.
-    keys = _schema_keys(result["data_schema"])
-    assert keys == {"name", *BUILDING_PROFILE_SENSOR_KEYS}
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Main Building", CONF_LUX_ENTITY: "sensor.shared_lux"},
-    )
-    assert result["type"] == "create_entry"
-    entry = result["result"]
-    assert entry.data[CONF_SENSOR_TYPE] == CoverType.BUILDING_PROFILE
-    assert entry.data["name"] == "Main Building"
-    assert entry.options[CONF_LUX_ENTITY] == "sensor.shared_lux"
-
-
-@pytest.mark.integration
 async def test_building_profile_link_selector_lists_profiles(
     hass: HomeAssistant,
 ) -> None:
@@ -430,28 +400,3 @@ async def test_init_step_profile_line_empty_for_unlinked_cover(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.integration
-async def test_user_menu_hides_duplicate_when_only_building_profile(
-    hass: HomeAssistant,
-) -> None:
-    """'duplicate_existing' must not appear when only Building Profile entries exist.
-
-    Building Profile entries (controls_cover=False) are not valid duplicate sources,
-    so the option must be hidden rather than leading to source_not_found.
-    """
-    profile = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "My Smart Home", CONF_SENSOR_TYPE: CoverType.BUILDING_PROFILE},
-        options={},
-        entry_id="profile_1",
-        title="Building Profile My Smart Home",
-    )
-    profile.add_to_hass(hass)
-
-    handler = ConfigFlowHandler()
-    handler.hass = hass
-
-    result = await handler.async_step_user()
-
-    assert result["type"] == "menu"
-    assert "duplicate_existing" not in result["menu_options"]

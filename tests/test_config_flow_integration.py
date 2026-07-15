@@ -191,13 +191,6 @@ async def test_quick_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
         result["flow_id"],
         {"name": "Test Blind", CONF_MODE: CoverType.BLIND},
     )
-    # Step: setup_mode menu
-    assert result["type"] == "menu"
-    assert result["step_id"] == "setup_mode"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
     # Step: cover_entities
     assert result["type"] == "form"
     assert result["step_id"] == "cover_entities"
@@ -259,9 +252,6 @@ async def test_quick_setup_horizontal_creates_entry(hass: HomeAssistant) -> None
         {"name": "Test Awning", CONF_MODE: CoverType.AWNING},
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     assert result["step_id"] == "geometry"
@@ -296,9 +286,6 @@ async def test_quick_setup_tilt_creates_entry(hass: HomeAssistant) -> None:
         {"name": "Test Tilt", CONF_MODE: CoverType.TILT},
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     assert result["step_id"] == "geometry"
@@ -329,183 +316,6 @@ async def test_quick_setup_tilt_creates_entry(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.integration
-async def test_full_setup_vertical_creates_entry(hass: HomeAssistant) -> None:
-    """Full-setup path for a vertical blind — walks all steps, creates entry."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Full Test Blind", CONF_MODE: CoverType.BLIND},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "full_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    assert result["step_id"] == "position"
-    # 4-layer order (#613): after L1 (entities/geometry/window) and L2 (position),
-    # the L3 handler steps run in pipeline-priority order, then L4 (automation).
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _POSITION
-    )
-    assert result["step_id"] == "behavior"  # L2b timing & thresholds
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _BEHAVIOR
-    )
-    assert result["step_id"] == "weather_override"  # L3 priority 90
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _WEATHER_OVERRIDE
-    )
-    assert result["step_id"] == "manual_override"  # L3 priority 80
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MANUAL_OVERRIDE
-    )
-    assert result["step_id"] == "custom_position"  # L3 priority 1-100
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _CUSTOM_POSITION
-    )
-    assert result["step_id"] == "motion_override"  # L3 priority 75
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MOTION_OVERRIDE
-    )
-    assert result["step_id"] == "light_cloud"  # L3 priority 60
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _LIGHT_CLOUD
-    )
-    assert result["step_id"] == "temperature_climate"  # L3 priority 50
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _TEMPERATURE_CLIMATE
-    )
-    assert result["step_id"] == "automation"  # L4 global motion constraints
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _AUTOMATION
-    )
-    # Summary step
-    assert result["type"] == "form"
-    assert result["step_id"] == "summary"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] == "create_entry"
-    entry = result["result"]
-    assert entry.data[CONF_SENSOR_TYPE] == CoverType.BLIND
-    # All options keys present
-    opts = entry.options
-    assert CONF_AZIMUTH in opts
-    assert CONF_FOV_LEFT in opts
-    assert CONF_DEFAULT_HEIGHT in opts
-    assert CONF_DELTA_POSITION in opts
-    assert opts[CONF_DELTA_TIME] is not None
-    assert opts[CONF_MANUAL_OVERRIDE_DURATION] is not None
-
-
-# ---------------------------------------------------------------------------
-# Phase 2b: Full-setup — building profile integration (issue #693)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-async def test_full_setup_includes_building_profile_step_when_profile_exists(
-    hass: HomeAssistant,
-) -> None:
-    """Full-setup create flow surfaces building_profile step when profiles exist.
-
-    Regression test for issue #693: the step was absent from ConfigFlow and
-    only existed in OptionsFlowHandler.
-    """
-    # Register a building profile so _building_profile_entries(hass) is non-empty.
-    profile = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "My Building", CONF_SENSOR_TYPE: CoverType.BUILDING_PROFILE},
-        options={CONF_OUTSIDETEMP_ENTITY: "sensor.outside_temp"},
-        entry_id="test_profile_693",
-        title="My Building",
-    )
-    profile.add_to_hass(hass)
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-    if result["type"] == "menu":
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "create_new"}
-        )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {"name": "Profile Blind", CONF_MODE: CoverType.BLIND},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "full_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_ENTITIES: []}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _VERTICAL_GEOMETRY
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _SUN_TRACKING
-    )
-    # The building_profile step must appear when profiles exist.
-    assert result["step_id"] == "building_profile"
-
-    # Submit with a profile chosen.
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_BUILDING_PROFILE_ID: "test_profile_693"}
-    )
-    # blind_spot is False in _SUN_TRACKING → position is next.
-    assert result["step_id"] == "position"
-
-    # Walk through the remaining steps to create the entry.
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _POSITION
-    )
-    assert result["step_id"] == "behavior"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _BEHAVIOR
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _WEATHER_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MANUAL_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _CUSTOM_POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MOTION_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _LIGHT_CLOUD
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _TEMPERATURE_CLIMATE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _AUTOMATION
-    )
-    assert result["step_id"] == "summary"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] == "create_entry"
-
-    opts = result["result"].options
-    assert opts.get(CONF_BUILDING_PROFILE_ID) == "test_profile_693"
-    assert opts.get(CONF_OUTSIDETEMP_ENTITY) == "sensor.outside_temp"
-
-
-@pytest.mark.integration
 async def test_full_setup_skips_building_profile_step_when_no_profiles(
     hass: HomeAssistant,
 ) -> None:
@@ -524,9 +334,6 @@ async def test_full_setup_skips_building_profile_step_when_no_profiles(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {"name": "No Profile Blind", CONF_MODE: CoverType.BLIND},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "full_setup"}
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
@@ -568,9 +375,6 @@ async def test_quick_setup_skips_building_profile_step_even_when_profiles_exist(
     )
     # Quick setup
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     result = await hass.config_entries.flow.async_configure(
@@ -601,9 +405,6 @@ async def test_sun_tracking_max_elevation_must_exceed_min(hass: HomeAssistant) -
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Err Test", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
@@ -639,9 +440,6 @@ async def test_quick_setup_critical_keys_never_none(hass: HomeAssistant) -> None
         )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Regression", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
@@ -761,21 +559,9 @@ async def test_options_flow_sync_empty_selection_no_abort(hass: HomeAssistant) -
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
-    # Navigate to sync step
-    if result["type"] == "menu":
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"next_step_id": "sync"}
-        )
-
-    if result["type"] == "form" and result.get("step_id") == "sync":
-        # Submit with no targets — should NOT abort
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            {"sync_targets": [], "sync_categories": []},
-        )
-        # Must return to a form or menu, not "abort"
-        assert result["type"] in ("form", "menu", "create_entry")
-        assert result["type"] != "abort"
+    # Condensed flow: multi-cover sync is heritage — not offered in the menu.
+    assert result["type"] == "menu"
+    assert "sync" not in result.get("menu_options", [])
 
 
 # ---------------------------------------------------------------------------
@@ -876,7 +662,9 @@ async def test_options_flow_menu_includes_blind_spot_when_enabled(
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "menu"
-    assert "blind_spot" in result.get("menu_options", [])
+    # Condensed flow: blind_spot is heritage — never offered, even when the
+    # legacy enable flag is set.
+    assert "blind_spot" not in result.get("menu_options", [])
 
 
 @pytest.mark.integration
@@ -903,7 +691,8 @@ async def test_options_flow_menu_includes_glare_zones_for_blind_cover(
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "menu"
-    assert "glare_zones" in result.get("menu_options", [])
+    # Condensed flow: glare zones are heritage — never offered.
+    assert "glare_zones" not in result.get("menu_options", [])
 
 
 @pytest.mark.integration
@@ -970,9 +759,11 @@ async def test_options_menu_order_follows_pipeline_layers(
         assert step in menu, f"{step} missing from menu {menu}"
         return menu.index(step)
 
-    # L1 → L2
+    # L1 → L2 (condensed: blind_spot/interp/glare/sync/profiles never shown)
     assert idx("cover_entities") < idx("geometry") < idx("sun_tracking")
-    assert idx("sun_tracking") < idx("blind_spot") < idx("position")
+    assert idx("sun_tracking") < idx("position")
+    for heritage in ("blind_spot", "interp", "glare_zones", "sync", "building_profile"):
+        assert heritage not in menu, f"heritage step {heritage} back in menu {menu}"
     # L2a positions → L2b behavior
     assert idx("position") < idx("behavior")
     # L3 handlers in priority-descending order
@@ -984,10 +775,9 @@ async def test_options_menu_order_follows_pipeline_layers(
         < idx("motion_override")
         < idx("light_cloud")
         < idx("temperature_climate")
-        < idx("glare_zones")
     )
     # L4 after all handlers, admin last
-    assert idx("glare_zones") < idx("automation")
+    assert idx("temperature_climate") < idx("automation")
     assert idx("automation") < idx("summary")
 
 
@@ -1369,36 +1159,9 @@ async def test_options_flow_glare_zones_step_saves(hass: HomeAssistant) -> None:
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "menu"
-    assert "glare_zones" in result.get("menu_options", [])
-
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"next_step_id": "glare_zones"}
-    )
-    assert result["step_id"] == "glare_zones"
-
-    # Submit zone data
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {
-            "glare_zone_1_name": "East Window",
-            "glare_zone_1_x": 0.0,
-            "glare_zone_1_y": 1.0,
-            "glare_zone_1_radius": 0.3,
-            "glare_zone_2_name": "",
-            "glare_zone_2_x": 0.0,
-            "glare_zone_2_y": 1.0,
-            "glare_zone_2_radius": 0.3,
-            "glare_zone_3_name": "",
-            "glare_zone_3_x": 0.0,
-            "glare_zone_3_y": 1.0,
-            "glare_zone_3_radius": 0.3,
-            "glare_zone_4_name": "",
-            "glare_zone_4_x": 0.0,
-            "glare_zone_4_y": 1.0,
-            "glare_zone_4_radius": 0.3,
-        },
-    )
-    assert result["type"] in ("form", "menu", "create_entry")
+    # Condensed flow: glare zones are heritage — the step is unreachable from
+    # the menu even with the legacy enable flag set.
+    assert "glare_zones" not in result.get("menu_options", [])
 
 
 # ---------------------------------------------------------------------------
@@ -1430,9 +1193,6 @@ async def test_config_flow_cover_entities_no_devices_skips_device_selector(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
     )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
     assert result["step_id"] == "cover_entities"
 
     with patch(
@@ -1460,9 +1220,6 @@ async def test_config_flow_cover_entities_with_devices_shows_device_selector(
         )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
     )
     assert result["step_id"] == "cover_entities"
 
@@ -1499,9 +1256,6 @@ async def test_config_flow_cover_entities_standalone_selection_proceeds_to_geome
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
     )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
 
     devices = {"device_abc123": "My Blind Motor"}
 
@@ -1535,9 +1289,6 @@ async def test_config_flow_cover_entities_real_device_selection_stores_device_id
         )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "Test Blind", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
     )
 
     devices = {"device_abc123": "My Blind Motor"}
@@ -1907,9 +1658,6 @@ async def test_create_flow_title_uses_device_name_when_attached(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "", CONF_MODE: CoverType.BLIND}
     )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
     assert result["step_id"] == "cover_entities"
 
     # Pass 1: submit the cover entity. The flow looks up the device and stores the
@@ -1971,9 +1719,6 @@ async def test_create_flow_title_falls_back_to_adaptive_prefix_without_device(
         result["flow_id"], {"name": "", CONF_MODE: CoverType.BLIND}
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: [entity_id]}
     )
     # No device → step proceeds straight to geometry
@@ -2019,9 +1764,6 @@ async def test_create_flow_user_typed_name_overrides_device_name(
     # User explicitly provides a name
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"name": "My Cover", CONF_MODE: CoverType.BLIND}
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "quick_setup"}
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: [entity_id]}
@@ -2220,9 +1962,6 @@ async def test_full_setup_persists_fov_and_window_width(
         {"name": "Persist Test Blind", CONF_MODE: CoverType.BLIND},
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "full_setup"}
-    )
-    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_ENTITIES: []}
     )
     # Feed CONF_WINDOW_WIDTH (+ a reveal depth) in the geometry step.
@@ -2259,33 +1998,9 @@ async def test_full_setup_persists_fov_and_window_width(
             "enable_glare_zones": False,
         },
     )
-    # 4-layer order (#613): position → behavior → L3 handlers → L4 automation.
+    # Condensed flow: position → summary (handlers configured via options).
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], _POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _BEHAVIOR
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _WEATHER_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MANUAL_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _CUSTOM_POSITION
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _MOTION_OVERRIDE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _LIGHT_CLOUD
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _TEMPERATURE_CLIMATE
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], _AUTOMATION
     )
     assert result["type"] == "form"
     assert result["step_id"] == "summary"
@@ -2383,10 +2098,10 @@ async def test_create_flow_ignores_stale_unknown_type_entry(hass: HomeAssistant)
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
-    # Menu renders; the stale entry contributes no duplicate_existing option.
-    assert result["type"] == "menu"
-    assert "create_new" in result["menu_options"]
-    assert "duplicate_existing" not in result["menu_options"]
+    # Condensed flow: no create menu — the cover form must render (no crash
+    # from enumerating the stale entry).
+    assert result["type"] == "form"
+    assert result["step_id"] == "create_new"
 
 
 async def test_stale_unknown_type_entry_setup_fails_cleanly(hass: HomeAssistant) -> None:
