@@ -1045,6 +1045,12 @@ async def test_config_flow_cover_entities_with_devices_shows_device_selector(
     assert (
         CONF_DEVICE_ID in schema_str_keys
     ), f"Expected {CONF_DEVICE_ID} in schema, got: {schema_str_keys}"
+    # The create flow attaches to the cover's physical device by default — a
+    # pergola's slats always belong to their box — instead of defaulting to
+    # standalone. The proxy toggle is not asked at all (always enabled).
+    marker = next(k for k in result["data_schema"].schema if str(k) == CONF_DEVICE_ID)
+    assert marker.default() == "device_abc123"
+    assert CONF_ENABLE_PROXY_COVER not in schema_str_keys
 
 
 @pytest.mark.integration
