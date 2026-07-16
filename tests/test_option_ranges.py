@@ -26,9 +26,59 @@ from custom_components.adaptive_pergola.const import (
     CUSTOM_POSITION_SLOTS,
     OPTION_RANGES,
 )
+from custom_components.adaptive_pergola.config_fields import FIELD_SPECS, ValidatorKind
 from custom_components.adaptive_pergola.services.options_service import (
     FIELD_VALIDATORS,
 )
+
+
+@pytest.mark.unit
+def test_field_validators_cover_specs() -> None:
+    """Every field declaring a validator kind has a ``FIELD_VALIDATORS`` entry.
+
+    ``config_fields`` is the single source of truth for how a field is
+    validated (its ``ValidatorKind``), and ``FIELD_VALIDATORS`` is meant to
+    mirror it. The map is hand-maintained, so it drifted: fov_compute,
+    enable_my_position_entities, motion_timeout_mode, dry_run and debug_mode
+    each declared a validator that was never added, so ``set_option`` rejected
+    them as "unknown option". This asserts the two stay in lockstep.
+    """
+    missing = {
+        spec.key
+        for spec in FIELD_SPECS.values()
+        if spec.validator is not ValidatorKind.NONE
+        and spec.key not in FIELD_VALIDATORS
+    }
+    assert not missing, (
+        f"FIELD_SPECS declare a validator for {sorted(missing)} but "
+        "FIELD_VALIDATORS has no entry — set_option would reject them"
+    )
+
+
+@pytest.mark.unit
+def test_previously_drifted_fields_now_settable() -> None:
+    """The five fields that had drifted validate correctly, both good and bad."""
+    from custom_components.adaptive_pergola.const import (
+        CONF_DEBUG_MODE,
+        CONF_DRY_RUN,
+        CONF_ENABLE_MY_POSITION_ENTITIES,
+        CONF_FOV_COMPUTE,
+        CONF_MOTION_TIMEOUT_MODE,
+    )
+
+    for key in (
+        CONF_FOV_COMPUTE,
+        CONF_ENABLE_MY_POSITION_ENTITIES,
+        CONF_DRY_RUN,
+        CONF_DEBUG_MODE,
+    ):
+        assert FIELD_VALIDATORS[key](True) is True
+        with pytest.raises(vol.Invalid):
+            FIELD_VALIDATORS[key]("not-a-bool")
+
+    assert FIELD_VALIDATORS[CONF_MOTION_TIMEOUT_MODE]("hold_position") == "hold_position"
+    with pytest.raises(vol.Invalid):
+        FIELD_VALIDATORS[CONF_MOTION_TIMEOUT_MODE]("bogus")
 
 
 @pytest.mark.unit

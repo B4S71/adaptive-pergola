@@ -195,6 +195,7 @@ from ..const import (
     DOMAIN,
     OPTION_RANGES,
 )
+from ..config_fields import FIELD_SPECS, FieldSpec, ValidatorKind
 from ..helpers import custom_position_slot_sensors
 from ..templates import is_template_string as _is_template_str
 
@@ -641,6 +642,48 @@ FIELD_VALIDATORS: dict[str, Any] = {
     CONF_GLARE_ZONE_PRIORITY: _range(CONF_GLARE_ZONE_PRIORITY),
     CONF_SOLAR_PRIORITY: _range(CONF_SOLAR_PRIORITY),
 }
+
+
+def _validator_for_spec(spec: FieldSpec):
+    """Build the validator a FieldSpec declares, or None for ValidatorKind.NONE.
+
+    The single source of truth for "how is this field validated" is the field's
+    declared :class:`ValidatorKind` in ``config_fields``. This mirrors what the
+    hand-written entries above already do per field; it exists so the
+    reconciliation pass below can fill any field the literal missed without
+    re-encoding the mapping.
+    """
+    kind = spec.validator
+    if kind is ValidatorKind.NONE:
+        return None
+    if kind is ValidatorKind.BOOL:
+        return _bool_v()
+    if kind is ValidatorKind.ENTITY:
+        return _entity_v()
+    if kind is ValidatorKind.ENTITIES:
+        return _entities_v()
+    if kind is ValidatorKind.DURATION:
+        return _duration_v()
+    if kind is ValidatorKind.TIME:
+        return _time_v()
+    if kind is ValidatorKind.SELECT:
+        return _select_v(*(spec.select_options or ()))
+    if kind is ValidatorKind.RANGE:
+        return _range(spec.key)
+    raise ValueError(f"Unhandled ValidatorKind {kind!r} for {spec.key!r}")
+
+
+# Reconcile the hand-written map above with the declared specs: every field that
+# declares a validator kind must have an entry. The literal drifted from the
+# specs over time — five fields (fov_compute, enable_my_position_entities,
+# motion_timeout_mode, dry_run, debug_mode) declared a validator that was never
+# added, so set_option rejected them as "unknown option". Filling from the spec
+# closes those and keeps the two in lockstep; test_field_validators_cover_specs
+# fails if a future field drifts the same way.
+for _spec in FIELD_SPECS.values():
+    if _spec.validator is ValidatorKind.NONE:
+        continue
+    FIELD_VALIDATORS.setdefault(_spec.key, _validator_for_spec(_spec))
 
 # ---------------------------------------------------------------------------
 # Section key sets (used for building service-call patches)
