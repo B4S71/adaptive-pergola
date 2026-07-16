@@ -56,17 +56,21 @@ def render_condition_or_none(hass: HomeAssistant, template_str) -> bool | None:
     source when a template is silent (is_sunny / presence / weather-override
     condition templates, issue #639) use this instead of forcing a default.
 
-    Implemented on top of :func:`render_condition` (no separate Jinja eval):
-    a failing render returns whichever default it is given, so rendering with
-    both defaults and comparing detects the failure without duplicating the
-    rendering logic.
+    Renders exactly once. The previous implementation called
+    :func:`render_condition` twice with opposing defaults and compared the
+    results to spot a failure. That had two problems: it doubled the render cost
+    of every condition template, and it assumed the template was deterministic —
+    ``{{ [true, false] | random }}`` renders fine but disagrees across the two
+    calls, and was reported as "render failed".
     """
     if not is_template_string(template_str):
         return None
-    rendered = render_condition(hass, template_str, default=False)
-    if rendered != render_condition(hass, template_str, default=True):
-        return None  # unstable across defaults → render failed → no opinion
-    return rendered
+    try:
+        result = Template(template_str, hass).async_render()
+    except TemplateError as err:
+        _LOGGER.debug("Condition template %r failed to render: %s", template_str, err)
+        return None
+    return result_as_boolean(result)
 
 
 def combine_with_mode(
