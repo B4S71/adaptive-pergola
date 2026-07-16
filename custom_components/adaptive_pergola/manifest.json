@@ -19,8 +19,8 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/B4S71/adaptive-pergola/issues",
   "requirements": [
-    "astral",
-    "pandas"
+    "astral==2.2",
+    "pandas==2.3.3"
   ],
   "version": "0.6.0-beta6"
 }

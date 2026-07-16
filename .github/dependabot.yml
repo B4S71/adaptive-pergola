@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # GitHub Actions — surface new releases so the SHA pins in the workflows can
+  # be bumped deliberately rather than drifting silently.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Python dev/runtime pins (requirements-dev.txt pulls requirements.txt, which
+  # carries the runtime deps). The manifest requirements are pinned separately
+  # and are not seen by pip here.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"

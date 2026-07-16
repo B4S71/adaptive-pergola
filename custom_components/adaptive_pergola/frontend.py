@@ -39,7 +39,19 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
         await hass.http.async_register_static_paths(
             [StaticPathConfig(_URL_PATH, str(js_path), False)]
         )
-        add_extra_js_url(hass, f"{_URL_PATH}?v={_CACHE_BUST}")
     except Exception:  # noqa: BLE001 - a frontend hiccup must not fail entry setup
+        # The static path was NOT registered — clear the flag so the next entry
+        # retries. Only this branch resets it: if the path registration
+        # succeeded, retrying would register the same aiohttp route twice and
+        # raise a duplicate-resource error, leaving the iconset never injected
+        # (ACP-021).
         hass.data[_REGISTERED_KEY] = False
         _LOGGER.warning("Failed to register the pergola slat iconset", exc_info=True)
+        return
+
+    try:
+        add_extra_js_url(hass, f"{_URL_PATH}?v={_CACHE_BUST}")
+    except Exception:  # noqa: BLE001 - injection failed but the path is registered
+        # Leave _REGISTERED_KEY set: the static path is live, so a retry must not
+        # re-register it. The JS URL injection is best-effort.
+        _LOGGER.warning("Failed to inject the pergola slat iconset URL", exc_info=True)
