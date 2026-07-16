@@ -24,3 +24,4 @@ config/.cloud/
 
 .vscode/
 simulation_exports/
+.claude/settings.local.json
