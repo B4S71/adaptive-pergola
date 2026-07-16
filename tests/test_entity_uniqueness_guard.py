@@ -30,10 +30,9 @@ async def test_all_entity_unique_ids_are_unique(hass: HomeAssistant) -> None:
     unique_ids = [e.unique_id for e in entries]
 
     duplicates = [uid for uid in set(unique_ids) if unique_ids.count(uid) > 1]
-    assert (
-        not duplicates
-    ), f"Duplicate unique_ids for config entry {entry.entry_id!r}:\n" + "\n".join(
-        f"  {uid!r}" for uid in sorted(duplicates)
+    assert not duplicates, (
+        f"Duplicate unique_ids for config entry {entry.entry_id!r}:\n"
+        + "\n".join(f"  {uid!r}" for uid in sorted(duplicates))
     )
 
 

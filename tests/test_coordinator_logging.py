@@ -238,9 +238,9 @@ class TestCancelMotionTimeoutLogging:
             and any("motion timeout" in str(a) for a in call.args[1:])
             for call in coord.logger.debug.call_args_list
         )
-        assert (
-            matched
-        ), f"expected a 'motion timeout canceled' log; got {coord.logger.debug.call_args_list}"
+        assert matched, (
+            f"expected a 'motion timeout canceled' log; got {coord.logger.debug.call_args_list}"
+        )
 
     def test_no_log_when_no_task(self):
         """Does not log when no task is active."""

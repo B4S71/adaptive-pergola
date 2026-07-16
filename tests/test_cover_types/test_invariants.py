@@ -172,9 +172,9 @@ def test_controls_cover_default_true() -> None:
     from custom_components.adaptive_pergola.cover_types import POLICY_REGISTRY
 
     for cover_type, policy_cls in POLICY_REGISTRY.items():
-        assert (
-            policy_cls.controls_cover is True
-        ), f"{cover_type} must declare controls_cover=True"
+        assert policy_cls.controls_cover is True, (
+            f"{cover_type} must declare controls_cover=True"
+        )
 
 
 @pytest.mark.unit

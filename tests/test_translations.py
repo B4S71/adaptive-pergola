@@ -167,9 +167,9 @@ def test_no_icon_mdi_prefix_in_values(lang_file: Path) -> None:
     """Translation values must not contain `mdi:` icon references."""
     values = _all_leaf_values(_load(lang_file))
     for value in values:
-        assert (
-            "mdi:" not in value
-        ), f"{lang_file.name}: 'mdi:' icon reference found in value: {value!r}"
+        assert "mdi:" not in value, (
+            f"{lang_file.name}: 'mdi:' icon reference found in value: {value!r}"
+        )
 
 
 @pytest.mark.parametrize("lang_file", TRANSLATION_FILES, ids=LANGUAGE_CODES)
@@ -177,9 +177,9 @@ def test_no_empty_string_values(lang_file: Path) -> None:
     """No translation value should be an empty string."""
     values = _all_leaf_values(_load(lang_file))
     for value in values:
-        assert (
-            value != ""
-        ), f"{lang_file.name}: empty string found among translation values"
+        assert value != "", (
+            f"{lang_file.name}: empty string found among translation values"
+        )
 
 
 @pytest.mark.parametrize("lang_file", TRANSLATION_FILES, ids=LANGUAGE_CODES)
@@ -206,12 +206,11 @@ def test_enforce_delta_at_endpoints_strings_present() -> None:
     en = _load(TRANSLATIONS_DIR / "en.json")
     for step_key in ("config", "options"):
         pos = en[step_key]["step"]["position"]
-        assert (
-            "enforce_delta_at_endpoints" in pos["data"]
-        ), f"{step_key}.position.data missing enforce_delta_at_endpoints label"
+        assert "enforce_delta_at_endpoints" in pos["data"], (
+            f"{step_key}.position.data missing enforce_delta_at_endpoints label"
+        )
         assert "enforce_delta_at_endpoints" in pos["data_description"], (
-            f"{step_key}.position.data_description missing "
-            "enforce_delta_at_endpoints"
+            f"{step_key}.position.data_description missing enforce_delta_at_endpoints"
         )
         assert pos["data"]["enforce_delta_at_endpoints"].strip()
         assert pos["data_description"]["enforce_delta_at_endpoints"].strip()
@@ -228,9 +227,9 @@ def test_debug_event_buffer_label_not_manual_override_specific() -> None:
     debug = en["options"]["step"]["debug"]
     label = debug["data"]["debug_event_buffer_size"]
     desc = debug["data_description"]["debug_event_buffer_size"]
-    assert (
-        "manual override" not in label.lower()
-    ), f"Buffer is shared across handlers; label is misleading: {label!r}"
+    assert "manual override" not in label.lower(), (
+        f"Buffer is shared across handlers; label is misleading: {label!r}"
+    )
     desc_lower = desc.lower()
     consumers_mentioned = sum(
         kw in desc_lower
@@ -243,25 +242,25 @@ def test_debug_event_buffer_label_not_manual_override_specific() -> None:
             "time window",
         )
     )
-    assert (
-        consumers_mentioned >= 2
-    ), f"Description should reference multiple consumers; got: {desc!r}"
+    assert consumers_mentioned >= 2, (
+        f"Description should reference multiple consumers; got: {desc!r}"
+    )
 
 
 def test_transit_timeout_on_manual_override_step_not_debug() -> None:
     """transit_timeout belongs on the manual_override step, not debug."""
     en = _load(TRANSLATIONS_DIR / "en.json")
     mo = en["options"]["step"]["manual_override"]
-    assert "transit_timeout" in mo.get(
-        "data", {}
-    ), "transit_timeout must be labelled on the manual_override step"
-    assert "transit_timeout" in mo.get(
-        "data_description", {}
-    ), "transit_timeout must have a data_description on the manual_override step"
+    assert "transit_timeout" in mo.get("data", {}), (
+        "transit_timeout must be labelled on the manual_override step"
+    )
+    assert "transit_timeout" in mo.get("data_description", {}), (
+        "transit_timeout must have a data_description on the manual_override step"
+    )
     debug = en["options"]["step"]["debug"]
-    assert "transit_timeout" not in debug.get(
-        "data", {}
-    ), "transit_timeout must NOT appear on the debug step"
+    assert "transit_timeout" not in debug.get("data", {}), (
+        "transit_timeout must NOT appear on the debug step"
+    )
 
 
 def test_venetian_mode_in_en_geometry_translations() -> None:
@@ -269,20 +268,20 @@ def test_venetian_mode_in_en_geometry_translations() -> None:
     en = _load(TRANSLATIONS_DIR / "en.json")
 
     cfg_geom = en["config"]["step"]["geometry"]
-    assert "venetian_mode" in cfg_geom.get(
-        "data", {}
-    ), "venetian_mode label missing from config.step.geometry.data"
-    assert "venetian_mode" in cfg_geom.get(
-        "data_description", {}
-    ), "venetian_mode description missing from config.step.geometry.data_description"
+    assert "venetian_mode" in cfg_geom.get("data", {}), (
+        "venetian_mode label missing from config.step.geometry.data"
+    )
+    assert "venetian_mode" in cfg_geom.get("data_description", {}), (
+        "venetian_mode description missing from config.step.geometry.data_description"
+    )
 
     opt_geom = en["options"]["step"]["geometry"]
-    assert "venetian_mode" in opt_geom.get(
-        "data", {}
-    ), "venetian_mode label missing from options.step.geometry.data"
-    assert "venetian_mode" in opt_geom.get(
-        "data_description", {}
-    ), "venetian_mode description missing from options.step.geometry.data_description"
+    assert "venetian_mode" in opt_geom.get("data", {}), (
+        "venetian_mode label missing from options.step.geometry.data"
+    )
+    assert "venetian_mode" in opt_geom.get("data_description", {}), (
+        "venetian_mode description missing from options.step.geometry.data_description"
+    )
 
 
 def test_priority_field_documents_all_three_gates() -> None:
@@ -317,9 +316,9 @@ def test_fr_cloud_suppression_decision_trace_state() -> None:
         "Reverted to misleading phrasing — must say 'Désactivation par temps nuageux' "
         "(reads as 'removing the clouds' to a French native speaker; see issue #457)"
     )
-    assert (
-        "nuageux" in value.lower()
-    ), f"FR cloud_suppression state label should reference cloudy weather; got: {value!r}"
+    assert "nuageux" in value.lower(), (
+        f"FR cloud_suppression state label should reference cloudy weather; got: {value!r}"
+    )
 
 
 # ---------------------------------------------------------------------------

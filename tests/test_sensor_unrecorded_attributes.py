@@ -35,9 +35,9 @@ def _resolved_cls(suffix: str) -> type:
 @pytest.mark.parametrize(("suffix", "keys"), list(EXPECTED.items()))
 def test_unrecorded_attributes_present(suffix: str, keys: set[str]) -> None:
     cls = _resolved_cls(suffix)
-    assert keys.issubset(
-        cls._unrecorded_attributes
-    ), f"{suffix}: expected {keys} ⊆ {set(cls._unrecorded_attributes)}"
+    assert keys.issubset(cls._unrecorded_attributes), (
+        f"{suffix}: expected {keys} ⊆ {set(cls._unrecorded_attributes)}"
+    )
 
 
 def test_specs_with_unrecorded_attrs_propagate_to_classes() -> None:

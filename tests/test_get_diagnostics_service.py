@@ -28,9 +28,7 @@ def make_coordinator(entry_id="entry-1", name="Test Cover", cover_type="cover_bl
     coord.config_entry.domain = DOMAIN
     coord._cover_type = cover_type  # noqa: SLF001
     coord.last_update_success = True
-    coord._last_update_success_time = dt.datetime(
-        2026, 4, 28, 12, 0, 0, tzinfo=dt.UTC
-    )  # noqa: SLF001
+    coord._last_update_success_time = dt.datetime(2026, 4, 28, 12, 0, 0, tzinfo=dt.UTC)  # noqa: SLF001
     coord.entities = [f"cover.{name.lower().replace(' ', '_')}"]
     coord.data = MagicMock()
     coord.data.diagnostics = {
@@ -250,9 +248,9 @@ def test_translations_contain_get_diagnostics_key():
     )
     for lang in ("en", "de", "fr"):
         data = json.loads((translations_dir / f"{lang}.json").read_text())
-        assert "get_diagnostics" in data.get(
-            "services", {}
-        ), f"{lang}.json missing services.get_diagnostics"
+        assert "get_diagnostics" in data.get("services", {}), (
+            f"{lang}.json missing services.get_diagnostics"
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -486,7 +486,9 @@ def _clamp_options_to_declared_ranges(options: dict) -> list[str]:
     return changed
 
 
-async def _async_drop_unrenderable_templates(hass: HomeAssistant, options: dict) -> list[str]:
+async def _async_drop_unrenderable_templates(
+    hass: HomeAssistant, options: dict
+) -> list[str]:
     """Drop stored templates that cannot be rendered within the time budget.
 
     Heals entries poisoned before the write-path cost gate shipped. Validation

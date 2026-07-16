@@ -249,6 +249,8 @@ from .pipeline.handlers import (  # noqa: E402
     resolve_handler_priority,
 )
 from .priority_chain import build_priority_chain  # noqa: E402
+
+
 def _handler_priority_overrides(config: dict[str, Any]) -> dict[str, int]:
     """Effective built-in handler priorities for *config* (override or default).
 
@@ -775,14 +777,13 @@ WEATHER_OPTIONS = vol.Schema(
     }
 )
 
+
 def _get_azimuth_edges(data) -> int:
     """Return the total azimuth field-of-view span (fov_left + fov_right)."""
     return data[CONF_FOV_LEFT] + data[CONF_FOV_RIGHT]
 
 
-_WEATHER_SAFETY_WIKI = (
-    "https://github.com/B4S71/adaptive-pergola"
-)
+_WEATHER_SAFETY_WIKI = "https://github.com/B4S71/adaptive-pergola"
 
 
 def _weather_override_placeholders(
@@ -1144,8 +1145,7 @@ _SUMMARY_LABELS_EN: dict[str, str] = {
     ),
     # --- Manual override (80) ---
     "rules.manual": (
-        "✋ Manual override: pauses automatic control when you move the cover"
-        "{detail}"
+        "✋ Manual override: pauses automatic control when you move the cover{detail}"
     ),
     "manual.pauses_for": "pauses for {duration}",
     "manual.threshold": "threshold {threshold}%",
@@ -1184,8 +1184,7 @@ _SUMMARY_LABELS_EN: dict[str, str] = {
     ),
     # --- Motion (75) ---
     "rules.motion": (
-        "🚶 Motion-based: if no occupancy for {motion_timeout}s "
-        "({sources}) → {action}"
+        "🚶 Motion-based: if no occupancy for {motion_timeout}s ({sources}) → {action}"
     ),
     "motion.template_source": "occupancy template",
     "motion.action_hold": (
@@ -1233,8 +1232,7 @@ _SUMMARY_LABELS_EN: dict[str, str] = {
     "climate.summer_full_close": "closes fully in summer heat",
     # --- Glare (45) ---
     "rules.glare": (
-        "🔆 Glare zones: lowers blind further to protect floor areas from "
-        "glare{detail}"
+        "🔆 Glare zones: lowers blind further to protect floor areas from glare{detail}"
     ),
     "glare.zones": "zones: {names}",
     "glare.window": "{width:.2f}m window",
@@ -1295,8 +1293,7 @@ _SUMMARY_LABELS_EN: dict[str, str] = {
     "timing.gate_sensors": "{indent}🌗 Daytime gate: {sensors} decide day vs dark.",
     "timing.gate_template": "{indent}🌗 Daytime gate: a template decides day vs dark.",
     "timing.gate_both": (
-        "{indent}🌗 Daytime gate: {sensors} and a template ({mode}) decide day "
-        "vs dark."
+        "{indent}🌗 Daytime gate: {sensors} and a template ({mode}) decide day vs dark."
     ),
     "timing.gate_explainer": (
         "{indent}When the gate reads daytime ACP sun-tracks; when it reads dark "
@@ -2540,9 +2537,7 @@ def _fov_compute_supported(sensor_type: str | None) -> bool:
     )
 
 
-_SUN_TRACKING_WIKI = (
-    "https://github.com/B4S71/adaptive-pergola"
-)
+_SUN_TRACKING_WIKI = "https://github.com/B4S71/adaptive-pergola"
 
 
 def _sun_tracking_placeholders(
@@ -2859,9 +2854,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 )
             return await self.async_step_geometry()
 
-        schema = _build_cover_entity_schema(
-            self.type_blind, include_proxy_toggle=False
-        )
+        schema = _build_cover_entity_schema(self.type_blind, include_proxy_toggle=False)
         return self.async_show_form(
             step_id="cover_entities",
             data_schema=schema,
@@ -3196,6 +3189,7 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             },
             options=options,
         )
+
 
 class OptionsFlowHandler(OptionsFlow):
     """Options to adjust parameters."""

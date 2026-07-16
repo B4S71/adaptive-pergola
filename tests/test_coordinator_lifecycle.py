@@ -19,7 +19,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_MOTION_SENSORS,
     CONF_MOTION_TEMPLATE,
     CONF_SENSOR_TYPE,
-    CONF_VENETIAN_MODE,
     DOMAIN,
     CoverType,
 )
@@ -295,13 +294,11 @@ async def test_last_update_success_time_attribute_exists(hass: HomeAssistant) ->
     import datetime as _dt
 
     val = coordinator._last_update_success_time
-    assert val is None or isinstance(
-        val, _dt.datetime
-    ), f"_last_update_success_time must be None or datetime, got {type(val)}"
+    assert val is None or isinstance(val, _dt.datetime), (
+        f"_last_update_success_time must be None or datetime, got {type(val)}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Venetian mode wiring
 # ---------------------------------------------------------------------------
-
-

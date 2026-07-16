@@ -292,9 +292,9 @@ class TestMaxTiltCap:
             logger=_make_logger(),
         )
         uncapped_tilt = uncapped_calc.calculate_dual().tilt
-        assert (
-            uncapped_tilt > cap
-        ), f"Test setup: natural tilt {uncapped_tilt} must exceed cap {cap}"
+        assert uncapped_tilt > cap, (
+            f"Test setup: natural tilt {uncapped_tilt} must exceed cap {cap}"
+        )
         assert capped_calc.calculate_dual().tilt == cap
 
     @patch("custom_components.adaptive_pergola.engine.sun_geometry.datetime")
@@ -320,9 +320,9 @@ class TestMaxTiltCap:
             logger=_make_logger(),
         )
         uncapped_tilt = uncapped_calc.calculate_dual().tilt
-        assert (
-            uncapped_tilt < 90
-        ), f"Test setup: natural tilt {uncapped_tilt} must be below cap 90"
+        assert uncapped_tilt < 90, (
+            f"Test setup: natural tilt {uncapped_tilt} must be below cap 90"
+        )
         assert high_cap_calc.calculate_dual().tilt == uncapped_tilt
 
     @patch("custom_components.adaptive_pergola.engine.sun_geometry.datetime")
@@ -396,9 +396,9 @@ class TestMinTiltFloor:
             logger=_make_logger(),
         )
         unfloored_tilt = unfloored_calc.calculate_dual().tilt
-        assert (
-            unfloored_tilt < floor
-        ), f"Test setup: natural tilt {unfloored_tilt} must be below floor {floor}"
+        assert unfloored_tilt < floor, (
+            f"Test setup: natural tilt {unfloored_tilt} must be below floor {floor}"
+        )
         assert floored_calc.calculate_dual().tilt == floor
 
     @patch("custom_components.adaptive_pergola.engine.sun_geometry.datetime")
@@ -424,9 +424,9 @@ class TestMinTiltFloor:
             logger=_make_logger(),
         )
         unfloored_tilt = unfloored_calc.calculate_dual().tilt
-        assert (
-            unfloored_tilt > 10
-        ), f"Test setup: natural tilt {unfloored_tilt} must be above floor 10"
+        assert unfloored_tilt > 10, (
+            f"Test setup: natural tilt {unfloored_tilt} must be above floor 10"
+        )
         assert low_floor_calc.calculate_dual().tilt == unfloored_tilt
 
     @patch("custom_components.adaptive_pergola.engine.sun_geometry.datetime")

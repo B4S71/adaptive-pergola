@@ -124,9 +124,9 @@ async def test_open_close_tilt_stop_dropped_when_source_unavailable(
     await proxy.async_stop_cover()
     coord.async_apply_user_position.assert_not_called()
     # Debug log must mention "unavailable — dropping"
-    assert any(
-        "unavailable" in r.getMessage() for r in caplog.records
-    ), "expected debug log mentioning unavailable"
+    assert any("unavailable" in r.getMessage() for r in caplog.records), (
+        "expected debug log mentioning unavailable"
+    )
 
 
 # ---------------------------------------------------------------------------

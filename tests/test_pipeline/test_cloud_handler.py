@@ -228,9 +228,9 @@ class TestCloudHandlerTimeWindow:
             in_time_window=False,
         )
         reason = self.handler.describe_skip(snap)
-        assert (
-            "time window" in reason.lower()
-        ), f"Expected 'time window' in describe_skip reason but got: {reason!r}"
+        assert "time window" in reason.lower(), (
+            f"Expected 'time window' in describe_skip reason but got: {reason!r}"
+        )
 
     def test_lux_threshold_outside_window_returns_none(self) -> None:
         """Lux-based suppression must also be gated by time window."""
@@ -395,9 +395,9 @@ class TestCloudHandlerFOVGate:
             in_time_window=True,
         )
         reason = self.handler.describe_skip(snap)
-        assert (
-            "fov" in reason.lower()
-        ), f"Expected 'fov' in describe_skip reason but got: {reason!r}"
+        assert "fov" in reason.lower(), (
+            f"Expected 'fov' in describe_skip reason but got: {reason!r}"
+        )
 
 
 class TestCloudSuppressionPolicyHook:

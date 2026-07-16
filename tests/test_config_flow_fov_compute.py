@@ -224,9 +224,7 @@ async def test_create_flow_button_press_then_save():
 
     # Button press → re-render, no advance. The derived 76° halves surface via
     # the sun-window fields around the default azimuth 180 → 104..256.
-    result1 = await flow.async_step_sun_tracking(
-        {CONF_FOV_COMPUTE: True}
-    )
+    result1 = await flow.async_step_sun_tracking({CONF_FOV_COMPUTE: True})
     assert result1["type"] == "form"
     assert result1["step_id"] == "sun_tracking"
     assert _suggested(result1, CONF_SUN_WINDOW_START) == 104

@@ -86,8 +86,8 @@ def _make_coordinator(
     cmd_svc.set_waiting(entity_id, True)
 
     cmd_svc.get_cover_capabilities = lambda eid: {"has_set_position": True}
-    cmd_svc.read_position_with_capabilities = (
-        lambda eid, caps, state_obj: current_position
+    cmd_svc.read_position_with_capabilities = lambda eid, caps, state_obj: (
+        current_position
     )
     coordinator._cmd_svc = cmd_svc
 
@@ -185,9 +185,9 @@ class TestProcessEntityStateChange:
         )
         self._call(coord)
 
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "wait_for_target must be cleared when grace expires and cover is not at target"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "wait_for_target must be cleared when grace expires and cover is not at target"
+        )
 
     def test_grace_expired_target_not_reached_does_not_add_to_target_just_reached(
         self,
@@ -252,9 +252,9 @@ class TestManualOverrideAfterGracePeriod:
             manual_threshold=5,
         )
 
-        assert manager.is_cover_manual(
-            entity_id
-        ), "Manual override must be detected when cover is far from commanded target"
+        assert manager.is_cover_manual(entity_id), (
+            "Manual override must be detected when cover is far from commanded target"
+        )
 
     def test_small_delta_not_detected_as_manual(self) -> None:
         """Position change smaller than threshold is not a manual override."""
@@ -284,9 +284,9 @@ class TestManualOverrideAfterGracePeriod:
             manual_threshold=5,
         )
 
-        assert not manager.is_cover_manual(
-            entity_id
-        ), "Small motor-rounding differences must not trigger manual override"
+        assert not manager.is_cover_manual(entity_id), (
+            "Small motor-rounding differences must not trigger manual override"
+        )
 
     def test_move_during_grace_period_not_detected(self) -> None:
         """Position changes during the grace period must never trigger manual detection.

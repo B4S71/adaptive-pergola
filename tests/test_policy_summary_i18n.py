@@ -59,9 +59,7 @@ SUMMARY_I18N_DIR = (
 def test_display_label_override_and_default() -> None:
     """A labels override wins; ``labels=None`` keeps the English default."""
     assert (
-        LouveredRoofPolicy().display_label(
-            labels={"cover_types.louvered_roof": "FOO"}
-        )
+        LouveredRoofPolicy().display_label(labels={"cover_types.louvered_roof": "FOO"})
         == "FOO"
     )
     assert LouveredRoofPolicy().display_label() == "Louvered Roof"

@@ -45,9 +45,9 @@ def test_set_blind_spot_service_description_mentions_fov_frame():
 
 def test_set_position_service_exists_in_yaml():
     svc = _load()
-    assert (
-        "set_position" in svc
-    ), "set_position service is registered in Python but has no entry in services.yaml"
+    assert "set_position" in svc, (
+        "set_position service is registered in Python but has no entry in services.yaml"
+    )
 
 
 def test_set_position_has_target_block():
@@ -100,6 +100,6 @@ REGISTERED_SERVICES = {
 def test_all_registered_services_have_yaml_entry():
     documented = set(_load().keys())
     missing = REGISTERED_SERVICES - documented
-    assert (
-        not missing
-    ), f"Service(s) registered in Python but missing from services.yaml: {sorted(missing)}"
+    assert not missing, (
+        f"Service(s) registered in Python but missing from services.yaml: {sorted(missing)}"
+    )

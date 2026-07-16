@@ -152,6 +152,7 @@ class TestCustomPositionTiltEndToEnd:
         result = registry.evaluate(snap)
         assert result.tilt == 0
 
+
 # ---------------------------------------------------------------------------
 # Step 17: Non-venetian policy — identity passthrough preserves tilt field
 # ---------------------------------------------------------------------------

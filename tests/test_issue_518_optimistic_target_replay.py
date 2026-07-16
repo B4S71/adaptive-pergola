@@ -228,8 +228,7 @@ class TestOptimisticTargetReplay:
 
         events = [e["event"] for e in buf._buf]
         assert "transit_optimistic_target_replay" in events, (
-            f"Expected transit_optimistic_target_replay event in buffer. "
-            f"Got: {events}"
+            f"Expected transit_optimistic_target_replay event in buffer. Got: {events}"
         )
         coord._grace_mgr.cancel_all()
 

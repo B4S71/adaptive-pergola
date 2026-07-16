@@ -565,9 +565,9 @@ class TestClimateCoverState:
             result = state_handler.get_state()
             # Min floor must NOT apply when sun is out of FOV → result stays at 0
             assert result is not None
-            assert (
-                result < 30
-            ), f"Expected result < 30 (min floor skipped at night) but got {result}"
+            assert result < 30, (
+                f"Expected result < 30 (min floor skipped at night) but got {result}"
+            )
 
     # -----------------------------------------------------------------------
     # Issue #689: summer_close_bypass_sun_floor
@@ -1539,9 +1539,9 @@ class TestIssue373Mode2SummerTiltHemisphere:
             )
             result = state_handler.tilt_state()
 
-            assert (
-                result > 50
-            ), f"Expected result >50 (not clamped to horizontal) but got {result}"
+            assert result > 50, (
+                f"Expected result >50 (not clamped to horizontal) but got {result}"
+            )
             assert result == 75, f"Expected 75 but got {result}"
 
     # ------------------------------------------------------------------
@@ -1631,14 +1631,14 @@ class TestIssue373Mode2SummerTiltHemisphere:
             # exactly what the pipeline does and what reproduces the issue.
             result = state_handler.get_state()
 
-        assert (
-            result != 50
-        ), f"Expected result != 50 (horizontal floor footgun) but got {result}"
+        assert result != 50, (
+            f"Expected result != 50 (horizontal floor footgun) but got {result}"
+        )
         # Positive-gamma case: raw 56% (helper returns (180-80)/180*100 ≈ 56)
         # survives the min_pos=50 clamp.  Pre-fix returned 44 → clamped to 50.
-        assert (
-            result > 50
-        ), f"Expected result > 50 (positive closed hemisphere) but got {result}"
+        assert result > 50, (
+            f"Expected result > 50 (positive closed hemisphere) but got {result}"
+        )
         assert state_handler.climate_strategy == ClimateStrategy.GLARE_CONTROL
 
     # ------------------------------------------------------------------

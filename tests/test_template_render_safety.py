@@ -139,7 +139,10 @@ async def test_render_condition_or_none_renders_once(hass: HomeAssistant):
     """The template is evaluated exactly once per call."""
     hass.states.async_set("input_boolean.x", "on")
     assert render_condition_or_none(hass, "{{ is_state('input_boolean.x','on') }}")
-    assert render_condition_or_none(hass, "{{ is_state('input_boolean.x','off') }}") is False
+    assert (
+        render_condition_or_none(hass, "{{ is_state('input_boolean.x','off') }}")
+        is False
+    )
 
 
 async def test_render_condition_or_none_ignores_non_templates(hass: HomeAssistant):

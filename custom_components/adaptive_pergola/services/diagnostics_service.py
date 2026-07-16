@@ -58,6 +58,7 @@ def _diag_payload(diag: object, *, is_admin: bool) -> object:
     sanitized = _sanitize(diag)
     return sanitized if is_admin else _redact_occupancy(sanitized)
 
+
 GET_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
         vol.Optional("entity_id"): vol.All(cv.ensure_list, [cv.entity_id]),

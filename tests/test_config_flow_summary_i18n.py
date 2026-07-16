@@ -201,9 +201,9 @@ def test_config_summary_placeholder_parity_de_fr() -> None:
             assert key in target, f"{lang}.json missing label key {key!r}"
             en_fields = _placeholder_fields(en_value)
             tgt_fields = _placeholder_fields(target[key])
-            assert (
-                en_fields == tgt_fields
-            ), f"{lang}.json[{key}] placeholder set {tgt_fields} != en {en_fields}"
+            assert en_fields == tgt_fields, (
+                f"{lang}.json[{key}] placeholder set {tgt_fields} != en {en_fields}"
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -145,29 +145,21 @@ class TestBuildCalcEngine:
 class TestDefaultHooks:
     """Default hook implementations on ``CoverTypePolicy`` are no-ops."""
 
-    @pytest.mark.parametrize(
-        "policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy]
-    )
+    @pytest.mark.parametrize("policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy])
     def test_post_pipeline_resolve_is_identity(self, policy_cls, calc_kwargs):
         result = MagicMock()
         out = policy_cls().post_pipeline_resolve(result, **calc_kwargs)
         assert out is result
 
-    @pytest.mark.parametrize(
-        "policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy]
-    )
+    @pytest.mark.parametrize("policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy])
     def test_position_context_overrides_empty(self, policy_cls):
         assert policy_cls().position_context_overrides(MagicMock()) == {}
 
-    @pytest.mark.parametrize(
-        "policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy]
-    )
+    @pytest.mark.parametrize("policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy])
     def test_secondary_axis_check_none(self, policy_cls):
         assert policy_cls().secondary_axis_check(MagicMock(), MagicMock()) is None
 
-    @pytest.mark.parametrize(
-        "policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy]
-    )
+    @pytest.mark.parametrize("policy_cls", [StubSingleAxisPolicy, StubDualAxisPolicy])
     @pytest.mark.asyncio
     async def test_after_position_command_returns_none(self, policy_cls):
         out = await policy_cls().after_position_command(

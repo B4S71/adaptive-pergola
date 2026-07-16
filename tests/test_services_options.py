@@ -615,9 +615,9 @@ class TestServiceRegistration:
             "set_venetian",
             "set_option",
         ]:
-            assert hass.services.has_service(
-                DOMAIN, service
-            ), f"Service '{service}' not registered"
+            assert hass.services.has_service(DOMAIN, service), (
+                f"Service '{service}' not registered"
+            )
 
 
 class TestSetPositionLimits:
@@ -1419,9 +1419,9 @@ class TestSetOption:
 
     async def test_all_settable_keys_in_field_validators(self):
         for key in ALL_SETTABLE_KEYS:
-            assert (
-                key in FIELD_VALIDATORS
-            ), f"'{key}' is in ALL_SETTABLE_KEYS but missing from FIELD_VALIDATORS"
+            assert key in FIELD_VALIDATORS, (
+                f"'{key}' is in ALL_SETTABLE_KEYS but missing from FIELD_VALIDATORS"
+            )
 
 
 class TestReloadPropagation:
@@ -1476,9 +1476,9 @@ class TestSetVenetian:
     async def test_set_venetian_service_registered(self, hass: HomeAssistant):
         """set_venetian service is registered after integration setup."""
         await _setup(hass, entry_id="ven_reg_01")
-        assert hass.services.has_service(
-            DOMAIN, "set_venetian"
-        ), "Service 'set_venetian' not registered"
+        assert hass.services.has_service(DOMAIN, "set_venetian"), (
+            "Service 'set_venetian' not registered"
+        )
 
     async def test_set_venetian_updates_post_settle_hold(self, hass: HomeAssistant):
         """set_venetian updates venetian_post_settle_hold in options."""
@@ -1611,9 +1611,9 @@ class TestStringEntityIdRegression:
 
         mock_update.assert_called_once(), "async_update_entry must be called once"
         new_opts = mock_update.call_args[1]["options"]
-        assert (
-            new_opts[CONF_DELTA_POSITION] == 7
-        ), f"Expected delta_position=7 in options, got: {new_opts.get(CONF_DELTA_POSITION)}"
+        assert new_opts[CONF_DELTA_POSITION] == 7, (
+            f"Expected delta_position=7 in options, got: {new_opts.get(CONF_DELTA_POSITION)}"
+        )
 
     async def test_set_automation_timing_list_entity_id_still_works(
         self, hass: HomeAssistant
@@ -1649,33 +1649,33 @@ class TestSunsetSunriseTimeEntity:
         """CONF_SUNSET_TIME_ENTITY must be in FIELD_VALIDATORS."""
         from custom_components.adaptive_pergola.const import CONF_SUNSET_TIME_ENTITY
 
-        assert (
-            CONF_SUNSET_TIME_ENTITY in FIELD_VALIDATORS
-        ), "sunset_time_entity missing from FIELD_VALIDATORS"
+        assert CONF_SUNSET_TIME_ENTITY in FIELD_VALIDATORS, (
+            "sunset_time_entity missing from FIELD_VALIDATORS"
+        )
 
     def test_sunrise_time_entity_in_field_validators(self):
         """CONF_SUNRISE_TIME_ENTITY must be in FIELD_VALIDATORS."""
         from custom_components.adaptive_pergola.const import CONF_SUNRISE_TIME_ENTITY
 
-        assert (
-            CONF_SUNRISE_TIME_ENTITY in FIELD_VALIDATORS
-        ), "sunrise_time_entity missing from FIELD_VALIDATORS"
+        assert CONF_SUNRISE_TIME_ENTITY in FIELD_VALIDATORS, (
+            "sunrise_time_entity missing from FIELD_VALIDATORS"
+        )
 
     def test_sunset_time_entity_in_all_settable_keys(self):
         """CONF_SUNSET_TIME_ENTITY must be in ALL_SETTABLE_KEYS (via _SECTION_SUNSET_SUNRISE)."""
         from custom_components.adaptive_pergola.const import CONF_SUNSET_TIME_ENTITY
 
-        assert (
-            CONF_SUNSET_TIME_ENTITY in ALL_SETTABLE_KEYS
-        ), "sunset_time_entity missing from ALL_SETTABLE_KEYS"
+        assert CONF_SUNSET_TIME_ENTITY in ALL_SETTABLE_KEYS, (
+            "sunset_time_entity missing from ALL_SETTABLE_KEYS"
+        )
 
     def test_sunrise_time_entity_in_all_settable_keys(self):
         """CONF_SUNRISE_TIME_ENTITY must be in ALL_SETTABLE_KEYS (via _SECTION_SUNSET_SUNRISE)."""
         from custom_components.adaptive_pergola.const import CONF_SUNRISE_TIME_ENTITY
 
-        assert (
-            CONF_SUNRISE_TIME_ENTITY in ALL_SETTABLE_KEYS
-        ), "sunrise_time_entity missing from ALL_SETTABLE_KEYS"
+        assert CONF_SUNRISE_TIME_ENTITY in ALL_SETTABLE_KEYS, (
+            "sunrise_time_entity missing from ALL_SETTABLE_KEYS"
+        )
 
     async def test_set_option_sunset_time_entity_accepted(self, hass: HomeAssistant):
         """set_option must accept sunset_time_entity without 'Unknown option' error."""
@@ -1796,13 +1796,14 @@ class TestDiagnosticSensorTargetResolution:
             )
             await hass.async_block_till_done()
 
-        mock_update.assert_called_once(), (
-            "async_update_entry must be called — service must not silently no-op"
+        (
+            mock_update.assert_called_once(),
+            ("async_update_entry must be called — service must not silently no-op"),
         )
         new_opts = mock_update.call_args[1]["options"]
-        assert (
-            new_opts[CONF_SUNSET_POS] == 0
-        ), f"sunset_position must be 0, got {new_opts.get(CONF_SUNSET_POS)!r}"
-        assert (
-            new_opts[CONF_SUNSET_OFFSET] == 120
-        ), f"sunset_offset must be 120, got {new_opts.get(CONF_SUNSET_OFFSET)!r}"
+        assert new_opts[CONF_SUNSET_POS] == 0, (
+            f"sunset_position must be 0, got {new_opts.get(CONF_SUNSET_POS)!r}"
+        )
+        assert new_opts[CONF_SUNSET_OFFSET] == 120, (
+            f"sunset_offset must be 120, got {new_opts.get(CONF_SUNSET_OFFSET)!r}"
+        )

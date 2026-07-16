@@ -204,7 +204,9 @@ class SunData:
         except (ValueError, AttributeError):
             # Polar midnight sun: sun never sets — treat as end of day
             today = date.today()
-            return datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc)
+            return datetime(
+                today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc
+            )
 
     def sunrise(self) -> datetime:
         """Fetch sunrise time.
@@ -218,7 +220,9 @@ class SunData:
         except (ValueError, AttributeError):
             # Polar night: sun never rises — treat as very early morning
             today = date.today()
-            return datetime(today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc)
+            return datetime(
+                today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc
+            )
 
     def next_sunrise(self) -> datetime:
         """Fetch tomorrow's sunrise time.
@@ -238,5 +242,11 @@ class SunData:
         except (ValueError, AttributeError):
             # Polar night: sun never rises — treat as very early morning
             return datetime(
-                tomorrow.year, tomorrow.month, tomorrow.day, 0, 1, 0, tzinfo=timezone.utc
+                tomorrow.year,
+                tomorrow.month,
+                tomorrow.day,
+                0,
+                1,
+                0,
+                tzinfo=timezone.utc,
             )

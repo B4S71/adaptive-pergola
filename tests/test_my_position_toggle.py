@@ -42,12 +42,12 @@ async def test_my_position_button_not_created_when_toggle_default_false():
 
     my_pos = [e for e in added if isinstance(e, AdaptivePergolaMyPositionButton)]
     reset = [e for e in added if isinstance(e, AdaptivePergolaButton)]
-    assert (
-        len(my_pos) == 0
-    ), "My Position button must not be created when toggle defaults to False"
-    assert (
-        len(reset) == 1
-    ), "Reset Manual Override button must remain always-on regardless of toggle"
+    assert len(my_pos) == 0, (
+        "My Position button must not be created when toggle defaults to False"
+    )
+    assert len(reset) == 1, (
+        "Reset Manual Override button must remain always-on regardless of toggle"
+    )
     # Reset Manual Override + Re-Sync are the two always-on buttons.
     assert len(added) == 2
 
@@ -75,9 +75,9 @@ async def test_my_position_number_not_created_when_toggle_default_false():
 
     await async_setup_entry(hass, config_entry, capture)
 
-    assert (
-        len(added) == 0
-    ), "My Position Value number entity must not be created when toggle defaults to False"
+    assert len(added) == 0, (
+        "My Position Value number entity must not be created when toggle defaults to False"
+    )
 
 
 @pytest.mark.asyncio

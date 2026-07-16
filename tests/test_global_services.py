@@ -229,9 +229,9 @@ def test_resolve_string_entity_id_normalized():
 
     result = _resolve_targets(hass, call)
 
-    assert (
-        coord_a in result
-    ), "owning coordinator not found when entity_id is a raw string"
+    assert coord_a in result, (
+        "owning coordinator not found when entity_id is a raw string"
+    )
     assert coord_b not in result
     assert result[coord_a] == {"cover.living"}
 
@@ -319,10 +319,9 @@ def test_resolve_explicit_target_no_match_logs_warning(caplog):
         result = _resolve_targets(hass, call)
 
     assert result == {}
-    assert any(
-        "resolved to no ACP" in r.message for r in caplog.records
-    ), "Expected a WARNING about unresolved targets, got: " + str(
-        [r.message for r in caplog.records]
+    assert any("resolved to no ACP" in r.message for r in caplog.records), (
+        "Expected a WARNING about unresolved targets, got: "
+        + str([r.message for r in caplog.records])
     )
 
 
@@ -540,9 +539,9 @@ def test_resolve_truly_foreign_entity_still_skipped():
     ):
         result = _resolve_targets(hass, call)
 
-    assert (
-        result == {}
-    ), "foreign entity (registry miss) must not resolve to any coordinator"
+    assert result == {}, (
+        "foreign entity (registry miss) must not resolve to any coordinator"
+    )
 
     # Case 2: registry returns an entry but with a config_entry_id we don't own
     fake_entry = MagicMock()
@@ -556,9 +555,9 @@ def test_resolve_truly_foreign_entity_still_skipped():
     ):
         result2 = _resolve_targets(hass, call)
 
-    assert (
-        result2 == {}
-    ), "entity with foreign config_entry_id must not resolve to any coordinator"
+    assert result2 == {}, (
+        "entity with foreign config_entry_id must not resolve to any coordinator"
+    )
 
 
 # ---------------------------------------------------------------------------

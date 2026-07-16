@@ -27,16 +27,12 @@ from custom_components.adaptive_pergola.const import (
     CONF_IRRADIANCE_THRESHOLD,
     CONF_LUX_THRESHOLD,
     CONF_OUTSIDE_THRESHOLD,
-    CONF_SILL_HEIGHT,
     CONF_TEMP_HIGH,
     CONF_TEMP_LOW,
     CONF_TILT_DEPTH,
-    CONF_TILT_DISTANCE,
     CONF_WEATHER_RAIN_THRESHOLD,
     CONF_WEATHER_WIND_DIRECTION_TOLERANCE,
     CONF_WEATHER_WIND_SPEED_THRESHOLD,
-    CONF_WINDOW_DEPTH,
-    CONF_WINDOW_WIDTH,
 )
 from custom_components.adaptive_pergola.const import (
     CONF_LR_FOOTPRINT_X,
@@ -102,9 +98,9 @@ class TestGeometrySchemaLabels:
         schema = geometry_louvered_roof_schema(_hass(imperial=True))
         for k, v in schema.schema.items():
             if hasattr(v, "config") and "unit_of_measurement" in v.config:
-                assert (
-                    v.config["unit_of_measurement"] != "ft"
-                ), f"{k} labelled 'ft' — must be 'in' per design"
+                assert v.config["unit_of_measurement"] != "ft", (
+                    f"{k} labelled 'ft' — must be 'in' per design"
+                )
 
 
 @pytest.mark.unit
@@ -134,7 +130,9 @@ class TestSunTrackingSchemaHasNoLengthFields:
 
     def test_absent_in_both_locales(self):
         for imperial in (False, True):
-            keys = {str(m) for m in sun_tracking_schema(_hass(imperial=imperial)).schema}
+            keys = {
+                str(m) for m in sun_tracking_schema(_hass(imperial=imperial)).schema
+            }
             assert CONF_DISTANCE not in keys
 
 

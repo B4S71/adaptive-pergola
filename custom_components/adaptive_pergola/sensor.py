@@ -290,7 +290,8 @@ def _compute_distance_attrs(
     """
     options = coordinator.config_entry.options
     dim_m = coordinator._policy.lift_travel_metres(  # noqa: SLF001
-        coordinator._config_service, options  # noqa: SLF001
+        coordinator._config_service,
+        options,  # noqa: SLF001
     )
     if dim_m is None or dim_m <= 0 or target_position is None:
         return None
@@ -717,9 +718,7 @@ def _motion_status_attrs(s: _ACPDiagnosticSensor) -> Mapping[str, Any] | None:
     if not motion_entities(s.config_entry.options):
         return None
     mgr = s.coordinator._motion_mgr  # noqa: SLF001
-    attrs: dict[str, Any] = {
-        "motion_timeout_seconds": mgr._timeout_seconds
-    }  # noqa: SLF001
+    attrs: dict[str, Any] = {"motion_timeout_seconds": mgr._timeout_seconds}  # noqa: SLF001
 
     if mgr.last_motion_time is not None:
         if mgr.has_pending_timeout or mgr.is_motion_timeout_active:
@@ -1068,9 +1067,7 @@ def _decision_trace_attrs(s: _ACPDiagnosticSensor) -> Mapping[str, Any] | None:
             # companion card reads it as the authoritative sky-compass dot state.
             attrs["sun_state"] = sun_validity.get("sun_state")
         if s.coordinator._cover_data is not None:  # noqa: SLF001
-            attrs["direct_sun_valid"] = (
-                s.coordinator._cover_data.direct_sun_valid
-            )  # noqa: SLF001
+            attrs["direct_sun_valid"] = s.coordinator._cover_data.direct_sun_valid  # noqa: SLF001
 
     return attrs or None
 
@@ -1501,7 +1498,9 @@ AdaptivePergolaDecisionTraceSensor = _make_legacy_alias(
     "AdaptivePergolaDecisionTraceSensor", "decision_trace", _ACPDiagnosticSensor
 )
 AdaptivePergolaLastSkippedActionSensor = _make_legacy_alias(
-    "AdaptivePergolaLastSkippedActionSensor", "last_skipped_action", _ACPDiagnosticSensor
+    "AdaptivePergolaLastSkippedActionSensor",
+    "last_skipped_action",
+    _ACPDiagnosticSensor,
 )
 AdaptivePergolaLastActionSensor = _make_legacy_alias(
     "AdaptivePergolaLastActionSensor", "last_cover_action", _ACPDiagnosticSensor

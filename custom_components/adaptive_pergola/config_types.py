@@ -507,7 +507,7 @@ class LouveredRoofConfig:
             CONF_LR_FOOTPRINT_X,
             CONF_LR_FOOTPRINT_Y,
             CONF_LR_LOW_SUN_POSITION,
-    CONF_LR_MAX_LIGHT_POSITION,
+            CONF_LR_MAX_LIGHT_POSITION,
             CONF_LR_PLANE_PITCH,
             CONF_LR_PROTECTED_HEIGHT,
             CONF_LR_ROOF_HEIGHT,

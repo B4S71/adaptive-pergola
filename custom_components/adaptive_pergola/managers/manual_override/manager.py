@@ -652,8 +652,8 @@ class AdaptivePergolaManager:
                         "reason": reason,
                     },
                 ),
-                set_timestamp=lambda eid=entity_id: self.manual_control_time.__setitem__(
-                    eid, now
+                set_timestamp=lambda eid=entity_id: (
+                    self.manual_control_time.__setitem__(eid, now)
                 ),
             )
 

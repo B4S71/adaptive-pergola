@@ -138,7 +138,9 @@ class AdaptivePergolaBinarySensor(AdaptivePergolaBaseEntity, BinarySensorEntity)
             return {"manual_controlled": self.coordinator.data.states["manual_list"]}
 
 
-class AdaptivePergolaPositionMismatchSensor(AdaptivePergolaBaseEntity, BinarySensorEntity):
+class AdaptivePergolaPositionMismatchSensor(
+    AdaptivePergolaBaseEntity, BinarySensorEntity
+):
     """Binary sensor indicating if position doesn't match calculated value."""
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM

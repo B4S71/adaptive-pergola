@@ -695,12 +695,16 @@ async def test_migrate_v3_7_drops_unrenderable_template(hass: HomeAssistant) -> 
     assert entry.minor_version == 7
 
 
-async def test_migrate_v3_7_keeps_broken_but_cheap_template(hass: HomeAssistant) -> None:
+async def test_migrate_v3_7_keeps_broken_but_cheap_template(
+    hass: HomeAssistant,
+) -> None:
     """A template that raises is left alone — consumers already degrade safely.
 
     Only *timing out* is disqualifying. Dropping merely-broken templates would
     silently change working configurations.
     """
-    entry = _make_entry(hass, {"lux_threshold": "{{ 1 / 0 }}"}, version=3, minor_version=6)
+    entry = _make_entry(
+        hass, {"lux_threshold": "{{ 1 / 0 }}"}, version=3, minor_version=6
+    )
     assert await async_migrate_entry(hass, entry)
     assert entry.options["lux_threshold"] == "{{ 1 / 0 }}"

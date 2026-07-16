@@ -160,9 +160,9 @@ def test_reference_table(elev, exp_p, exp_delta, exp_light):
     for airflow in (False, True):
         c = _build(sol_elev=elev, shade_airflow=airflow, footprint=30.0)
         theta = c.calculate_position()
-        assert (
-            _block_margin(c, theta) >= _MIN_BLOCK_MARGIN
-        ), f"elev={elev} airflow={airflow} θ={theta:.1f} grazes/leaks"
+        assert _block_margin(c, theta) >= _MIN_BLOCK_MARGIN, (
+            f"elev={elev} airflow={airflow} θ={theta:.1f} grazes/leaks"
+        )
 
 
 def test_profile_angle_rises_toward_axis_end():
@@ -467,8 +467,13 @@ def test_due_west_pinch_matches_measured_13pct():
     This is the fixed ``_BLOCK_OVERLAP_MARGIN_CM`` tuned to the user's
     measurement — the anchor the whole margin is calibrated to.
     """
-    c = _reporting_site(30.0, sol_azi=272.0, shade_airflow=True, fov_right=180,
-                        tilt_calibration=_SITE_CAL)
+    c = _reporting_site(
+        30.0,
+        sol_azi=272.0,
+        shade_airflow=True,
+        fov_right=180,
+        tilt_calibration=_SITE_CAL,
+    )
     theta = c.calculate_position()
     assert c._last_calc_details["mode"] == MODE_MAX_SHADE
     assert c.calculate_percentage() == pytest.approx(13.0, abs=1.5)
@@ -481,13 +486,18 @@ def test_off_axis_afternoon_far_side_rises_monotone():
     Reproduces the reporting site's real 15:00–16:15 sun track.
     """
     track = [
-        (55.8, 231.2), (53.8, 236.1), (51.7, 240.7),
-        (49.5, 244.8), (47.2, 248.7), (44.9, 252.4),
+        (55.8, 231.2),
+        (53.8, 236.1),
+        (51.7, 240.7),
+        (49.5, 244.8),
+        (47.2, 248.7),
+        (44.9, 252.4),
     ]
     pcts = []
     for elev, az in track:
-        c = _reporting_site(elev, sol_azi=az, shade_airflow=True,
-                            tilt_calibration=_SITE_CAL)
+        c = _reporting_site(
+            elev, sol_azi=az, shade_airflow=True, tilt_calibration=_SITE_CAL
+        )
         theta = c.calculate_position()
         assert c._last_calc_details["mode"] == MODE_MAX_SHADE
         assert c._last_calc_details["far_side"] is False  # still tracking side
@@ -504,8 +514,9 @@ def test_near_axis_tracking_side_pinches_to_flat_overlap():
     vent runs off travel → the flat overlap side takes over: a near-flat seal
     that BLOCKS with margin, not the bare grazing edge (which leaks).
     """
-    c = _reporting_site(31.0, sol_azi=269.0, shade_airflow=True,
-                        tilt_calibration=_SITE_CAL)
+    c = _reporting_site(
+        31.0, sol_azi=269.0, shade_airflow=True, tilt_calibration=_SITE_CAL
+    )
     theta = c.calculate_position()
     assert c._last_calc_details["mode"] == MODE_MAX_SHADE
     beta = c.signed_profile_angle
@@ -529,8 +540,13 @@ def test_evening_just_barely_rises_to_vertical_never_above():
     track = [(27, 273), (22, 278), (17, 284), (12, 289), (8, 294), (4, 300)]
     pcts = []
     for elev, az in track:
-        c = _reporting_site(elev, sol_azi=az, shade_airflow=True, fov_right=180,
-                            tilt_calibration=_SITE_CAL)
+        c = _reporting_site(
+            elev,
+            sol_azi=az,
+            shade_airflow=True,
+            fov_right=180,
+            tilt_calibration=_SITE_CAL,
+        )
         theta = c.calculate_position()
         assert c._last_calc_details["far_side"] is True  # past-axis wing
         assert theta <= 90.0 + 1e-6  # NEVER past vertical (sun-from-below)
@@ -555,11 +571,21 @@ def test_shade_never_leaks_across_the_day():
     (axis 92, the reporting site's config), both flavors. The oracle keys on the
     signed profile angle, so it is valid on both sides.
     """
-    near = [(e, az, 180) for e in (15.0, 25.0, 40.0, 58.0, 65.0) for az in (150.0, 180.0, 210.0)]
+    near = [
+        (e, az, 180)
+        for e in (15.0, 25.0, 40.0, 58.0, 65.0)
+        for az in (150.0, 180.0, 210.0)
+    ]
     # Far side: window faces west so the crossover sun stays in FOV; elevations
     # roughly match Linz summer afternoon at each azimuth.
-    far = [(45.0, 255.0, 270), (40.0, 262.0, 270), (35.0, 268.0, 270),
-           (31.0, 272.0, 270), (28.0, 275.0, 270), (24.0, 280.0, 270)]
+    far = [
+        (45.0, 255.0, 270),
+        (40.0, 262.0, 270),
+        (35.0, 268.0, 270),
+        (31.0, 272.0, 270),
+        (28.0, 275.0, 270),
+        (24.0, 280.0, 270),
+    ]
     for elev, az, win in near + far:
         for airflow in (False, True):
             c = _build(
@@ -612,8 +638,11 @@ def test_max_light_position_holds_fixed_position_when_not_shading():
     """
     # Out of FOV (sol_azi 100, win_azi 180) → not shading. Fixed 15% → 15%.
     cover = _build(
-        sol_elev=45.0, sol_azi=100.0, axis_azimuth=90.0,
-        max_light_position=15, h_def=60,
+        sol_elev=45.0,
+        sol_azi=100.0,
+        axis_azimuth=90.0,
+        max_light_position=15,
+        h_def=60,
     )
     cover.calculate_position()
     assert cover._last_calc_details["mode"] == MODE_PARK
@@ -722,7 +751,9 @@ def test_max_sunlight_regime_is_axis_relative_not_compass():
     near_a = _build(sol_elev=40.0, sol_azi=182.0, axis_azimuth=92.0, footprint=2.0)
     near_b = _build(sol_elev=40.0, sol_azi=290.0, axis_azimuth=200.0, footprint=2.0)
     assert near_a.gamma_roof == pytest.approx(near_b.gamma_roof, abs=0.5)
-    assert near_a._max_light_angle() == pytest.approx(near_b._max_light_angle(), abs=0.5)
+    assert near_a._max_light_angle() == pytest.approx(
+        near_b._max_light_angle(), abs=0.5
+    )
     # ...and a far-side pair rotated together also agrees.
     far_a = _build(sol_elev=15.0, sol_azi=60.0, axis_azimuth=92.0, footprint=2.0)
     far_b = _build(sol_elev=15.0, sol_azi=168.0, axis_azimuth=200.0, footprint=2.0)
@@ -1049,9 +1080,9 @@ def test_every_option_backed_switch_key_is_settable():
         for spec in _SWITCH_SPECS
         if spec.option_key is not None and spec.option_key not in FIELD_VALIDATORS
     ]
-    assert (
-        not missing
-    ), f"option-backed switch keys missing from FIELD_VALIDATORS: {missing}"
+    assert not missing, (
+        f"option-backed switch keys missing from FIELD_VALIDATORS: {missing}"
+    )
 
 
 class TestCloudSuppressionPositionHook:

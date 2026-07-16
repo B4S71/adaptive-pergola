@@ -72,9 +72,9 @@ def register_stub_policy(policy_cls: type[CoverTypePolicy]):
             assert get_policy("cover_stub") is not None
     """
     key = policy_cls.cover_type
-    assert (
-        key not in POLICY_REGISTRY
-    ), f"{key} already registered — pick a unique stub cover_type"
+    assert key not in POLICY_REGISTRY, (
+        f"{key} already registered — pick a unique stub cover_type"
+    )
     POLICY_REGISTRY[key] = policy_cls
     try:
         yield policy_cls

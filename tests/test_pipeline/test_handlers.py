@@ -759,6 +759,6 @@ class TestOverrideHandlerContributeDefault:
             SolarHandler(),
             DefaultHandler(),
         ]:
-            assert (
-                handler.contribute(snap) == {}
-            ), f"{handler.__class__.__name__}.contribute() should return {{}}"
+            assert handler.contribute(snap) == {}, (
+                f"{handler.__class__.__name__}.contribute() should return {{}}"
+            )

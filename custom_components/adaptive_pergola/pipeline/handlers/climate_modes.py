@@ -232,9 +232,9 @@ TILT_WITH_PRESENCE: tuple[ClimateRule, ...] = (
         _solar,
     ),
     ClimateRule(
-        lambda c: c.cover_valid
-        and not (c.is_summer and c.is_winter)
-        and c.is_low_light,
+        lambda c: (
+            c.cover_valid and not (c.is_summer and c.is_winter) and c.is_low_light
+        ),
         ClimateStrategy.LOW_LIGHT,
         _solar,
     ),

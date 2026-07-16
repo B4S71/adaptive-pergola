@@ -78,12 +78,8 @@ class PositionContext:
     resync_travel_threshold: int | None = None
     inverse_state: bool = False
     force: bool = False  # Skip delta/time/manual_override gates (NOT auto_control)
-    is_safety: bool = (
-        False  # Safety-critical target (persists across window boundaries; bypasses auto_control)
-    )
-    bypass_auto_control: bool = (
-        False  # Sanctioned one-shot bypass of auto_control gate (e.g. switch return-to-default)
-    )
+    is_safety: bool = False  # Safety-critical target (persists across window boundaries; bypasses auto_control)
+    bypass_auto_control: bool = False  # Sanctioned one-shot bypass of auto_control gate (e.g. switch return-to-default)
     use_my_position: bool = (
         False  # Route through send_my_position() on non-position-capable covers
     )

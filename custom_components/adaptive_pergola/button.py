@@ -31,7 +31,9 @@ async def async_setup_entry(
     entities = config_entry.options.get(CONF_ENTITIES, [])
     if len(entities) >= 1:
         buttons.append(
-            AdaptivePergolaButton(config_entry.entry_id, hass, config_entry, coordinator)
+            AdaptivePergolaButton(
+                config_entry.entry_id, hass, config_entry, coordinator
+            )
         )
         if config_entry.options.get(
             CONF_ENABLE_MY_POSITION_ENTITIES, DEFAULT_ENABLE_MY_POSITION_ENTITIES

@@ -206,14 +206,14 @@ class TestBuildForecastSamples:
         )
         assert len(f.samples) > 0, "forecast produced no samples"
         # First sample matches the first time in sun_data (midnight).
-        assert (
-            f.samples[0].t == _DAY_START
-        ), f"first sample at {f.samples[0].t}, expected {_DAY_START}"
+        assert f.samples[0].t == _DAY_START, (
+            f"first sample at {f.samples[0].t}, expected {_DAY_START}"
+        )
         # Last sample is at next midnight: _DAY_START + 24 h.
         expected_last = _DAY_START + timedelta(hours=24)
-        assert (
-            f.samples[-1].t == expected_last
-        ), f"last sample at {f.samples[-1].t}, expected {expected_last}"
+        assert f.samples[-1].t == expected_last, (
+            f"last sample at {f.samples[-1].t}, expected {expected_last}"
+        )
 
     def test_empty_sun_data_returns_empty_samples_and_events(self):
         sd = _make_sun_data(n_samples=0)
@@ -264,9 +264,9 @@ class TestForecastEvaluatesPerSampleTime:
         )
         # The curve is NOT flat: midday samples track the sun...
         solar = [s for s in f.samples if s.handler == "solar"]
-        assert (
-            solar
-        ), "no solar samples — forecast collapsed to all-default (the #516 bug)"
+        assert solar, (
+            "no solar samples — forecast collapsed to all-default (the #516 bug)"
+        )
         assert all(10 <= s.t.hour < 16 for s in solar)
         assert all(s.position == 40 for s in solar)
         # ...while off-hours sit at the default.
@@ -399,9 +399,9 @@ class TestBuildForecastEvents:
 
         enter_events = [e for e in f.events if e.kind == EVENT_FOV_ENTER]
         assert len(enter_events) == 1
-        assert (
-            enter_events[0].t == crossing_time
-        ), f"FOV-enter at {enter_events[0].t}, expected {crossing_time}"
+        assert enter_events[0].t == crossing_time, (
+            f"FOV-enter at {enter_events[0].t}, expected {crossing_time}"
+        )
 
     def test_events_returned_sorted_by_time(self):
         sd = _make_sun_data(
@@ -770,7 +770,9 @@ def _make_coord_for_forecast_helper():
     coord = MagicMock(spec=AdaptiveDataUpdateCoordinator)
     coord.hass = MagicMock()
     coord.hass.async_add_executor_job = _AsyncCallRecorder()
-    coord.data = AdaptivePergolaData(climate_mode_toggle=False, states={}, attributes={})
+    coord.data = AdaptivePergolaData(
+        climate_mode_toggle=False, states={}, attributes={}
+    )
     coord._position_forecast = None
     return coord
 
@@ -1177,9 +1179,9 @@ def test_build_forecast_with_real_sun_data_caches_timeline():
             config=_make_config(h_def=10),
             now=_NOW,
         )
-    assert (
-        spy.call_count <= 1
-    ), f"pd.date_range called {spy.call_count}× during one forecast — expected ≤ 1"
+    assert spy.call_count <= 1, (
+        f"pd.date_range called {spy.call_count}× during one forecast — expected ≤ 1"
+    )
 
 
 @pytest.mark.asyncio
@@ -1294,9 +1296,7 @@ def _make_real_sun_data(
 
     from custom_components.adaptive_pergola.sun import SunData
 
-    return SunData(
-        timezone="UTC", observer=Observer(latitude, longitude, elevation)
-    )
+    return SunData(timezone="UTC", observer=Observer(latitude, longitude, elevation))
 
 
 class TestSunDataModuleCache:
@@ -1362,9 +1362,9 @@ class TestSunDataModuleCache:
 
             _ = sd.times  # must fill again
 
-        assert (
-            spy.call_count == 2
-        ), f"pd.date_range called {spy.call_count}× — expected 2 (one per day)"
+        assert spy.call_count == 2, (
+            f"pd.date_range called {spy.call_count}× — expected 2 (one per day)"
+        )
 
     def test_cache_key_helper_exists_and_is_deterministic(self):
         """_cache_key is importable and returns the same tuple on repeated calls."""
