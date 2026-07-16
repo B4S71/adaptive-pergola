@@ -2745,8 +2745,14 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     # reconcile/chase behavior; new installs default to off via the schema.
     # 3.3 (issue #563 trailing defect): copy legacy custom_position_sensor_N
     # into the new list key.
-    # Rollback-safe: every migration block is additive (existing keys retained).
-    MINOR_VERSION = 6
+    # 3.7: repair values the entry's own schema now rejects — clamp numbers that
+    # fall outside their field's declared range (ranges were tightened without
+    # migrating stored values), and drop templates that never finish rendering
+    # (heals entries poisoned before the write-path cost gate shipped; this runs
+    # before async_setup_entry, so it is what breaks that boot loop).
+    # Rollback-safe: every migration block is additive (existing keys retained)
+    # or value-level (3.7), and HA lets older code load a higher minor version.
+    MINOR_VERSION = 7
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__()

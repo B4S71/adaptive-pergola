@@ -52,6 +52,7 @@ from .const import (
     CUSTOM_POSITION_SLOTS,
     DIAG_CACHE_KEY,
     DOMAIN,
+    OPTION_RANGES,
     _LOGGER,
 )
 from .coordinator import AdaptiveConfigEntry, AdaptiveDataUpdateCoordinator
@@ -70,6 +71,7 @@ from .migrations import (
     async_prune_legacy_sensor_entities_v2,
 )
 from .services import async_setup_services, async_unload_services
+from .services.options_service import TEMPLATE_RENDER_TIMEOUT
 
 PLATFORMS = [
     Platform.SENSOR,
@@ -442,6 +444,80 @@ def _merge_force_override_into_slot_5(options: dict) -> bool:
     return True
 
 
+def _clamp_options_to_declared_ranges(options: dict) -> list[str]:
+    """Clamp stored numeric options into the range their own field declares.
+
+    Ranges have been tightened over time without migrating the values already
+    stored, so an entry can hold a number its own config flow now rejects. A
+    real example carried over from the adaptive-cover-pro heritage:
+    ``weather_wind_direction_tolerance`` is declared ``(5, 180)`` but entries
+    exist holding ``"360"`` — a legacy "any direction" sentinel from when the
+    field accepted a full circle. Nothing complained, because the value only
+    reaches a validator when the field is edited; then the service rejects it
+    and the config flow will not let the section be saved.
+
+    Clamping is safe for this class of value: 180 degrees of tolerance already
+    means "any direction" (it is measured either side of the wind bearing), so
+    360 -> 180 preserves the behaviour the value was expressing.
+
+    Booleans are skipped (bool is an int subclass, and no boolean field declares
+    a range) and templates are skipped — they render to a number at runtime and
+    are bounded by their own field's range then.
+
+    Returns the list of clamped keys.
+    """
+    changed: list[str] = []
+    for key, (low, high) in OPTION_RANGES.items():
+        value = options.get(key)
+        if value is None or isinstance(value, bool) or is_template_string(value):
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        clamped = min(high, max(low, number))
+        if clamped == number:
+            continue
+        # Preserve the stored representation: these fields round-trip through
+        # the config flow as strings for the templatable ones, numbers otherwise.
+        tidy = int(clamped) if float(clamped).is_integer() else clamped
+        options[key] = str(tidy) if isinstance(value, str) else tidy
+        changed.append(key)
+    return changed
+
+
+async def _async_drop_unrenderable_templates(hass: HomeAssistant, options: dict) -> list[str]:
+    """Drop stored templates that cannot be rendered within the time budget.
+
+    Heals entries poisoned before the write-path cost gate shipped. Validation
+    only guards new writes; an entry saved earlier still holds a template that
+    hangs the event loop when the coordinator renders it during setup, and this
+    migration runs before ``async_setup_entry``, so it is the only thing that
+    can break that boot loop from inside the integration.
+
+    Only *timing out* is disqualifying. A template that raises renders quickly
+    and every consumer already degrades safely (numeric resolve drops the key,
+    condition resolve returns no opinion), so those are left alone — dropping
+    them would silently change working configurations.
+
+    Returns the list of dropped keys.
+    """
+    dropped: list[str] = []
+    for key, value in list(options.items()):
+        if not is_template_string(value):
+            continue
+        try:
+            timed_out = await Template(value, hass).async_render_will_timeout(
+                TEMPLATE_RENDER_TIMEOUT
+            )
+        except TemplateError:
+            continue  # broken but cheap — runtime already handles it
+        if timed_out:
+            options.pop(key, None)
+            dropped.append(key)
+    return dropped
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate old config entries to the current schema version."""
     new_options = dict(entry.options)
@@ -524,6 +600,41 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if new_version == 3 and new_minor < 6:
         new_options.setdefault(CONF_WEATHER_ENABLED, True)
         new_minor = 6
+
+    # v3.6 → v3.7: repair values that the entry's own schema now rejects.
+    #
+    # Two independent classes, both of which only bite once something tries to
+    # *validate* or *render* the stored value rather than merely read it:
+    #
+    #  * numbers outside their field's declared range — ranges were tightened
+    #    without migrating stored values, so e.g. an entry carrying
+    #    weather_wind_direction_tolerance="360" (declared 5..180) cannot have
+    #    its weather section saved in the config flow.
+    #  * templates that never finish rendering — validation now rejects those
+    #    at the write path, but an entry poisoned before that shipped still
+    #    hangs the event loop during setup, and this runs first.
+    #
+    # A MINOR bump: HA lets older code load an entry with a higher minor
+    # version, and both repairs are value-level (no new keys), so a rollback to
+    # 0.5.0 keeps working — it simply sees the clamped value.
+    if new_version == 3 and new_minor < 7:
+        clamped = _clamp_options_to_declared_ranges(new_options)
+        if clamped:
+            _LOGGER.info(
+                "Clamped out-of-range options of %s into their declared ranges (%s)",
+                entry.data.get("name", entry.entry_id),
+                ", ".join(clamped),
+            )
+        dropped = await _async_drop_unrenderable_templates(hass, new_options)
+        if dropped:
+            _LOGGER.warning(
+                "Dropped templates of %s that could not render within %ss (%s); "
+                "those fields fall back to their defaults",
+                entry.data.get("name", entry.entry_id),
+                TEMPLATE_RENDER_TIMEOUT,
+                ", ".join(dropped),
+            )
+        new_minor = 7
 
     hass.config_entries.async_update_entry(
         entry, options=new_options, version=new_version, minor_version=new_minor
