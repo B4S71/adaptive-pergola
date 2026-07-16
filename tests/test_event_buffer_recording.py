@@ -143,11 +143,11 @@ def _make_transit_coordinator(
     )
     coord._cmd_svc = cmd_svc
 
-    coord._is_in_grace_period = (
-        lambda eid: AdaptiveDataUpdateCoordinator._is_in_grace_period(coord, eid)
+    coord._is_in_grace_period = lambda eid: (
+        AdaptiveDataUpdateCoordinator._is_in_grace_period(coord, eid)
     )
-    coord._start_grace_period = (
-        lambda eid: AdaptiveDataUpdateCoordinator._start_grace_period(coord, eid)
+    coord._start_grace_period = lambda eid: (
+        AdaptiveDataUpdateCoordinator._start_grace_period(coord, eid)
     )
 
     return coord

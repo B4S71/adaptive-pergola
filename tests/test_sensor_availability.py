@@ -149,7 +149,9 @@ ENTITY_FACTORIES: dict[type, object] = {
     AdaptivePergolaControlStatusSensor: lambda: _std_sensor_factory(
         AdaptivePergolaControlStatusSensor
     ),
-    AdaptivePergolaSensorEntity: lambda: _std_sensor_factory(AdaptivePergolaSensorEntity),
+    AdaptivePergolaSensorEntity: lambda: _std_sensor_factory(
+        AdaptivePergolaSensorEntity
+    ),
     AdaptivePergolaManualOverrideEndSensor: lambda: _std_sensor_factory(
         AdaptivePergolaManualOverrideEndSensor
     ),
@@ -201,10 +203,12 @@ ENTITY_FACTORIES: dict[type, object] = {
         coordinator=_make_coordinator(),
     ),
     # Constructor: (config_entry, unique_id, coordinator)
-    AdaptivePergolaPositionMismatchSensor: lambda: AdaptivePergolaPositionMismatchSensor(
-        config_entry=_make_config_entry(),
-        unique_id="test_avail_entry",
-        coordinator=_make_coordinator(),
+    AdaptivePergolaPositionMismatchSensor: lambda: (
+        AdaptivePergolaPositionMismatchSensor(
+            config_entry=_make_config_entry(),
+            unique_id="test_avail_entry",
+            coordinator=_make_coordinator(),
+        )
     ),
     # --- switch.py ---
     AdaptivePergolaSwitch: lambda: AdaptivePergolaSwitch(
@@ -320,9 +324,9 @@ def test_sun_position_sensor_crashes_without_fix():
         coordinator=coord,
     )
     # After the fix: entity reports unavailable and does not crash
-    assert (
-        sensor.available is False
-    ), "SunPositionSensor must return available=False when coordinator.data is None"
+    assert sensor.available is False, (
+        "SunPositionSensor must return available=False when coordinator.data is None"
+    )
 
 
 @pytest.mark.unit
@@ -336,9 +340,9 @@ def test_control_status_sensor_crashes_without_fix():
         name="Test",
         coordinator=coord,
     )
-    assert (
-        sensor.available is False
-    ), "ControlStatusSensor must return available=False when coordinator.data is None"
+    assert sensor.available is False, (
+        "ControlStatusSensor must return available=False when coordinator.data is None"
+    )
 
 
 # ===========================================================================

@@ -773,7 +773,9 @@ def _make_motion_status_sensor(coordinator, motion_sensors=None):
     config_entry = MagicMock()
     config_entry.options.get.return_value = motion_sensors
 
-    sensor = AdaptivePergolaMotionStatusSensor.__new__(AdaptivePergolaMotionStatusSensor)
+    sensor = AdaptivePergolaMotionStatusSensor.__new__(
+        AdaptivePergolaMotionStatusSensor
+    )
     sensor.coordinator = coordinator
     sensor.config_entry = config_entry
     return sensor
@@ -1481,9 +1483,9 @@ async def test_reactive_and_mode_gates_sensor_until_template_truthy(hass):
         AdaptiveDataUpdateCoordinator._handle_occupancy_change.__get__(coordinator)
     )
     # Combined occupancy reads the real manager (sensors + template per mode).
-    type(coordinator).is_motion_detected = (
-        AdaptiveDataUpdateCoordinator.is_motion_detected
-    )
+    type(
+        coordinator
+    ).is_motion_detected = AdaptiveDataUpdateCoordinator.is_motion_detected
     coordinator.state_change = False
     coordinator.async_refresh = AsyncMock()
     coordinator._start_motion_timeout = Mock()

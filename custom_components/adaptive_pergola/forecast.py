@@ -447,7 +447,8 @@ def build_forecast_for_coord(coord: AdaptiveDataUpdateCoordinator) -> Forecast:
     # missing caps (snapshot not built yet) default to floor active.
     caps = getattr(coord._snapshot, "cover_capabilities", None) or {}  # noqa: SLF001
     all_positionable = bool(caps) and all(
-        coord._policy.position_axis_supported(c) for c in caps.values()  # noqa: SLF001
+        coord._policy.position_axis_supported(c)
+        for c in caps.values()  # noqa: SLF001
     )
 
     # End-of-window position (issue #625): gate on CONF_RETURN_SUNSET exactly

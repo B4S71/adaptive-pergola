@@ -92,9 +92,9 @@ def test_vertical_cover_1000_calculations_under_200ms() -> None:
         cover.calculate_position()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert (
-        elapsed_ms < 200
-    ), f"1000 vertical calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    assert elapsed_ms < 200, (
+        f"1000 vertical calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    )
 
 
 @pytest.mark.unit
@@ -133,9 +133,9 @@ def test_horizontal_cover_1000_calculations_under_200ms() -> None:
         cover.calculate_position()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert (
-        elapsed_ms < 200
-    ), f"1000 horizontal calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    assert elapsed_ms < 200, (
+        f"1000 horizontal calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    )
 
 
 @pytest.mark.unit
@@ -173,9 +173,9 @@ def test_tilt_cover_1000_calculations_under_200ms() -> None:
         cover.calculate_position()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert (
-        elapsed_ms < 200
-    ), f"1000 tilt calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    assert elapsed_ms < 200, (
+        f"1000 tilt calculations took {elapsed_ms:.1f}ms (limit: 200ms)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -195,9 +195,9 @@ def test_vertical_cover_varied_sun_positions_under_500ms() -> None:
         cover.calculate_position()
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert (
-        elapsed_ms < 2000
-    ), f"1000 varied-sun calculations took {elapsed_ms:.1f}ms (limit: 2000ms)"
+    assert elapsed_ms < 2000, (
+        f"1000 varied-sun calculations took {elapsed_ms:.1f}ms (limit: 2000ms)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -267,9 +267,9 @@ def test_pipeline_1000_evaluations_under_500ms() -> None:
         registry.evaluate(snapshot)
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert (
-        elapsed_ms < 500
-    ), f"1000 pipeline evaluations took {elapsed_ms:.1f}ms (limit: 500ms)"
+    assert elapsed_ms < 500, (
+        f"1000 pipeline evaluations took {elapsed_ms:.1f}ms (limit: 500ms)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +323,6 @@ def test_config_summary_under_50ms() -> None:
         _build_config_summary(config, CoverType.BLIND)
     elapsed_ms = (time.perf_counter() - start) * 1000
 
-    assert elapsed_ms < 50 * (
-        N / 1
-    ), f"100 config summary builds took {elapsed_ms:.1f}ms"  # Allow 50ms * iterations
+    assert elapsed_ms < 50 * (N / 1), (
+        f"100 config summary builds took {elapsed_ms:.1f}ms"
+    )  # Allow 50ms * iterations

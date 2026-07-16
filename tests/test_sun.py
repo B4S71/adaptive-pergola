@@ -98,9 +98,9 @@ def test_solar_azimuth_recomputes_date_range_at_most_once_per_day():
         _ = sd.solar_azimuth
         _ = sd.solar_azimuth
         _ = sd.times
-    assert (
-        spy.call_count == 1
-    ), f"pd.date_range called {spy.call_count}× — expected ≤ 1 per day"
+    assert spy.call_count == 1, (
+        f"pd.date_range called {spy.call_count}× — expected ≤ 1 per day"
+    )
 
 
 @pytest.mark.unit

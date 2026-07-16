@@ -354,9 +354,9 @@ class TestClimateDataPropagation:
             calculate_percentage_return=55.0,
         )
         result = self.registry.evaluate(snap)
-        assert (
-            result.control_method == ControlMethod.SOLAR
-        ), "ClimateHandler should defer (GLARE_CONTROL) so SolarHandler wins"
+        assert result.control_method == ControlMethod.SOLAR, (
+            "ClimateHandler should defer (GLARE_CONTROL) so SolarHandler wins"
+        )
         assert result.climate_data is not None, (
             "REGRESSION (Issue #240): climate_data was dropped when ClimateHandler "
             "returned None for the GLARE_CONTROL defer path"

@@ -61,7 +61,15 @@ def _stub_state(mock_hass, position: int) -> None:
     mock_hass.states.get.return_value = state
 
 
-async def _apply(svc, mock_hass, *, current, target, threshold, service_name="set_cover_tilt_position"):
+async def _apply(
+    svc,
+    mock_hass,
+    *,
+    current,
+    target,
+    threshold,
+    service_name="set_cover_tilt_position",
+):
     """Run apply_position with all gates green and a stubbed service route."""
     _stub_state(mock_hass, current)
     with (

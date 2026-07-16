@@ -199,9 +199,9 @@ class TestProgressAwareBackstop:
             last_progress_seconds_ago=None,  # no progress recorded
         )
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "wait_for_target must be cleared when no progress for > 45s"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "wait_for_target must be cleared when no progress for > 45s"
+        )
 
     def test_slow_cover_still_moving_at_50s_does_not_trigger_false_override(
         self,
@@ -255,9 +255,9 @@ class TestProgressAwareBackstop:
             last_progress_seconds_ago=None,  # never reported progress
         )
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "Hard timeout safety net must still work for covers without intermediate reports"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "Hard timeout safety net must still work for covers without intermediate reports"
+        )
 
     def test_configurable_timeout_extends_window(self) -> None:
         """When transit_timeout is set to 120s, a 50s old command is not timed out."""
@@ -274,9 +274,9 @@ class TestProgressAwareBackstop:
         )
         _call(coord)
         # 50s elapsed < 120s timeout → must NOT fire
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is True
-        ), "With transit_timeout=120s, a 50s old command must not trigger the backstop"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is True, (
+            "With transit_timeout=120s, a 50s old command must not trigger the backstop"
+        )
 
 
 # ===========================================================================
@@ -504,9 +504,9 @@ class TestReconciliationBackstop:
         svc._enabled = True
 
         await svc.run_reconciliation_pass(now)
-        assert (
-            svc.is_waiting_for_target(entity_id) is False
-        ), "Reconcile backstop must clear wait_for_target after 50s > 45s configured timeout"
+        assert svc.is_waiting_for_target(entity_id) is False, (
+            "Reconcile backstop must clear wait_for_target after 50s > 45s configured timeout"
+        )
 
 
 # ===========================================================================
@@ -647,9 +647,9 @@ class TestInTransitGuard:
             manual_threshold=5,
             is_in_transit=manager._test_is_in_transit,
         )
-        assert not manager.is_cover_manual(
-            entity_id
-        ), "In-transit event must not have marked manual override"
+        assert not manager.is_cover_manual(entity_id), (
+            "In-transit event must not have marked manual override"
+        )
 
         # Advance the mocked HA state to reflect the cover settling
         manager._hass_state_holder.state = "open"

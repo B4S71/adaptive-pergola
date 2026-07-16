@@ -188,9 +188,9 @@ class TestClimateStatusThresholdAttrs:
         )
         assert "temp_low" in attrs, "temp_low must be present in standby"
         assert "temp_high" in attrs, "temp_high must be present in standby"
-        assert (
-            "temp_summer_outside" in attrs
-        ), "temp_summer_outside must be present in standby"
+        assert "temp_summer_outside" in attrs, (
+            "temp_summer_outside must be present in standby"
+        )
 
     def test_threshold_attrs_values_in_standby(self) -> None:
         """Threshold values from config_entry.options are present in standby."""

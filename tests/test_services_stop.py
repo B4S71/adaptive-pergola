@@ -61,9 +61,9 @@ def _make_coord(*, entities: list[str] | None = None):
 async def test_stop_service_registered_after_setup(hass) -> None:
     """adaptive_pergola.stop is registered after async_setup_services."""
     await _setup(hass, entry_id="stop_reg_01")
-    assert hass.services.has_service(
-        DOMAIN, "stop"
-    ), "stop service should be registered after setup"
+    assert hass.services.has_service(DOMAIN, "stop"), (
+        "stop service should be registered after setup"
+    )
 
 
 @pytest.mark.integration
@@ -75,9 +75,9 @@ async def test_stop_service_removed_after_all_entries_unloaded(hass) -> None:
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert not hass.services.has_service(
-        DOMAIN, "stop"
-    ), "stop service should be removed when last entry is unloaded"
+    assert not hass.services.has_service(DOMAIN, "stop"), (
+        "stop service should be removed when last entry is unloaded"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -212,9 +212,9 @@ def test_services_yaml_has_stop_entry() -> None:
         / "services.yaml"
     )
     data = yaml.safe_load(services_yaml.read_text())
-    assert (
-        "stop" in data
-    ), f"'stop' key missing from services.yaml; found: {list(data.keys())}"
+    assert "stop" in data, (
+        f"'stop' key missing from services.yaml; found: {list(data.keys())}"
+    )
     entry = data["stop"]
     assert "name" in entry
     assert "description" in entry
@@ -240,9 +240,9 @@ def test_en_json_has_stop_service_entry() -> None:
     )
     data = json.loads(en_json.read_text())
     services = data.get("services", {})
-    assert (
-        "stop" in services
-    ), f"'stop' key missing from en.json services; found: {list(services.keys())}"
+    assert "stop" in services, (
+        f"'stop' key missing from en.json services; found: {list(services.keys())}"
+    )
     stop = services["stop"]
     assert "name" in stop
     assert "description" in stop

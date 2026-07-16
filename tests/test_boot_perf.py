@@ -203,6 +203,6 @@ async def test_sun_data_cache_primed_via_executor(hass: HomeAssistant) -> None:
 
     # After the fix, SunData cache priming MUST go through the executor.
     # "prime_cache" must appear in the recorded executor calls. Issue #655.
-    assert (
-        "prime_cache" in executor_calls
-    ), f"SunData.prime_cache not found in executor calls: {executor_calls}"
+    assert "prime_cache" in executor_calls, (
+        f"SunData.prime_cache not found in executor calls: {executor_calls}"
+    )

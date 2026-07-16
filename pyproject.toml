@@ -1,6 +1,6 @@
 [project]
 name = "adaptive-pergola"
-version = "0.6.0-beta6"
+version = "0.6.2"
 description = "Adaptive louvered-roof (pergola) automation for Home Assistant — pergola-only split of Adaptive Cover Pro"
 requires-python = ">=3.13"
 dependencies = [
@@ -14,6 +14,15 @@ dev = [
   "pytest>=9.0.3",
   "pytest-homeassistant-custom-component",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint.per-file-ignores]
+# pytest requires ``pytest_plugins`` at module top, before any import, so the
+# conftest imports legitimately cannot sit at the very top of the file.
+"tests/conftest.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

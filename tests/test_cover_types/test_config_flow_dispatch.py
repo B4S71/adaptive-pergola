@@ -26,9 +26,7 @@ class TestGeometrySchemaDispatch:
     """``policy.geometry_schema()`` returns the right schema per cover type."""
 
     def test_louvered_roof(self):
-        assert (
-            LouveredRoofPolicy().geometry_schema() is GEOMETRY_LOUVERED_ROOF_SCHEMA
-        )
+        assert LouveredRoofPolicy().geometry_schema() is GEOMETRY_LOUVERED_ROOF_SCHEMA
 
 
 @pytest.mark.unit
@@ -41,8 +39,7 @@ class TestEntitySelectorFilter:
         # supported_features filter is OR-of-listed, not AND — the
         # missing-set_position case surfaces via cover_capability_warnings).
         assert (
-            LouveredRoofPolicy().entity_selector_filter()
-            is TILT_CAPABLE_ENTITY_FILTER
+            LouveredRoofPolicy().entity_selector_filter() is TILT_CAPABLE_ENTITY_FILTER
         )
 
 

@@ -49,7 +49,9 @@ async def test_my_position_button_created_when_entities_configured():
 
     await async_setup_entry(hass, config_entry, capture)
 
-    my_pos_buttons = [e for e in added if isinstance(e, AdaptivePergolaMyPositionButton)]
+    my_pos_buttons = [
+        e for e in added if isinstance(e, AdaptivePergolaMyPositionButton)
+    ]
     assert len(my_pos_buttons) == 1
 
 
@@ -246,9 +248,9 @@ async def test_my_position_button_bypasses_auto_control():
         use_my_position=True,
     )
 
-    assert (
-        outcome[0] == "sent"
-    ), f"Expected command to be sent even with auto_control off, but got: {outcome}"
+    assert outcome[0] == "sent", (
+        f"Expected command to be sent even with auto_control off, but got: {outcome}"
+    )
     # The dispatched context bypassed the gate without being classified safety.
     ctx = coord._captured_contexts[-1]
     assert ctx.bypass_auto_control is True
@@ -293,9 +295,9 @@ async def test_my_position_button_passes_bypass_kwargs():
 
     coordinator.async_apply_user_position.assert_awaited_once()
     _, kwargs = coordinator.async_apply_user_position.call_args
-    assert (
-        kwargs.get("use_my_position") is True
-    ), "async_press must pass use_my_position=True to async_apply_user_position"
-    assert (
-        "bypass_auto_control" not in kwargs
-    ), "bypass is intrinsic now — button must not pass bypass_auto_control"
+    assert kwargs.get("use_my_position") is True, (
+        "async_press must pass use_my_position=True to async_apply_user_position"
+    )
+    assert "bypass_auto_control" not in kwargs, (
+        "bypass is intrinsic now — button must not pass bypass_auto_control"
+    )

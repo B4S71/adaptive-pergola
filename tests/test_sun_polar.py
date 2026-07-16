@@ -98,8 +98,6 @@ def test_sunrise_normal_returns_astral_result():
 @pytest.mark.unit
 def test_next_sunrise_polar_night_returns_tomorrow_sentinel():
     """SunData.next_sunrise() returns tomorrow 00:01:00 during polar night."""
-    from datetime import timedelta
-
     sd = _make_sun_data()
     with patch(_SUNRISE_FN, side_effect=ValueError("Sun never rises")):
         result = sd.next_sunrise()

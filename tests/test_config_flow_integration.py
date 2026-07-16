@@ -281,9 +281,9 @@ async def test_quick_setup_critical_keys_never_none(hass: HomeAssistant) -> None
     assert result["type"] == "create_entry"
     opts = result["result"].options
     assert opts.get(CONF_DELTA_TIME) is not None, "CONF_DELTA_TIME must not be None"
-    assert (
-        opts.get(CONF_MANUAL_OVERRIDE_DURATION) is not None
-    ), "CONF_MANUAL_OVERRIDE_DURATION must not be None"
+    assert opts.get(CONF_MANUAL_OVERRIDE_DURATION) is not None, (
+        "CONF_MANUAL_OVERRIDE_DURATION must not be None"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -540,9 +540,9 @@ async def test_options_flow_menu_returns_list_not_dict(
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == "menu"
-    assert isinstance(
-        result["menu_options"], list
-    ), f"menu_options should be a list for client-side translation, got {type(result['menu_options'])}"
+    assert isinstance(result["menu_options"], list), (
+        f"menu_options should be a list for client-side translation, got {type(result['menu_options'])}"
+    )
 
 
 @pytest.mark.integration
@@ -1042,9 +1042,9 @@ async def test_config_flow_cover_entities_with_devices_shows_device_selector(
     assert result["type"] == "form"
     assert result["step_id"] == "cover_entities"
     schema_str_keys = [str(k) for k in result["data_schema"].schema]
-    assert (
-        CONF_DEVICE_ID in schema_str_keys
-    ), f"Expected {CONF_DEVICE_ID} in schema, got: {schema_str_keys}"
+    assert CONF_DEVICE_ID in schema_str_keys, (
+        f"Expected {CONF_DEVICE_ID} in schema, got: {schema_str_keys}"
+    )
     # The create flow attaches to the cover's physical device by default — a
     # pergola's slats always belong to their box — instead of defaulting to
     # standalone. The proxy toggle is not asked at all (always enabled).
@@ -1201,9 +1201,9 @@ async def test_options_flow_cover_entities_combined_form_with_devices(
 
         assert result["step_id"] == "cover_entities"
         schema_str_keys = [str(k) for k in result["data_schema"].schema]
-        assert (
-            CONF_DEVICE_ID in schema_str_keys
-        ), f"Expected {CONF_DEVICE_ID} in schema keys, got: {schema_str_keys}"
+        assert CONF_DEVICE_ID in schema_str_keys, (
+            f"Expected {CONF_DEVICE_ID} in schema keys, got: {schema_str_keys}"
+        )
 
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {CONF_ENTITIES: [], CONF_DEVICE_ID: "device_xyz789"}
@@ -1265,15 +1265,15 @@ async def test_options_flow_custom_position_clears_sensor_position_and_priority(
 
     saved = result["data"]
     for slot in CUSTOM_POSITION_SLOTS.values():
-        assert (
-            saved.get(slot["sensor"]) is None
-        ), f"{slot['sensor']} should be None after clearing"
-        assert (
-            saved.get(slot["position"]) is None
-        ), f"{slot['position']} should be None after clearing"
-        assert (
-            saved.get(slot["priority"]) is None
-        ), f"{slot['priority']} should be None after clearing"
+        assert saved.get(slot["sensor"]) is None, (
+            f"{slot['sensor']} should be None after clearing"
+        )
+        assert saved.get(slot["position"]) is None, (
+            f"{slot['position']} should be None after clearing"
+        )
+        assert saved.get(slot["priority"]) is None, (
+            f"{slot['priority']} should be None after clearing"
+        )
 
 
 @pytest.mark.integration
@@ -1324,12 +1324,12 @@ async def test_cleared_start_time_persists_blank(hass: HomeAssistant) -> None:
     assert result["type"] == "create_entry"
 
     saved = result["data"]
-    assert (
-        saved.get(CONF_START_TIME) is None
-    ), f"start_time should be absent/None, got {saved.get(CONF_START_TIME)!r}"
-    assert (
-        saved.get(CONF_END_TIME) is None
-    ), f"end_time should be absent/None, got {saved.get(CONF_END_TIME)!r}"
+    assert saved.get(CONF_START_TIME) is None, (
+        f"start_time should be absent/None, got {saved.get(CONF_START_TIME)!r}"
+    )
+    assert saved.get(CONF_END_TIME) is None, (
+        f"end_time should be absent/None, got {saved.get(CONF_END_TIME)!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1381,9 +1381,9 @@ async def test_options_flow_light_cloud_clears_is_sunny_sensor(
     )
     assert result["type"] == "create_entry"
 
-    assert (
-        result["data"].get(CONF_IS_SUNNY_SENSOR) is None
-    ), "CONF_IS_SUNNY_SENSOR should be None after clearing, not 'binary_sensor.sunny'"
+    assert result["data"].get(CONF_IS_SUNNY_SENSOR) is None, (
+        "CONF_IS_SUNNY_SENSOR should be None after clearing, not 'binary_sensor.sunny'"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1563,9 +1563,9 @@ async def test_options_flow_position_step_exposes_my_position_toggle(
         for k in schema_keys
         if isinstance(k, vol.Marker) and k.schema == CONF_ENABLE_MY_POSITION_ENTITIES
     ]
-    assert (
-        len(matching) == 1
-    ), f"Expected exactly one schema entry for {CONF_ENABLE_MY_POSITION_ENTITIES}"
+    assert len(matching) == 1, (
+        f"Expected exactly one schema entry for {CONF_ENABLE_MY_POSITION_ENTITIES}"
+    )
     assert matching[0].default() is False
 
     # Submitting the form with the toggle on must land True in the entry options.
@@ -1653,9 +1653,9 @@ async def test_options_flow_position_step_clears_sunset_pos_when_omitted(
     assert result["type"] == "create_entry"
 
     saved = result["data"]
-    assert (
-        saved.get(CONF_SUNSET_POS) is None
-    ), "sunset_position must be None after clearing, not retain previous value 0"
+    assert saved.get(CONF_SUNSET_POS) is None, (
+        "sunset_position must be None after clearing, not retain previous value 0"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1772,7 +1772,9 @@ async def test_create_flow_sun_tracking_rerender_keeps_typed_azimuth() -> None:
     )
 
 
-async def test_create_flow_ignores_stale_unknown_type_entry(hass: HomeAssistant) -> None:
+async def test_create_flow_ignores_stale_unknown_type_entry(
+    hass: HomeAssistant,
+) -> None:
     """A leftover entry with an unregistered cover type must not break the create menu.
 
     Regression for the pergola split: the pre-split Adaptive Pergola 0.2.x
@@ -1797,7 +1799,9 @@ async def test_create_flow_ignores_stale_unknown_type_entry(hass: HomeAssistant)
     assert result["type"] == "form"
 
 
-async def test_stale_unknown_type_entry_setup_fails_cleanly(hass: HomeAssistant) -> None:
+async def test_stale_unknown_type_entry_setup_fails_cleanly(
+    hass: HomeAssistant,
+) -> None:
     """Setting up a stale unknown-type entry fails with ConfigEntryError, not a crash."""
     from homeassistant.config_entries import ConfigEntryState
 

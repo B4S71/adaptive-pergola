@@ -55,7 +55,6 @@ def test_no_legacy_fov_mode_symbols():
     ("cover_type", "supported"),
     [
         (CoverType.BLIND, True),
-        
         (CoverType.AWNING, False),
         (CoverType.TILT, False),
     ],

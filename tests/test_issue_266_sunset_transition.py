@@ -125,9 +125,9 @@ async def test_sunset_window_opens_after_end_time_dispatches_sunset_pos():
     assert coord._cmd_svc.apply_position.call_count == 2
     for call in coord._cmd_svc.apply_position.call_args_list:
         trigger = call.args[2] if len(call.args) > 2 else call.kwargs.get("trigger", "")
-        assert (
-            trigger == "sunset_window_opened"
-        ), f"Expected trigger 'sunset_window_opened', got {trigger!r}"
+        assert trigger == "sunset_window_opened", (
+            f"Expected trigger 'sunset_window_opened', got {trigger!r}"
+        )
     coord.async_refresh.assert_called_once()
 
 

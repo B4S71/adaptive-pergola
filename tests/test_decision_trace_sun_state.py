@@ -44,7 +44,9 @@ def _make_coordinator(sun_validity: dict | None = None):
     return coord
 
 
-def _make_sensor(sun_validity: dict | None = None) -> AdaptivePergolaDecisionTraceSensor:
+def _make_sensor(
+    sun_validity: dict | None = None,
+) -> AdaptivePergolaDecisionTraceSensor:
     return AdaptivePergolaDecisionTraceSensor(
         "test_sun_state_entry",
         _make_hass(),

@@ -46,8 +46,7 @@ def test_field_validators_cover_specs() -> None:
     missing = {
         spec.key
         for spec in FIELD_SPECS.values()
-        if spec.validator is not ValidatorKind.NONE
-        and spec.key not in FIELD_VALIDATORS
+        if spec.validator is not ValidatorKind.NONE and spec.key not in FIELD_VALIDATORS
     }
     assert not missing, (
         f"FIELD_SPECS declare a validator for {sorted(missing)} but "
@@ -76,7 +75,9 @@ def test_previously_drifted_fields_now_settable() -> None:
         with pytest.raises(vol.Invalid):
             FIELD_VALIDATORS[key]("not-a-bool")
 
-    assert FIELD_VALIDATORS[CONF_MOTION_TIMEOUT_MODE]("hold_position") == "hold_position"
+    assert (
+        FIELD_VALIDATORS[CONF_MOTION_TIMEOUT_MODE]("hold_position") == "hold_position"
+    )
     with pytest.raises(vol.Invalid):
         FIELD_VALIDATORS[CONF_MOTION_TIMEOUT_MODE]("bogus")
 
@@ -163,9 +164,9 @@ def test_custom_position_slots_have_ranges() -> None:
     for slot_keys in CUSTOM_POSITION_SLOTS.values():
         for sub in ("position", "priority"):
             key = slot_keys[sub]
-            assert (
-                key in OPTION_RANGES
-            ), f"{key} ({sub} slot) missing from OPTION_RANGES"
+            assert key in OPTION_RANGES, (
+                f"{key} ({sub} slot) missing from OPTION_RANGES"
+            )
 
 
 @pytest.mark.unit

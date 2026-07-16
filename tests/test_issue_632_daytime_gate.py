@@ -335,9 +335,7 @@ def test_schedule_gate_fallback_wake_when_holding():
 def test_schedule_gate_fallback_wake_no_wake_when_determinate():
     """A determinate gate (None remaining) schedules no wake."""
     coord = _coord_for_wake(secs=None)
-    with patch(
-        "custom_components.adaptive_pergola.coordinator.async_call_later"
-    ) as m:
+    with patch("custom_components.adaptive_pergola.coordinator.async_call_later") as m:
         coord._schedule_gate_fallback_wake()
     m.assert_not_called()
     assert coord._gate_fallback_unsub is None

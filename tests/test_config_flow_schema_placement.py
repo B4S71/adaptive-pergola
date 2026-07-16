@@ -13,7 +13,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_DELTA_POSITION,
     CONF_DELTA_TIME,
     CONF_ENABLE_POSITION_MATCHING,
-    CONF_INVERSE_STATE,
     CONF_MANUAL_OVERRIDE_DURATION,
     CONF_MAX_COVERAGE_STEPS,
     CONF_MAX_POSITION,
@@ -28,7 +27,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_SUNSET_POS,
     CONF_SUNSET_TIME_ENTITY,
     CONF_TRANSIT_TIMEOUT,
-    CONF_VENETIAN_MODE,
 )
 
 
@@ -140,9 +138,9 @@ def test_conf_key_lives_on_correct_step(
     expected = _schema_keys(getattr(cf, expected_schema_name))
     forbidden = _schema_keys(getattr(cf, forbidden_schema_name))
     assert conf_key in expected, f"{conf_key} should be in {expected_schema_name}"
-    assert (
-        conf_key not in forbidden
-    ), f"{conf_key} should NOT be in {forbidden_schema_name}"
+    assert conf_key not in forbidden, (
+        f"{conf_key} should NOT be in {forbidden_schema_name}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -160,9 +158,9 @@ def test_custom_position_schema_blind_excludes_tilt_slots() -> None:
     schema = cf._build_custom_position_schema_dict(sensor_type=CoverType.BLIND)
     keys = {str(k) for k in schema}
     for slot_keys in CUSTOM_POSITION_SLOTS.values():
-        assert (
-            slot_keys["tilt"] not in keys
-        ), f"{slot_keys['tilt']} should not be in blind"
+        assert slot_keys["tilt"] not in keys, (
+            f"{slot_keys['tilt']} should not be in blind"
+        )
 
 
 def test_custom_position_schema_awning_excludes_tilt_slots() -> None:
@@ -175,9 +173,9 @@ def test_custom_position_schema_awning_excludes_tilt_slots() -> None:
     schema = cf._build_custom_position_schema_dict(sensor_type=CoverType.AWNING)
     keys = {str(k) for k in schema}
     for slot_keys in CUSTOM_POSITION_SLOTS.values():
-        assert (
-            slot_keys["tilt"] not in keys
-        ), f"{slot_keys['tilt']} should not be in awning"
+        assert slot_keys["tilt"] not in keys, (
+            f"{slot_keys['tilt']} should not be in awning"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -195,9 +193,9 @@ def test_custom_position_schema_blind_excludes_tilt_only_slots() -> None:
     schema = cf._build_custom_position_schema_dict(sensor_type=CoverType.BLIND)
     keys = {str(k) for k in schema}
     for slot_keys in CUSTOM_POSITION_SLOTS.values():
-        assert (
-            slot_keys["tilt_only"] not in keys
-        ), f"{slot_keys['tilt_only']} should not be in blind"
+        assert slot_keys["tilt_only"] not in keys, (
+            f"{slot_keys['tilt_only']} should not be in blind"
+        )
 
 
 def test_custom_position_schema_awning_excludes_tilt_only_slots() -> None:
@@ -210,9 +208,9 @@ def test_custom_position_schema_awning_excludes_tilt_only_slots() -> None:
     schema = cf._build_custom_position_schema_dict(sensor_type=CoverType.AWNING)
     keys = {str(k) for k in schema}
     for slot_keys in CUSTOM_POSITION_SLOTS.values():
-        assert (
-            slot_keys["tilt_only"] not in keys
-        ), f"{slot_keys['tilt_only']} should not be in awning"
+        assert slot_keys["tilt_only"] not in keys, (
+            f"{slot_keys['tilt_only']} should not be in awning"
+        )
 
 
 # ---------------------------------------------------------------------------

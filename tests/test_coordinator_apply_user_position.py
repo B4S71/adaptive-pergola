@@ -581,9 +581,9 @@ async def test_apply_user_position_explicit_options_not_overridden_by_resolved()
     coord._snapshot_builder.build.assert_called_once()
     call_args, _call_kwargs = coord._snapshot_builder.build.call_args
     opts_passed = call_args[0]
-    assert (
-        opts_passed is explicit_options
-    ), "build() must use the explicitly supplied options when options != None."
+    assert opts_passed is explicit_options, (
+        "build() must use the explicitly supplied options when options != None."
+    )
 
 
 # ---------------------------------------------------------------------------

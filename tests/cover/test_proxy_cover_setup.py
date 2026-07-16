@@ -154,8 +154,8 @@ async def test_proxy_device_info_matches_acp_entry_device(hass) -> None:
     ]
     assert own_entities, "no entities registered for entry"
     devices = {ent.device_id for ent in own_entities if ent.device_id}
-    assert (
-        len(devices) == 1
-    ), f"expected a single virtual device shared by all ACP entities; got {devices}"
+    assert len(devices) == 1, (
+        f"expected a single virtual device shared by all ACP entities; got {devices}"
+    )
     device = d_reg.async_get(next(iter(devices)))
     assert (DOMAIN, entry.entry_id) in device.identifiers

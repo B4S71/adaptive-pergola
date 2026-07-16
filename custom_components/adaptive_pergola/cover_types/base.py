@@ -766,9 +766,7 @@ class CoverTypePolicy(ABC):
         """
         return "Cover-Types"
 
-    def display_label(
-        self, labels: dict[str, str] | None = None
-    ) -> str:  # noqa: ARG002
+    def display_label(self, labels: dict[str, str] | None = None) -> str:  # noqa: ARG002
         """Return the human-readable label for this cover type.
 
         Used by ``config_flow._build_config_summary`` and any other UI

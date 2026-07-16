@@ -208,9 +208,9 @@ async def test_unset_daytime_gate_not_tracked(hass) -> None:
     """When no gate sensors are configured, no gate entity leaks into the tracked list."""
     _, calls = await _setup_entry_capture_tracked(hass, entry_id="track_gate_none_01")
     all_tracked = [e for call in calls for e in call]
-    assert (
-        "binary_sensor.daytime_gate" not in all_tracked
-    ), "Unconfigured gate sensors must not appear in the tracked entity list."
+    assert "binary_sensor.daytime_gate" not in all_tracked, (
+        "Unconfigured gate sensors must not appear in the tracked entity list."
+    )
 
 
 async def test_manual_override_input_entities_tracked(hass) -> None:

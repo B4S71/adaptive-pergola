@@ -90,6 +90,6 @@ GEOMETRY_LABELS_EN: dict[str, str] = {
     ),
     # Computed-FOV read-only line (blind + venetian Measurements mode, #565).
     "geometry.fov.computed": (
-        "Computed FOV ≈ {deg}°/{deg}° " "({w} m width, {d} m reveal depth)"
+        "Computed FOV ≈ {deg}°/{deg}° ({w} m width, {d} m reveal depth)"
     ),
 }

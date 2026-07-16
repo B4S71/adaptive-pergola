@@ -100,9 +100,7 @@ def test_after_start_time_entity_returns_false_when_future():
             "custom_components.adaptive_pergola.managers.time_window.get_datetime_from_str",
             return_value=future_time,
         ),
-        patch(
-            "custom_components.adaptive_pergola.managers.time_window.dt"
-        ) as mock_dt,
+        patch("custom_components.adaptive_pergola.managers.time_window.dt") as mock_dt,
     ):
         mock_dt.date.today.return_value = today
         mock_dt.datetime.now.return_value = now
@@ -483,9 +481,7 @@ def test_after_start_time_entity_normalizes_tomorrow_to_today():
             "custom_components.adaptive_pergola.managers.time_window.get_datetime_from_str",
             return_value=tomorrow_sunrise,
         ),
-        patch(
-            "custom_components.adaptive_pergola.managers.time_window.dt"
-        ) as mock_dt,
+        patch("custom_components.adaptive_pergola.managers.time_window.dt") as mock_dt,
     ):
         mock_dt.date.today.return_value = today
         mock_dt.datetime.now.return_value = now
@@ -521,9 +517,7 @@ def test_after_start_time_entity_no_normalize_when_today():
             "custom_components.adaptive_pergola.managers.time_window.get_datetime_from_str",
             return_value=past_today,
         ),
-        patch(
-            "custom_components.adaptive_pergola.managers.time_window.dt"
-        ) as mock_dt,
+        patch("custom_components.adaptive_pergola.managers.time_window.dt") as mock_dt,
     ):
         mock_dt.date.today.return_value = today
         mock_dt.datetime.now.return_value = now
@@ -557,9 +551,7 @@ def test_after_start_time_entity_future_today_returns_false():
             "custom_components.adaptive_pergola.managers.time_window.get_datetime_from_str",
             return_value=future_today,
         ),
-        patch(
-            "custom_components.adaptive_pergola.managers.time_window.dt"
-        ) as mock_dt,
+        patch("custom_components.adaptive_pergola.managers.time_window.dt") as mock_dt,
     ):
         mock_dt.date.today.return_value = today
         mock_dt.datetime.now.return_value = now
@@ -945,9 +937,7 @@ def test_after_start_time_with_utc_iso_sun_sensor_string():
             return_value="2026-04-18T04:46:00+00:00",
         ),
         patch("homeassistant.util.dt.DEFAULT_TIME_ZONE", ny),
-        patch(
-            "custom_components.adaptive_pergola.managers.time_window.dt"
-        ) as mock_dt,
+        patch("custom_components.adaptive_pergola.managers.time_window.dt") as mock_dt,
     ):
         # "now" is 01:00 local NY — after 00:46 local sunrise (04:46 UTC converted)
         mock_dt.datetime.now.return_value = frozen_now

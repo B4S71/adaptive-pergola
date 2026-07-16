@@ -99,6 +99,6 @@ async def test_disabling_proxy_via_options_removes_entities_on_reload(hass) -> N
 
     # After reload with proxy off, the platform no longer publishes the entity.
     state = hass.states.get(proxy_eid)
-    assert (
-        state is None or state.state == "unavailable"
-    ), f"expected proxy retired (None/unavailable); got {state}"
+    assert state is None or state.state == "unavailable", (
+        f"expected proxy retired (None/unavailable); got {state}"
+    )

@@ -204,9 +204,9 @@ class TestTransitDetection:
                 new_state_str="opening",
             )
             _call(coord)
-            assert (
-                coord._cmd_svc.is_waiting_for_target(entity_id) is True
-            ), f"wait_for_target must stay True at position {new_pos} (was {old_pos})"
+            assert coord._cmd_svc.is_waiting_for_target(entity_id) is True, (
+                f"wait_for_target must stay True at position {new_pos} (was {old_pos})"
+            )
 
 
 # ===========================================================================

@@ -171,9 +171,9 @@ class TestOpenStateCoverMakingProgress:
         )
         coord.state_change_data.old_state.state = "open"
         _call(coord)
-        assert (
-            coord._cmd_svc.record_progress.called
-        ), "record_progress must be called so the progress backstop window extends"
+        assert coord._cmd_svc.record_progress.called, (
+            "record_progress must be called so the progress backstop window extends"
+        )
 
     def test_open_state_cover_stalled_beyond_timeout_clears_wait_for_target(
         self,
@@ -195,9 +195,9 @@ class TestOpenStateCoverMakingProgress:
         )
         coord.state_change_data.old_state.state = "open"
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "Hard timeout backstop must still fire for open-state covers with no progress"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "Hard timeout backstop must still fire for open-state covers with no progress"
+        )
 
     def test_open_state_cover_drifting_away_from_target_clears_wait_for_target(
         self,
@@ -217,9 +217,9 @@ class TestOpenStateCoverMakingProgress:
         )
         coord.state_change_data.old_state.state = "open"
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "Cover moving away from target must clear wait_for_target (genuine manual move)"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "Cover moving away from target must clear wait_for_target (genuine manual move)"
+        )
 
     def test_open_state_cover_progress_backstop_resets_window(self) -> None:
         """Open-state cover: progress window extends when moving, even past sent_at timeout.
@@ -270,9 +270,9 @@ class TestRegressionExistingBehaviour:
         )
         coord.state_change_data.old_state.state = "open"
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is False
-        ), "Stalled open→open (no movement) must clear wait_for_target — Issue #172 guard"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is False, (
+            "Stalled open→open (no movement) must clear wait_for_target — Issue #172 guard"
+        )
 
     def test_opening_state_cover_forward_progress_still_works(self) -> None:
         """The original 'opening' code path must still keep wait_for_target=True."""
@@ -286,6 +286,6 @@ class TestRegressionExistingBehaviour:
         )
         coord.state_change_data.old_state.state = "opening"
         _call(coord)
-        assert (
-            coord._cmd_svc.is_waiting_for_target(entity_id) is True
-        ), "opening→opening with forward progress must still keep wait_for_target=True"
+        assert coord._cmd_svc.is_waiting_for_target(entity_id) is True, (
+            "opening→opening with forward progress must still keep wait_for_target=True"
+        )

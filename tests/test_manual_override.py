@@ -507,6 +507,6 @@ def test_mark_user_command_setdefault_does_not_extend_timestamp():
     manager.mark_user_command("cover.test", reason="second")
     second_ts = manager.manual_control_time["cover.test"]
 
-    assert (
-        second_ts == first_ts
-    ), f"timestamp must not be extended: first={first_ts}, second={second_ts}"
+    assert second_ts == first_ts, (
+        f"timestamp must not be extended: first={first_ts}, second={second_ts}"
+    )

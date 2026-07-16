@@ -13,7 +13,6 @@ Covers:
 from __future__ import annotations
 
 
-
 import pytest
 import voluptuous as vol
 

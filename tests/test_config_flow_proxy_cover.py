@@ -37,9 +37,9 @@ def test_proxy_cover_defaults_to_false() -> None:
     """The toggle defaults to the DEFAULT_ENABLE_PROXY_COVER value (False)."""
     schema = _build_cover_entity_schema(CoverType.BLIND)
     defaults = _schema_defaults(schema)
-    assert (
-        defaults.get(CONF_ENABLE_PROXY_COVER) is DEFAULT_ENABLE_PROXY_COVER
-    ), f"expected default False; got {defaults!r}"
+    assert defaults.get(CONF_ENABLE_PROXY_COVER) is DEFAULT_ENABLE_PROXY_COVER, (
+        f"expected default False; got {defaults!r}"
+    )
 
 
 def test_proxy_cover_schema_validates_boolean_round_trip() -> None:

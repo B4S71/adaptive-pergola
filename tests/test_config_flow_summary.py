@@ -9,7 +9,6 @@ from custom_components.adaptive_pergola.config_flow import (
     _format_duration,
 )
 from custom_components.adaptive_pergola.const import (
-    CONF_AWNING_ANGLE,
     CONF_AZIMUTH,
     CONF_DAYTIME_GATE_SENSORS,
     CONF_DAYTIME_GATE_TEMPLATE,
@@ -44,7 +43,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_IRRADIANCE_THRESHOLD,
     CONF_IS_SUNNY_SENSOR,
     CONF_IS_SUNNY_TEMPLATE,
-    CONF_LENGTH_AWNING,
     CONF_LUX_ENTITY,
     CONF_LUX_THRESHOLD,
     CONF_MANUAL_OVERRIDE_DURATION,
@@ -74,11 +72,7 @@ from custom_components.adaptive_pergola.const import (
     CONF_TEMP_ENTITY,
     CONF_TEMP_HIGH,
     CONF_TEMP_LOW,
-    CONF_TILT_DEPTH,
-    CONF_TILT_DISTANCE,
     CONF_TILT_MODE,
-    CONF_VENETIAN_TILT_SKIP_ABOVE,
-    DEFAULT_VENETIAN_TILT_SKIP_ABOVE,
     CONF_WEATHER_ENABLED,
     CONF_WEATHER_ENTITY,
     CONF_WEATHER_IS_RAINING_SENSOR,
@@ -879,9 +873,9 @@ def test_transit_timeout_non_default_shown_in_manual_override_section():
     lines = summary.splitlines()
     mo_line = next((ln for ln in lines if "Manual override" in ln), None)
     assert mo_line is not None, "Manual override line missing from summary"
-    assert (
-        f"transit timeout: {non_default}s" in mo_line
-    ), f"Expected 'transit timeout: {non_default}s' in manual override line; got: {mo_line!r}"
+    assert f"transit timeout: {non_default}s" in mo_line, (
+        f"Expected 'transit timeout: {non_default}s' in manual override line; got: {mo_line!r}"
+    )
     # Must NOT appear under Position Limits
     in_position_limits = False
     in_pl_section = False
@@ -892,9 +886,9 @@ def test_transit_timeout_non_default_shown_in_manual_override_section():
             in_pl_section = False
         if in_pl_section and "transit timeout" in line.lower():
             in_position_limits = True
-    assert (
-        not in_position_limits
-    ), "transit_timeout must not appear under Position Limits"
+    assert not in_position_limits, (
+        "transit_timeout must not appear under Position Limits"
+    )
 
 
 def test_transit_timeout_default_not_shown():
@@ -2431,36 +2425,36 @@ def test_tilt_mode2_with_high_min_position_shows_warning():
     """MODE2 + min_position ≥ 50 surfaces the footgun (issue #373)."""
     cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 50}
     summary = _build_config_summary(cfg, CoverType.TILT)
-    assert _mode2_warning_markers_present(
-        summary
-    ), f"Expected MODE2-min-pos warning markers in summary, got:\n{summary}"
+    assert _mode2_warning_markers_present(summary), (
+        f"Expected MODE2-min-pos warning markers in summary, got:\n{summary}"
+    )
 
 
 def test_tilt_mode1_with_high_min_position_no_warning():
     """MODE1 + min_position ≥ 50 must NOT surface the MODE2-specific warning."""
     cfg = {CONF_TILT_MODE: "mode1", CONF_MIN_POSITION: 50}
     summary = _build_config_summary(cfg, CoverType.TILT)
-    assert not _mode2_warning_markers_present(
-        summary
-    ), f"MODE1 must not trigger MODE2 warning, got:\n{summary}"
+    assert not _mode2_warning_markers_present(summary), (
+        f"MODE1 must not trigger MODE2 warning, got:\n{summary}"
+    )
 
 
 def test_tilt_mode2_min_position_zero_no_warning():
     """MODE2 + min_position 0 leaves the open band alone, no warning."""
     cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 0}
     summary = _build_config_summary(cfg, CoverType.TILT)
-    assert not _mode2_warning_markers_present(
-        summary
-    ), f"MODE2 + min_pos 0 must not warn, got:\n{summary}"
+    assert not _mode2_warning_markers_present(summary), (
+        f"MODE2 + min_pos 0 must not warn, got:\n{summary}"
+    )
 
 
 def test_venetian_mode2_with_high_min_position_shows_warning():
     """Venetian MODE2 + min_position ≥ 50 surfaces the same footgun."""
     cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 50}
     summary = _build_config_summary(cfg, CoverType.VENETIAN)
-    assert _mode2_warning_markers_present(
-        summary
-    ), f"Expected MODE2-min-pos warning for venetian, got:\n{summary}"
+    assert _mode2_warning_markers_present(summary), (
+        f"Expected MODE2-min-pos warning for venetian, got:\n{summary}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -2581,9 +2575,9 @@ def test_config_summary_warns_when_proxy_enabled_without_min_mode_slot():
     cfg["custom_position_min_mode_1"] = False
     summary = _build_config_summary(cfg, CoverType.BLIND)
     proxy_block = [ln for ln in summary.splitlines() if "proxy" in ln.lower()]
-    assert any(
-        "⚠" in ln for ln in proxy_block
-    ), f"expected ⚠ warning near proxy line; got: {proxy_block}"
+    assert any("⚠" in ln for ln in proxy_block), (
+        f"expected ⚠ warning near proxy line; got: {proxy_block}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -2855,5 +2849,3 @@ def test_summary_gate_template_mode_and():
     cfg[CONF_DAYTIME_GATE_TEMPLATE_MODE] = "and"
     summary = _build_config_summary(cfg, CoverType.BLIND)
     assert "daytime gate" in summary.lower()
-
-

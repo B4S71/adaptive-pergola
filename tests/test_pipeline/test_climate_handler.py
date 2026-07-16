@@ -514,9 +514,9 @@ class TestClimateHandlerTimeWindow:
         """describe_skip() should mention 'time window' when outside window."""
         snap = self._active_snap(in_time_window=False)
         reason = self.handler.describe_skip(snap)
-        assert (
-            "time window" in reason.lower()
-        ), f"Expected 'time window' in describe_skip reason but got: {reason!r}"
+        assert "time window" in reason.lower(), (
+            f"Expected 'time window' in describe_skip reason but got: {reason!r}"
+        )
 
     def test_summer_returns_none_outside_window(self) -> None:
         """Summer cooling must also be gated by time window."""
@@ -607,9 +607,9 @@ class TestClimateHandlerContribute:
             ),
             climate_options=_make_options(temp_low=18.0, temp_high=26.0),
         )
-        assert (
-            self.handler.evaluate(snap) is None
-        ), "sanity: should defer on GLARE_CONTROL"
+        assert self.handler.evaluate(snap) is None, (
+            "sanity: should defer on GLARE_CONTROL"
+        )
         contrib = self.handler.contribute(snap)
         assert "climate_data" in contrib
         assert isinstance(contrib["climate_data"], ClimateCoverData)
@@ -701,9 +701,9 @@ class TestClimateHandlerAwningSemantics:
         result = self.handler.evaluate(snap)
         assert result is not None
         assert result.control_method == ControlMethod.WINTER
-        assert (
-            result.position == 0
-        ), f"Awning winter heating must retract (0%); got {result.position}"
+        assert result.position == 0, (
+            f"Awning winter heating must retract (0%); got {result.position}"
+        )
 
     def test_awning_winter_heating_without_presence_retracts(self) -> None:
         """Winter + sun-in-FOV + no presence + awning → retract (0%)."""
@@ -717,9 +717,9 @@ class TestClimateHandlerAwningSemantics:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.position == 0
-        ), f"Awning winter heating (no presence) must retract (0%); got {result.position}"
+        assert result.position == 0, (
+            f"Awning winter heating (no presence) must retract (0%); got {result.position}"
+        )
 
     def test_awning_summer_cooling_transparent_with_presence_extends(self) -> None:
         """Summer + transparent + presence + awning → extend (100%) to block sun."""
@@ -734,9 +734,9 @@ class TestClimateHandlerAwningSemantics:
         result = self.handler.evaluate(snap)
         assert result is not None
         assert result.control_method == ControlMethod.SUMMER
-        assert (
-            result.position == 100
-        ), f"Awning summer cooling must extend (100%); got {result.position}"
+        assert result.position == 100, (
+            f"Awning summer cooling must extend (100%); got {result.position}"
+        )
 
     def test_awning_summer_cooling_without_presence_extends(self) -> None:
         """Summer + no presence + awning → extend (100%) to block sun."""
@@ -750,9 +750,9 @@ class TestClimateHandlerAwningSemantics:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.position == 100
-        ), f"Awning summer cooling (no presence) must extend (100%); got {result.position}"
+        assert result.position == 100, (
+            f"Awning summer cooling (no presence) must extend (100%); got {result.position}"
+        )
 
     def test_awning_winter_insulation_stays_at_zero(self) -> None:
         """Winter + no sun-in-FOV + insulation + awning → 0% (retracted = closed for awnings).
@@ -771,9 +771,9 @@ class TestClimateHandlerAwningSemantics:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.position == 0
-        ), f"Awning insulation must stay retracted (0%); got {result.position}"
+        assert result.position == 0, (
+            f"Awning insulation must stay retracted (0%); got {result.position}"
+        )
 
     def test_blind_winter_heating_still_returns_100(self) -> None:
         """Regression guard: blind winter heating must still return 100% after the awning fix."""
@@ -787,9 +787,9 @@ class TestClimateHandlerAwningSemantics:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.position == 100
-        ), f"Blind winter heating must still raise (100%) after awning fix; got {result.position}"
+        assert result.position == 100, (
+            f"Blind winter heating must still raise (100%) after awning fix; got {result.position}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -824,9 +824,9 @@ class TestClimateHandlerControlMethodOnLowLightBranch:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.control_method == ControlMethod.DEFAULT
-        ), f"Low-light branch must emit DEFAULT, not {result.control_method}"
+        assert result.control_method == ControlMethod.DEFAULT, (
+            f"Low-light branch must emit DEFAULT, not {result.control_method}"
+        )
 
     def test_no_presence_low_light_emits_default_not_solar(self) -> None:
         """No presence + intermediate temp + is_sunny=False → ControlMethod.DEFAULT."""
@@ -843,9 +843,9 @@ class TestClimateHandlerControlMethodOnLowLightBranch:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.control_method == ControlMethod.DEFAULT
-        ), f"Low-light (no presence) branch must emit DEFAULT, not {result.control_method}"
+        assert result.control_method == ControlMethod.DEFAULT, (
+            f"Low-light (no presence) branch must emit DEFAULT, not {result.control_method}"
+        )
 
     def test_lux_below_threshold_emits_default_not_solar(self) -> None:
         """Presence + intermediate temp + lux_below_threshold=True → ControlMethod.DEFAULT."""
@@ -863,9 +863,9 @@ class TestClimateHandlerControlMethodOnLowLightBranch:
         )
         result = self.handler.evaluate(snap)
         assert result is not None
-        assert (
-            result.control_method == ControlMethod.DEFAULT
-        ), f"Lux-below-threshold branch must emit DEFAULT, not {result.control_method}"
+        assert result.control_method == ControlMethod.DEFAULT, (
+            f"Lux-below-threshold branch must emit DEFAULT, not {result.control_method}"
+        )
 
 
 # ---------------------------------------------------------------------------
