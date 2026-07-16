@@ -15,8 +15,48 @@ if TYPE_CHECKING:
 
 from ..const import DOMAIN
 from ..diagnostics import _sanitize
+from .permissions import async_is_admin_call
 
 _LOGGER = logging.getLogger(__name__)
+
+# Diagnostics keys that reveal household occupancy — live and historical. HA's
+# own diagnostics download is admin-only, so a non-admin caller of this service
+# gets the payload with these stripped (ACP-005/006). The geometry, position,
+# and sun sections are kept so a Lovelace card still renders for everyone.
+_OCCUPANCY_KEYS: frozenset[str] = frozenset(
+    {
+        "motion_sensors",
+        "motion_detected",
+        "motion_timeout_active",
+        "motion_status",
+        "event_timeline",
+        "presence_entity",
+        "manual_override_history",
+        "context_user_id",
+        "context_id",
+    }
+)
+
+
+def _redact_occupancy(diag: object) -> object:
+    """Recursively drop occupancy-revealing keys from a diagnostics payload."""
+    if isinstance(diag, dict):
+        return {
+            key: _redact_occupancy(value)
+            for key, value in diag.items()
+            if key not in _OCCUPANCY_KEYS
+        }
+    if isinstance(diag, list):
+        return [_redact_occupancy(item) for item in diag]
+    return diag
+
+
+def _diag_payload(diag: object, *, is_admin: bool) -> object:
+    """JSON-safe diagnostics, occupancy-stripped for non-admin callers."""
+    if diag is None:
+        return None
+    sanitized = _sanitize(diag)
+    return sanitized if is_admin else _redact_occupancy(sanitized)
 
 GET_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
@@ -52,8 +92,15 @@ def _resolve_by_config_entry(
 
 
 async def async_handle_get_diagnostics(call: ServiceCall) -> dict:
-    """Handle the get_diagnostics service call and return live diagnostics."""
+    """Handle the get_diagnostics service call and return live diagnostics.
+
+    Admins get the full payload; non-admins get it with occupancy fields
+    stripped (ACP-005). The service is designed to back a Lovelace card, so it
+    is not gated outright — the card keeps working for non-admin household
+    members, just without motion/presence/event-history data.
+    """
     hass: HomeAssistant = call.hass
+    is_admin = await async_is_admin_call(call)
 
     explicit_entry_ids: list[str] = call.data.get("config_entry_id") or []
 
@@ -77,12 +124,14 @@ async def async_handle_get_diagnostics(call: ServiceCall) -> dict:
             try:
                 diag = coord.build_diagnostic_data()
             except Exception as exc:  # noqa: BLE001
+                # Log the detail; return a generic message. repr(exc) leaks
+                # internal paths/state to a non-admin caller (ACP-017).
                 _LOGGER.warning(
                     "get_diagnostics: could not build diagnostics for %s: %s",
                     entry_id,
                     exc,
                 )
-                diag = {"error": f"diagnostics_unavailable: {exc!r}"}
+                diag = {"error": "diagnostics_unavailable"}
 
         last_success_time = coord._last_update_success_time  # noqa: SLF001
         entries[entry_id] = {
@@ -93,12 +142,15 @@ async def async_handle_get_diagnostics(call: ServiceCall) -> dict:
             "last_update_success_time": (
                 last_success_time.isoformat() if last_success_time else None
             ),
-            "diagnostics": _sanitize(diag) if diag is not None else None,
+            "diagnostics": _diag_payload(diag, is_admin=is_admin),
         }
 
     return {
         "version": 1,
         "generated_at": dt.datetime.now(dt.UTC).isoformat(),
         "count": len(entries),
+        # Signals to a card that occupancy fields were withheld, so it can show
+        # "admin only" rather than mistaking absence for "no motion configured".
+        "reduced": not is_admin,
         "entries": entries,
     }

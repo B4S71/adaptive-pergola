@@ -198,6 +198,7 @@ from ..const import (
 from ..config_fields import FIELD_SPECS, FieldSpec, ValidatorKind
 from ..helpers import custom_position_slot_sensors
 from ..templates import is_template_string as _is_template_str
+from .permissions import async_require_admin
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1153,6 +1154,7 @@ def _make_section_handler(hass: HomeAssistant, allowed_keys: frozenset[str]):
     from . import _resolve_targets  # noqa: PLC0415  (avoids circular at module level)
 
     async def _handler(call: ServiceCall) -> None:
+        await async_require_admin(call)
         patch = _build_patch(call.data, allowed_keys)
         # Once per patch, not per target: cost is a property of the template.
         await async_validate_template_cost(hass, patch)
@@ -1172,6 +1174,7 @@ def _make_section_handler(hass: HomeAssistant, allowed_keys: frozenset[str]):
 
 async def _handle_set_custom_position(hass: HomeAssistant, call: ServiceCall) -> None:
     """Handle set_custom_position — routes slot 1–10 to the right option keys."""
+    await async_require_admin(call)
     from . import _resolve_targets  # noqa: PLC0415
 
     slot = call.data.get("slot")
@@ -1232,6 +1235,7 @@ async def _handle_set_force_override(hass: HomeAssistant, call: ServiceCall) -> 
     at safety priority. Existing automations keep working for one release;
     they should migrate to ``set_custom_position`` with ``slot: 5``.
     """
+    await async_require_admin(call)
     from . import _resolve_targets  # noqa: PLC0415
 
     _LOGGER.warning(
@@ -1277,6 +1281,7 @@ async def _handle_set_force_override(hass: HomeAssistant, call: ServiceCall) -> 
 
 async def _handle_set_option(hass: HomeAssistant, call: ServiceCall) -> None:
     """Handle generic set_option service."""
+    await async_require_admin(call)
     from . import _resolve_targets  # noqa: PLC0415
 
     option = call.data.get("option")

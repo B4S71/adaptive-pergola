@@ -103,6 +103,14 @@ def _make_call(entity_id=None, device_id=None, area_id=None, raw=False) -> Magic
             call.data["area_id"] = area_id
         else:
             call.data["area_id"] = area_id if isinstance(area_id, list) else [area_id]
+    # Admin caller by default: the state-changing globals (integration_enable/
+    # disable, emergency_stop) now require admin. The permission check reads
+    # call.context.user_id then awaits call.hass.auth.async_get_user.
+    call.context = MagicMock()
+    call.context.user_id = "admin-user"
+    _admin = MagicMock()
+    _admin.is_admin = True
+    call.hass.auth.async_get_user = AsyncMock(return_value=_admin)
     return call
 
 
@@ -616,3 +624,33 @@ async def test_unload_services_keeps_services_when_only_real_entry_remains():
     await async_unload_services(hass)  # must not raise AttributeError
 
     hass.services.async_remove.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Admin gate on state-changing globals (ACP-008 / ACP-009)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "service", ["integration_enable", "integration_disable", "emergency_stop"]
+)
+async def test_state_changing_globals_reject_non_admin(service):
+    """A non-admin caller is rejected before any coordinator state changes."""
+    from homeassistant.exceptions import Unauthorized
+
+    coord = _make_coordinator(["cover.a"])
+    coord.enabled_toggle = True
+    hass = _make_hass({"entry_a": coord})
+    await async_setup_services(hass)
+    handler = _get_handler(hass, service)
+
+    call = _make_call()
+    non_admin = MagicMock()
+    non_admin.is_admin = False
+    call.hass.auth.async_get_user = AsyncMock(return_value=non_admin)
+
+    with pytest.raises(Unauthorized):
+        await handler(call)
+
+    # emergency_stop / integration_disable must not have flipped the toggle.
+    assert coord.enabled_toggle is True

@@ -4,9 +4,21 @@ from __future__ import annotations
 
 import datetime as dt
 
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from ..const import (
+    CONF_DAYTIME_GATE_SENSORS,
+    CONF_DEVICE_ID,
+    CONF_ENTITIES,
+    CONF_FORCE_OVERRIDE_SENSORS,
+    CONF_MANUAL_OVERRIDE_INPUT_ENTITIES,
+    CONF_MOTION_MEDIA_PLAYERS,
+    CONF_MOTION_SENSORS,
+    CONF_PRESENCE_ENTITY,
+    CUSTOM_POSITION_SLOTS,
+)
 from .builder import DiagnosticContext, DiagnosticsBuilder
 
 __all__ = [
@@ -16,27 +28,86 @@ __all__ = [
 ]
 
 
-def _sanitize(obj):
-    """Recursively convert non-JSON-serializable types to serializable equivalents."""
+def _build_redaction_keys() -> frozenset[str]:
+    """Config-option keys withheld from the diagnostics download.
+
+    HA diagnostics are routinely pasted into public GitHub issues, so anything
+    that identifies household members or their movements is redacted (ACP-006):
+
+    * entities that name people or track presence/occupancy,
+    * every custom-position slot's trigger sensors,
+    * every ``*_template`` field — user Jinja that can embed URLs or tokens,
+    * the user-chosen ``name`` (e.g. "Kids Room").
+
+    Coordinates are never emitted directly, but note they remain *derivable*
+    from the exact sunrise/sunset and sun-vector values elsewhere in the dump;
+    coarsening those is a separate change.
+    """
+    keys = {
+        "name",
+        # user_id / context id carried by manual-override events (ACP-007).
+        "context_user_id",
+        "context_id",
+        CONF_PRESENCE_ENTITY,
+        CONF_MOTION_SENSORS,
+        CONF_MOTION_MEDIA_PLAYERS,
+        CONF_ENTITIES,
+        CONF_MANUAL_OVERRIDE_INPUT_ENTITIES,
+        CONF_DAYTIME_GATE_SENSORS,
+        CONF_FORCE_OVERRIDE_SENSORS,
+        CONF_DEVICE_ID,
+    }
+    # Per-slot custom-position trigger sensors + condition templates.
+    for slot in CUSTOM_POSITION_SLOTS.values():
+        keys.add(slot["sensor"])
+        keys.add(slot["sensors"])
+        keys.add(slot["template"])
+    # Every remaining templatable field — presence/is-sunny/weather/motion/
+    # daytime-gate condition templates. These are raw user Jinja.
+    from .. import const  # noqa: PLC0415
+
+    for name in dir(const):
+        if name.startswith("CONF_") and name.endswith("_TEMPLATE"):
+            keys.add(getattr(const, name))
+    return frozenset(keys)
+
+
+TO_REDACT: frozenset[str] = _build_redaction_keys()
+
+
+def _jsonify(obj):
+    """Recursively convert non-JSON-serializable types to serializable equivalents.
+
+    This is a *type* conversion (datetime → isoformat, enum → value, numpy →
+    .item()), NOT a privacy control — it redacts nothing. The name matters:
+    ``_sanitize`` read like a redaction step during review, which it never was.
+    Redaction is ``async_redact_data(..., TO_REDACT)`` at the call sites.
+    """
     import dataclasses  # noqa: PLC0415
     import enum  # noqa: PLC0415
 
     if isinstance(obj, dict):
-        return {k: _sanitize(v) for k, v in obj.items()}
+        return {k: _jsonify(v) for k, v in obj.items()}
     if isinstance(obj, list | tuple):
-        return [_sanitize(v) for v in obj]
+        return [_jsonify(v) for v in obj]
     if isinstance(obj, set | frozenset):
-        return sorted(_sanitize(v) for v in obj)
+        return sorted(_jsonify(v) for v in obj)
     if isinstance(obj, dt.datetime | dt.date | dt.time):
         return obj.isoformat()
     if isinstance(obj, enum.Enum):
         return obj.value
     if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
-        return _sanitize(dataclasses.asdict(obj))
+        return _jsonify(dataclasses.asdict(obj))
     # numpy scalars (numpy not imported at module level — check by duck-typing)
     if hasattr(obj, "item") and hasattr(obj, "dtype"):
         return obj.item()
     return obj
+
+
+# Backwards-compatible alias: _sanitize was the historical name. Kept so the
+# diagnostics service and existing tests keep importing it; new code uses
+# _jsonify, which no longer reads as a privacy control.
+_sanitize = _jsonify
 
 
 async def async_get_config_entry_diagnostics(
@@ -114,7 +185,7 @@ async def async_get_config_entry_diagnostics(
         "config_entry_version": config_entry.version,
         "config_entry_minor_version": config_entry.minor_version,
         "generated_at": dt.datetime.now(dt.UTC).isoformat(),
-        "config_data": dict(config_entry.data),
-        "config_options": dict(config_entry.options),
+        "config_data": async_redact_data(dict(config_entry.data), TO_REDACT),
+        "config_options": async_redact_data(dict(config_entry.options), TO_REDACT),
         "diagnostics": coordinator_diagnostics,
     }

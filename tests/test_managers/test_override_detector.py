@@ -335,7 +335,11 @@ def test_default_user_context_decision_marks():
     )
     assert d.mark_manual is True
     assert d.event_name == "manual_override_set"
-    assert "holly" in d.event_kwargs["reason"]
+    # user_id is carried as a structured, redactable field, not interpolated
+    # into the free-text reason (ACP-007).
+    assert d.event_kwargs["reason"] == "user-initiated state change"
+    assert d.event_kwargs["context_user_id"] == "holly"
+    assert d.event_kwargs["context_id"] == "ctx-1"
 
 
 def test_default_stop_to_my_decision_marks_when_not_waiting():

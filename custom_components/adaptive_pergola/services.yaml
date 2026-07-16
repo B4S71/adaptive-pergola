@@ -1129,7 +1129,9 @@ get_diagnostics:
     Returns the live diagnostics snapshot for the targeted Adaptive Pergola
     instances — pipeline decision trace, cover positions, climate readings, sun
     data, and coordinator health. Designed to be called from the ACP Lovelace
-    card via hass.callService(..., { return_response: true }).
+    card via hass.callService(..., { return_response: true }). Admins receive the
+    full snapshot; non-admin users receive it with occupancy fields (motion,
+    presence, event history) removed and "reduced": true set on the response.
   target:
     entity:
       integration: adaptive_pergola
