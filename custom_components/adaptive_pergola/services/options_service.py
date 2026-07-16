@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.core import ServiceCall, ServiceValidationError
+from homeassistant.exceptions import TemplateError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.template import Template
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -206,6 +208,12 @@ IDENTITY_KEYS: frozenset[str] = frozenset(
 # HA service call plumbing keys to strip when building a patch
 _PLUMBING_KEYS: frozenset[str] = frozenset({"entity_id", "device_id", "area_id"})
 
+# Wall-clock budget for validating a single templated option. Rendering happens
+# in a worker thread, so this bounds how long a caller waits — not the event
+# loop. Generous enough for any realistic threshold template (which reads a
+# handful of states), tight enough that an unbounded loop is caught.
+TEMPLATE_RENDER_TIMEOUT: float = 3.0
+
 # ---------------------------------------------------------------------------
 # Per-field validators
 # ---------------------------------------------------------------------------
@@ -266,14 +274,61 @@ def _check_template_syntax(value: str) -> str:
     Syntax-gate via jinja2 directly — a bare HA ``Template`` here would trip the
     frame helper (no hass at validation time) and log a usage warning. Semantic
     rendering happens later at runtime.
+
+    This proves *syntax* only, never *cost*: ``parse()`` builds an AST without
+    executing anything, so an unbounded loop parses clean. The cost gate is
+    :func:`async_validate_template_cost`, which the service handlers run before
+    persisting.
+
+    The loopcontrols extension is enabled to match HA's own ``TemplateEnvironment``.
+    Without it a template using ``{% break %}`` is rejected here but renders fine
+    in HA — a false reject on a valid template.
     """
     import jinja2
 
     try:
-        jinja2.Environment().parse(value)
+        jinja2.Environment(extensions=["jinja2.ext.loopcontrols"]).parse(value)
     except jinja2.TemplateError as err:
         raise vol.Invalid(f"Invalid template: {err}") from err
     return value
+
+
+async def async_validate_template_cost(
+    hass: HomeAssistant, patch: dict, *, timeout: float = TEMPLATE_RENDER_TIMEOUT
+) -> None:
+    """Reject templates in *patch* that are too expensive to render.
+
+    ``_check_template_syntax`` proves the template parses; it says nothing about
+    how long rendering takes. A template such as
+    ``{% for i in range(100000000) %}{% endfor %}500`` parses clean, is persisted
+    to the config entry, and is then rendered by the coordinator during setup —
+    on the event loop, with no timeout — so Home Assistant never finishes
+    starting and the poisoned entry re-hangs on every boot.
+
+    ``Template.async_render_will_timeout`` is HA's own guard for exactly this: it
+    renders in a worker thread (never the event loop), kills the thread on
+    timeout, and *returns True* when the render overran. Note it does not raise
+    TimeoutError — it reports by return value — and it re-raises genuine render
+    failures as TemplateError.
+
+    Raises ServiceValidationError so the caller gets a clean validation error
+    rather than an unhandled exception.
+    """
+    for key, value in patch.items():
+        if not _is_template_str(value):
+            continue
+        template = Template(value, hass)
+        try:
+            timed_out = await template.async_render_will_timeout(timeout)
+        except TemplateError as err:
+            raise ServiceValidationError(
+                f"Invalid value for '{key}': template failed to render ({err})"
+            ) from err
+        if timed_out:
+            raise ServiceValidationError(
+                f"Invalid value for '{key}': template took longer than "
+                f"{timeout}s to render and would block Home Assistant."
+            )
 
 
 def _template_or_none(value):
@@ -1056,6 +1111,8 @@ def _make_section_handler(hass: HomeAssistant, allowed_keys: frozenset[str]):
 
     async def _handler(call: ServiceCall) -> None:
         patch = _build_patch(call.data, allowed_keys)
+        # Once per patch, not per target: cost is a property of the template.
+        await async_validate_template_cost(hass, patch)
         targets = _resolve_targets(hass, call)
         for coord in targets:
             sensor_type = coord.config_entry.data.get("sensor_type")
@@ -1112,6 +1169,7 @@ async def _handle_set_custom_position(hass: HomeAssistant, call: ServiceCall) ->
         sensors = patch[slot_keys["sensors"]] or []
         patch[slot_keys["sensor"]] = sensors[0] if sensors else None
 
+    await async_validate_template_cost(hass, patch)
     targets = _resolve_targets(hass, call)
     for coord in targets:
         validate_options_patch(patch, dict(coord.config_entry.options))
@@ -1158,6 +1216,7 @@ async def _handle_set_force_override(hass: HomeAssistant, call: ServiceCall) -> 
         sensors = patch[slot_keys["sensors"]] or []
         patch[slot_keys["sensor"]] = sensors[0] if sensors else None
 
+    await async_validate_template_cost(hass, patch)
     targets = _resolve_targets(hass, call)
     for coord in targets:
         validate_options_patch(
@@ -1204,6 +1263,7 @@ async def _handle_set_option(hass: HomeAssistant, call: ServiceCall) -> None:
     value = call.data.get("value")
     patch = {option: value}
 
+    await async_validate_template_cost(hass, patch)
     targets = _resolve_targets(hass, call)
     for coord in targets:
         sensor_type = coord.config_entry.data.get("sensor_type")
