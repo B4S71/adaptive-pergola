@@ -259,8 +259,21 @@ class TestFieldValidators:
         FIELD_VALIDATORS[CONF_START_TIME](None)
 
     def test_time_field_rejects_bad_format(self):
-        with pytest.raises(Exception):
-            FIELD_VALIDATORS[CONF_START_TIME]("8:00")
+        """Out-of-range components are rejected (the values that actually crashed).
+
+        Validation moved from a shape-only regex to cv.time, so the contract
+        changed deliberately: "8:00" is now *accepted* (it is a real time, and
+        the old ^\\d{2}:\\d{2}:\\d{2}$ only rejected it on digit count), while
+        "99:99:99" — which the regex accepted, persisted, and then raised on in
+        dateutil every cycle — is now rejected. See test_crash_hardening.py.
+        """
+        for bad in ("99:99:99", "25:61:61", "aa:bb:cc", ""):
+            with pytest.raises(Exception):
+                FIELD_VALIDATORS[CONF_START_TIME](bad)
+
+    def test_time_field_accepts_short_form(self):
+        """cv.time accepts the short form; previously rejected on shape alone."""
+        FIELD_VALIDATORS[CONF_START_TIME]("8:00")
 
     def test_tilt_mode_select(self):
         FIELD_VALIDATORS["tilt_mode"]("mode1")
@@ -1372,6 +1385,19 @@ class TestSetOption:
         await _setup(hass, entry_id="so_id_01")
         with pytest.raises((ServiceValidationError, Exception)):
             await _call(hass, "set_option", {"option": "name", "value": "x"})
+
+    @pytest.mark.parametrize("bad_option", [{}, [], 5, {"a": 1}])
+    async def test_non_string_option_rejected_cleanly(
+        self, hass: HomeAssistant, bad_option
+    ):
+        """A non-string 'option' must raise ServiceValidationError, not TypeError.
+
+        An unhashable value (e.g. {}) previously reached `option in IDENTITY_KEYS`
+        and raised a raw `TypeError: unhashable type: 'dict'` (ACP-022).
+        """
+        await _setup(hass, entry_id=f"so_ns_{abs(hash(str(bad_option))) % 1000}")
+        with pytest.raises(ServiceValidationError):
+            await _call(hass, "set_option", {"option": bad_option, "value": "x"})
 
     async def test_unknown_key_rejected(self, hass: HomeAssistant):
         await _setup(hass, entry_id="so_unk_01")

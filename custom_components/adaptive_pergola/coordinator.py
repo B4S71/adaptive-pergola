@@ -677,6 +677,13 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                 build_forecast_for_coord, self
             )
         except Exception:  # noqa: BLE001 — defensive degradation
+            # Logged, not silent: this except previously hid a permanent
+            # forecast failure at polar latitudes (naive sentinel vs tz-aware
+            # FOV event -> TypeError in the event sort) with no trace at all.
+            _LOGGER.debug(
+                "position_forecast computation failed; sensor degrades to None",
+                exc_info=True,
+            )
             forecast = None
         self._position_forecast = forecast
         if self.data is not None:

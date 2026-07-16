@@ -8,7 +8,7 @@ rather than stubbing methods on a location object.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
@@ -33,7 +33,9 @@ def test_sunset_polar_midnight_sun_returns_sentinel():
         result = sd.sunset()
 
     today = date.today()
-    assert result == datetime(today.year, today.month, today.day, 23, 59, 59)
+    assert result == datetime(
+        today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit
@@ -44,7 +46,9 @@ def test_sunset_polar_attribute_error_returns_sentinel():
         result = sd.sunset()
 
     today = date.today()
-    assert result == datetime(today.year, today.month, today.day, 23, 59, 59)
+    assert result == datetime(
+        today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit
@@ -55,7 +59,9 @@ def test_sunrise_polar_night_returns_sentinel():
         result = sd.sunrise()
 
     today = date.today()
-    assert result == datetime(today.year, today.month, today.day, 0, 1, 0)
+    assert result == datetime(
+        today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit
@@ -66,7 +72,9 @@ def test_sunrise_polar_attribute_error_returns_sentinel():
         result = sd.sunrise()
 
     today = date.today()
-    assert result == datetime(today.year, today.month, today.day, 0, 1, 0)
+    assert result == datetime(
+        today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit
@@ -97,7 +105,9 @@ def test_next_sunrise_polar_night_returns_tomorrow_sentinel():
         result = sd.next_sunrise()
 
     tomorrow = date.today() + timedelta(days=1)
-    assert result == datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 1, 0)
+    assert result == datetime(
+        tomorrow.year, tomorrow.month, tomorrow.day, 0, 1, 0, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit
@@ -113,3 +123,28 @@ def test_sunrise_sunset_use_the_observer():
     with patch(_SUNSET_FN, return_value=datetime(2024, 6, 21, 20, 30)) as spy:
         sd.sunset()
     assert spy.call_args.args[0] is observer
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("method", "target"),
+    [("sunset", _SUNSET_FN), ("sunrise", _SUNRISE_FN), ("next_sunrise", _SUNRISE_FN)],
+)
+def test_polar_sentinels_are_tz_aware(method, target):
+    """Polar sentinels must be tz-aware to match the astral happy path (ACP-010).
+
+    forecast.py sorts sun events together with FOV events, and FOV events are
+    always tz-aware (they come from the tz-aware ``sun_data.times`` index). A
+    naive sentinel made that sort raise TypeError, which coordinator.py
+    swallowed into ``forecast = None`` with no log line — so above ~66°
+    latitude during midnight sun the position_forecast sensor read Unknown
+    permanently, with no trace of why.
+    """
+    sd = _make_sun_data()
+    with patch(target, side_effect=ValueError("Sun never sets at this latitude")):
+        result = getattr(sd, method)()
+
+    assert result.tzinfo is not None, f"{method}() sentinel must be tz-aware"
+    # The real failure mode: sorting the sentinel next to a tz-aware FOV event.
+    fov_event = datetime(2026, 7, 16, 12, 0, 0, tzinfo=timezone.utc)
+    sorted([result, fov_event])  # must not raise TypeError

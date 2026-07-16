@@ -194,29 +194,31 @@ class SunData:
         """Fetch sunset time.
 
         Returns a far-future sentinel (midnight tonight) at polar latitudes
-        during midnight sun when astral raises ValueError.
+        during midnight sun when astral raises ValueError. The sentinel is
+        tz-aware UTC to match the happy path: forecast.py sorts sun events
+        together with FOV events, and FOV events are always tz-aware, so a naive
+        sentinel makes that sort raise TypeError.
         """
         try:
             return astral.sun.sunset(self.observer, date.today())
         except (ValueError, AttributeError):
             # Polar midnight sun: sun never sets — treat as end of day
             today = date.today()
-            return datetime(
-                today.year, today.month, today.day, 23, 59, 59
-            )  # noqa: DTZ001
+            return datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc)
 
     def sunrise(self) -> datetime:
         """Fetch sunrise time.
 
         Returns an early-morning sentinel (00:01 today) at polar latitudes
-        during polar night when astral raises ValueError.
+        during polar night when astral raises ValueError. Tz-aware for the same
+        reason as :meth:`sunset`.
         """
         try:
             return astral.sun.sunrise(self.observer, date.today())
         except (ValueError, AttributeError):
             # Polar night: sun never rises — treat as very early morning
             today = date.today()
-            return datetime(today.year, today.month, today.day, 0, 1, 0)  # noqa: DTZ001
+            return datetime(today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc)
 
     def next_sunrise(self) -> datetime:
         """Fetch tomorrow's sunrise time.
@@ -227,7 +229,8 @@ class SunData:
         ``Unknown`` (issue #516).
 
         Returns an early-morning sentinel (00:01 tomorrow) at polar latitudes
-        during polar night when astral raises ValueError.
+        during polar night when astral raises ValueError. Tz-aware for the same
+        reason as :meth:`sunset`.
         """
         tomorrow = date.today() + timedelta(days=1)
         try:
@@ -235,5 +238,5 @@ class SunData:
         except (ValueError, AttributeError):
             # Polar night: sun never rises — treat as very early morning
             return datetime(
-                tomorrow.year, tomorrow.month, tomorrow.day, 0, 1, 0
-            )  # noqa: DTZ001
+                tomorrow.year, tomorrow.month, tomorrow.day, 0, 1, 0, tzinfo=timezone.utc
+            )

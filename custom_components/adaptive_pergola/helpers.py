@@ -208,10 +208,20 @@ def get_datetime_from_str(string: str):
     are converted to HA's configured local timezone and then stripped of tzinfo so
     downstream naive comparisons work correctly in non-UTC installs.
     Tz-naive inputs (e.g., static "06:30") are returned unchanged.
+
+    Returns None when *string* cannot be parsed as a datetime. The start/end
+    entity selectors offer the ``sensor`` domain, so a user can legitimately
+    pick a sensor that reports a non-date state ("off", "", "0"); dateutil
+    raises ParserError (a ValueError) for those, which would otherwise
+    propagate out of the coordinator update and take every entity on the
+    instance unavailable.
     """
     if string is None:
         return None
-    parsed = parser.parse(string)
+    try:
+        parsed = parser.parse(string)
+    except (ValueError, TypeError, OverflowError):
+        return None
     if parsed.tzinfo is not None:
         parsed = dt_util.as_local(parsed).replace(tzinfo=None)
     return parsed
