@@ -227,8 +227,15 @@ class AdaptivePergolaManager:
         new_position,
         effective_threshold=None,
         reason: str = "",
+        context_user_id: str | None = None,
+        context_id: str | None = None,
     ) -> None:
-        """Append a manual-override decision event to the shared ring buffer."""
+        """Append a manual-override decision event to the shared ring buffer.
+
+        ``context_user_id`` / ``context_id`` are recorded as their own keys (not
+        folded into ``reason``) so the diagnostics redaction can target them —
+        the buffer feeds the diagnostics event_timeline (ACP-007).
+        """
         self._events.record(
             event_name,
             entity_id=entity_id,
@@ -236,6 +243,8 @@ class AdaptivePergolaManager:
             new_position=new_position,
             effective_threshold=effective_threshold,
             reason=reason,
+            context_user_id=context_user_id,
+            context_id=context_id,
         )
 
     def get_event_buffer(self) -> list[dict]:

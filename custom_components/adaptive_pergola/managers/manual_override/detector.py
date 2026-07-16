@@ -118,10 +118,13 @@ def default_user_context_decision(change: UserContextChange) -> OverrideDecision
         event_kwargs={
             "our_state": None,
             "new_position": None,
-            "reason": (
-                f"user-initiated state change "
-                f"(context user_id={change.context_user_id}, id={change.context_id})"
-            ),
+            # user_id carried as a structured field, not interpolated into the
+            # reason string — a key-based redaction (ACP-006) can only target a
+            # key, and this event flows into the diagnostics event_timeline
+            # (ACP-007).
+            "reason": "user-initiated state change",
+            "context_user_id": change.context_user_id,
+            "context_id": change.context_id,
         },
     )
 

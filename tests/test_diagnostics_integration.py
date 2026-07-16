@@ -72,7 +72,10 @@ async def test_diagnostics_contains_config_data(hass: HomeAssistant) -> None:
     entry = await _setup(hass, entry_id="diag_config_01")
     result = await async_get_config_entry_diagnostics(hass, entry)
     assert "config_data" in result
-    assert result["config_data"].get("name") == "Diag Cover"
+    # The user-chosen name is redacted — it can be "Kids Room" and diagnostics
+    # are routinely pasted into public issues (ACP-006).
+    assert result["config_data"].get("name") == "**REDACTED**"
+    # Non-identifying fields are untouched.
     assert result["config_data"].get(CONF_SENSOR_TYPE) == CoverType.BLIND
 
 

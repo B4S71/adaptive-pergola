@@ -61,10 +61,24 @@ def make_hass(*coordinators):
     return hass
 
 
-def make_call(hass, data=None):
+def make_call(hass, data=None, *, is_admin=True, user_id="user-1"):
+    """Build a fake ServiceCall.
+
+    Defaults to an admin caller (the common case). ``async_is_admin_call`` reads
+    ``call.context.user_id`` then awaits ``hass.auth.async_get_user`` — both are
+    wired here so the permission check resolves deterministically.
+    """
+    from unittest.mock import AsyncMock
+
     call = MagicMock()
     call.hass = hass
     call.data = data or {}
+    call.context = MagicMock()
+    call.context.user_id = user_id
+    user = MagicMock()
+    user.is_admin = is_admin
+    hass.auth = MagicMock()
+    hass.auth.async_get_user = AsyncMock(return_value=user)
     return call
 
 
@@ -239,3 +253,51 @@ def test_translations_contain_get_diagnostics_key():
         assert "get_diagnostics" in data.get(
             "services", {}
         ), f"{lang}.json missing services.get_diagnostics"
+
+
+# ---------------------------------------------------------------------------
+# Tiered payload: admin full, non-admin occupancy-stripped (ACP-005)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_admin_gets_occupancy_fields():
+    """An admin caller sees motion/presence/event_timeline."""
+    coord = make_coordinator()
+    coord.data.diagnostics = {
+        "motion_sensors": ["binary_sensor.kids_room"],
+        "motion_detected": True,
+        "event_timeline": [{"ts": "t"}],
+        "calculated_position": 35,
+    }
+    hass = make_hass(coord)
+    call = make_call(hass, is_admin=True)
+
+    result = await async_handle_get_diagnostics(call)
+    diag = result["entries"]["entry-1"]["diagnostics"]
+    assert result["reduced"] is False
+    assert diag["motion_sensors"] == ["binary_sensor.kids_room"]
+    assert "event_timeline" in diag
+
+
+@pytest.mark.asyncio
+async def test_non_admin_gets_reduced_payload():
+    """A non-admin caller gets the same payload with occupancy stripped."""
+    coord = make_coordinator()
+    coord.data.diagnostics = {
+        "motion_sensors": ["binary_sensor.kids_room"],
+        "motion_detected": True,
+        "event_timeline": [{"ts": "t"}],
+        "calculated_position": 35,
+    }
+    hass = make_hass(coord)
+    call = make_call(hass, is_admin=False)
+
+    result = await async_handle_get_diagnostics(call)
+    diag = result["entries"]["entry-1"]["diagnostics"]
+    assert result["reduced"] is True
+    assert "motion_sensors" not in diag
+    assert "motion_detected" not in diag
+    assert "event_timeline" not in diag
+    # The card still renders — geometry/position survive.
+    assert diag["calculated_position"] == 35

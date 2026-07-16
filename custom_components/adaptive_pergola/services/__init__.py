@@ -20,6 +20,7 @@ from ..const import DOMAIN
 from .diagnostics_service import GET_DIAGNOSTICS_SCHEMA, async_handle_get_diagnostics
 from .export_service import EXPORT_CONFIG_SCHEMA, async_handle_export
 from .options_service import OPTIONS_SERVICE_NAMES, register_options_services
+from .permissions import async_require_admin
 from .set_position_service import SET_POSITION_SCHEMA, async_handle_set_position
 from .set_tilt_service import SET_TILT_SCHEMA, async_handle_set_tilt
 from .stop_service import async_handle_stop
@@ -164,12 +165,14 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         )
 
     async def handle_integration_enable(call: ServiceCall) -> None:
+        await async_require_admin(call)
         targets = _resolve_targets(hass, call)
         for coord in targets:
             coord.enabled_toggle = True
             coord.logger.debug("integration_enable service: enabled")
 
     async def handle_integration_disable(call: ServiceCall) -> None:
+        await async_require_admin(call)
         targets = _resolve_targets(hass, call)
         for coord, entity_filter in targets.items():
             # Stop in-flight moves first (before gate closes)
@@ -182,6 +185,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             coord.logger.debug("integration_disable service: disabled")
 
     async def handle_emergency_stop(call: ServiceCall) -> None:
+        await async_require_admin(call)
         targets = _resolve_targets(hass, call)
         for coord, entity_filter in targets.items():
             # Blanket stop: all configured covers (not just wait_for_target)
