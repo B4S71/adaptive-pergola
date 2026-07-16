@@ -13,7 +13,7 @@ on day rollover.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pandas as pd
@@ -184,8 +184,13 @@ def test_polar_sentinels_still_work():
         result_sunrise = sd.sunrise()
 
     today = date.today()
-    assert result_sunset == datetime(today.year, today.month, today.day, 23, 59, 59)
-    assert result_sunrise == datetime(today.year, today.month, today.day, 0, 1, 0)
+    # tz-aware to match the astral happy path — see ACP-010 / test_sun_polar.py
+    assert result_sunset == datetime(
+        today.year, today.month, today.day, 23, 59, 59, tzinfo=timezone.utc
+    )
+    assert result_sunrise == datetime(
+        today.year, today.month, today.day, 0, 1, 0, tzinfo=timezone.utc
+    )
 
 
 @pytest.mark.unit

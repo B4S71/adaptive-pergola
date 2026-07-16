@@ -81,10 +81,12 @@ class ConfigurationService:
 
         """
         _raw_distance = options.get(CONF_DISTANCE)
-        _raw_h_win = options.get(CONF_HEIGHT_WIN)
         return VerticalConfig(
             distance=_raw_distance if _raw_distance is not None else DEFAULT_DISTANCE,
-            h_win=_raw_h_win if _raw_h_win is not None else DEFAULT_WINDOW_HEIGHT,
+            # `or` rather than an `is not None` test: a stored 0 is not a usable
+            # window height and reaches a division in position_utils. Every
+            # sibling field below already uses this idiom.
+            h_win=options.get(CONF_HEIGHT_WIN) or DEFAULT_WINDOW_HEIGHT,
             window_depth=options.get(CONF_WINDOW_DEPTH)
             or 0.0,  # Default 0.0; handle None for non-vertical covers
             sill_height=options.get(CONF_SILL_HEIGHT)

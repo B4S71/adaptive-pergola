@@ -8,11 +8,11 @@ a full reload so all state-change listeners and pipeline handlers pick up new va
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.core import ServiceCall, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -206,8 +206,6 @@ IDENTITY_KEYS: frozenset[str] = frozenset(
 # HA service call plumbing keys to strip when building a patch
 _PLUMBING_KEYS: frozenset[str] = frozenset({"entity_id", "device_id", "area_id"})
 
-_TIME_RE = re.compile(r"^\d{2}:\d{2}:\d{2}$")
-
 # ---------------------------------------------------------------------------
 # Per-field validators
 # ---------------------------------------------------------------------------
@@ -305,16 +303,38 @@ def _entities_v():
 
 
 def _duration_v():
-    return vol.Any(None, dict)
+    """Validate an optional duration dict.
+
+    ``cv.time_period_dict`` checks both the keys and their ranges, which a bare
+    ``dict`` did not: ``timedelta(**{"evil": 1})`` raises TypeError at use time,
+    long after the value was persisted to the config entry.
+
+    It does not catch everything on its own — an out-of-range day count
+    (``{"days": 1e308}``) escapes as OverflowError rather than vol.Invalid, so
+    it is translated here; callers only expect vol.Invalid.
+    """
+
+    def _check(v):
+        if v is None:
+            return None
+        try:
+            return cv.time_period_dict(v)
+        except vol.Invalid:
+            raise
+        except (OverflowError, TypeError, ValueError) as err:
+            raise vol.Invalid(f"Invalid duration: {err}") from err
+
+    return _check
 
 
 def _time_v():
-    def _check(v):
-        if v is not None and not _TIME_RE.match(str(v)):
-            raise vol.Invalid(f"Time must be HH:MM:SS, got: {v!r}")
-        return v
+    """Validate an optional HH:MM:SS time.
 
-    return vol.Any(None, _check)
+    ``cv.time`` range-checks the components; the previous regex only checked the
+    shape, so "99:99:99" was accepted and persisted, then raised in dateutil on
+    every coordinator cycle.
+    """
+    return vol.Any(None, cv.time)
 
 
 def _select_v(*options: str):
@@ -1160,6 +1180,14 @@ async def _handle_set_option(hass: HomeAssistant, call: ServiceCall) -> None:
     option = call.data.get("option")
     if not option:
         raise ServiceValidationError("'option' field is required.")
+
+    # Guard before the membership tests below: an unhashable option (e.g. {})
+    # would raise a raw TypeError out of `option in IDENTITY_KEYS` instead of a
+    # ServiceValidationError.
+    if not isinstance(option, str):
+        raise ServiceValidationError(
+            f"'option' must be a string, got {type(option).__name__}."
+        )
 
     if option in IDENTITY_KEYS:
         raise ServiceValidationError(
