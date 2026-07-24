@@ -41,7 +41,7 @@ def svc(mock_hass):
     )
 
 
-def _ctx(threshold: int | None) -> PositionContext:
+def _ctx(threshold: int | None, endstop_mode: str = "nearest") -> PositionContext:
     """PositionContext that passes every gate, with the resync threshold set."""
     return PositionContext(
         auto_control=True,
@@ -51,6 +51,7 @@ def _ctx(threshold: int | None) -> PositionContext:
         time_threshold=0,
         special_positions=[0, 100],
         resync_travel_threshold=threshold,
+        resync_endstop_mode=endstop_mode,
     )
 
 
@@ -69,6 +70,7 @@ async def _apply(
     target,
     threshold,
     service_name="set_cover_tilt_position",
+    endstop_mode="nearest",
 ):
     """Run apply_position with all gates green and a stubbed service route."""
     _stub_state(mock_hass, current)
@@ -87,7 +89,9 @@ async def _apply(
         ),
         patch(f"{MOD}.asyncio.sleep", new=AsyncMock()),
     ):
-        return await svc.apply_position("cover.test", target, "solar", _ctx(threshold))
+        return await svc.apply_position(
+            "cover.test", target, "solar", _ctx(threshold, endstop_mode)
+        )
 
 
 # --- travel accounting -------------------------------------------------------
@@ -163,6 +167,34 @@ async def test_detour_uses_low_endstop_for_low_targets(svc, mock_hass):
     assert outcome == "sent"
     first, second = mock_hass.services.async_call.await_args_list
     assert first.args[2]["tilt_position"] == 0
+    assert second.args[2]["tilt_position"] == 40
+
+
+@pytest.mark.asyncio
+async def test_detour_close_mode_forces_low_endstop_for_high_target(svc, mock_hass):
+    """endstop_mode='close' detours via 0 even when the target is high."""
+    svc.state("cover.test").travel_since_resync = 19
+    with patch.object(svc, "_at_target", return_value=True):
+        outcome, _ = await _apply(
+            svc, mock_hass, current=90, target=92, threshold=20, endstop_mode="close"
+        )
+    assert outcome == "sent"
+    first, second = mock_hass.services.async_call.await_args_list
+    assert first.args[2]["tilt_position"] == 0  # forced closed, not nearest 100
+    assert second.args[2]["tilt_position"] == 92
+
+
+@pytest.mark.asyncio
+async def test_detour_open_mode_forces_high_endstop_for_low_target(svc, mock_hass):
+    """endstop_mode='open' detours via 100 even when the target is low."""
+    svc.state("cover.test").travel_since_resync = 30
+    with patch.object(svc, "_at_target", return_value=True):
+        outcome, _ = await _apply(
+            svc, mock_hass, current=45, target=40, threshold=20, endstop_mode="open"
+        )
+    assert outcome == "sent"
+    first, second = mock_hass.services.async_call.await_args_list
+    assert first.args[2]["tilt_position"] == 100  # forced open, not nearest 0
     assert second.args[2]["tilt_position"] == 40
 
 
@@ -313,7 +345,7 @@ async def test_wait_for_position_timeout(svc, mock_hass):
 # --- manual re-sync cycle (button) ---------------------------------------------
 
 
-def _make_cycle_coordinator(current_position=93):
+def _make_cycle_coordinator(current_position=93, endstop_mode="nearest"):
     """MagicMock coordinator with the real async_run_resync_cycle bound."""
     from custom_components.adaptive_pergola.coordinator import (
         AdaptiveDataUpdateCoordinator,
@@ -322,6 +354,7 @@ def _make_cycle_coordinator(current_position=93):
     coord = MagicMock()
     coord.entities = ["cover.test"]
     coord.config_entry.options = {}
+    coord.resync_endstop_mode = endstop_mode
     coord._cmd_svc.get_current_position.return_value = current_position
     coord._cmd_svc.apply_position = AsyncMock(return_value=("sent", "svc"))
     coord._cmd_svc.wait_for_position = AsyncMock(return_value=True)
@@ -334,8 +367,8 @@ def _make_cycle_coordinator(current_position=93):
 
 @pytest.mark.asyncio
 async def test_resync_cycle_closes_then_returns():
-    """The cycle sends 0 first, waits, then restores the captured pose."""
-    coord = _make_cycle_coordinator(current_position=93)
+    """The 'close' mode sends 0 first, waits, then restores the captured pose."""
+    coord = _make_cycle_coordinator(current_position=93, endstop_mode="close")
     cycled = await coord.async_run_resync_cycle()
 
     assert cycled == ["cover.test"]
@@ -348,6 +381,32 @@ async def test_resync_cycle_closes_then_returns():
     for kwargs in (c.kwargs for c in coord._build_position_context.call_args_list):
         assert kwargs["force"] is True
         assert kwargs["bypass_auto_control"] is True
+
+
+@pytest.mark.asyncio
+async def test_resync_cycle_nearest_uses_closer_end_stop():
+    """'nearest' references at the end stop closest to the captured pose."""
+    # 93% is nearer the open stop → reference at 100, then restore 93.
+    coord = _make_cycle_coordinator(current_position=93, endstop_mode="nearest")
+    await coord.async_run_resync_cycle()
+    calls = coord._cmd_svc.apply_position.await_args_list
+    assert [c.args[1] for c in calls] == [100, 93]
+    coord._cmd_svc.wait_for_position.assert_awaited_once_with("cover.test", 100)
+
+    # 20% is nearer the closed stop → reference at 0.
+    coord = _make_cycle_coordinator(current_position=20, endstop_mode="nearest")
+    await coord.async_run_resync_cycle()
+    calls = coord._cmd_svc.apply_position.await_args_list
+    assert [c.args[1] for c in calls] == [0, 20]
+
+
+@pytest.mark.asyncio
+async def test_resync_cycle_open_mode_references_fully_open():
+    """'open' mode references at 100 regardless of captured position."""
+    coord = _make_cycle_coordinator(current_position=20, endstop_mode="open")
+    await coord.async_run_resync_cycle()
+    calls = coord._cmd_svc.apply_position.await_args_list
+    assert [c.args[1] for c in calls] == [100, 20]
 
 
 @pytest.mark.asyncio
@@ -381,3 +440,28 @@ async def test_resync_button_delegates_to_cycle():
     button.coordinator = coord
     await button.async_press()
     coord.async_run_resync_cycle.assert_awaited_once()
+
+
+# --- endstop resolver --------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("mode", "nearest_to", "expected"),
+    [
+        ("nearest", 92, 100),
+        ("nearest", 40, 0),
+        ("nearest", 50, 100),  # ties resolve to open (>= 50)
+        ("close", 92, 0),
+        ("close", 40, 0),
+        ("open", 40, 100),
+        ("open", 92, 100),
+        ("bogus", 92, 100),  # unknown mode falls back to nearest
+    ],
+)
+def test_resolve_resync_endstop(mode, nearest_to, expected):
+    """The shared resolver maps each mode to the right end stop."""
+    from custom_components.adaptive_pergola.managers.cover_command import (
+        resolve_resync_endstop,
+    )
+
+    assert resolve_resync_endstop(mode, nearest_to) == expected

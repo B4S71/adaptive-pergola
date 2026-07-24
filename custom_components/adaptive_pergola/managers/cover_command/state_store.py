@@ -76,6 +76,9 @@ class PositionContext:
     # Accumulated-travel end-stop re-sync threshold (percent of travel);
     # None/0 = feature disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
     resync_travel_threshold: int | None = None
+    # Which end stop the re-sync detour drives to: "nearest" (default), "close"
+    # (always 0) or "open" (always 100). See CONF_RESYNC_ENDSTOP_MODE.
+    resync_endstop_mode: str = "nearest"
     inverse_state: bool = False
     force: bool = False  # Skip delta/time/manual_override gates (NOT auto_control)
     is_safety: bool = False  # Safety-critical target (persists across window boundaries; bypasses auto_control)

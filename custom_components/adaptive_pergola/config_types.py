@@ -700,6 +700,9 @@ class TrackingSlice:
     # Accumulated-travel end-stop re-sync threshold (percent of travel);
     # None/0 = disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
     resync_travel_threshold: int | None = None
+    # Which end stop the re-sync detour drives to: "nearest" (default), "close"
+    # (always 0) or "open" (always 100). See CONF_RESYNC_ENDSTOP_MODE.
+    resync_endstop_mode: str = "nearest"
 
 
 @dataclass(frozen=True, slots=True)
@@ -774,6 +777,7 @@ class RuntimeConfig:
             CONF_MOTION_TIMEOUT,
             CONF_OPEN_CLOSE_THRESHOLD,
             CONF_POSITION_TOLERANCE,
+            CONF_RESYNC_ENDSTOP_MODE,
             CONF_RESYNC_TRAVEL_THRESHOLD,
             CONF_START_ENTITY,
             CONF_START_TIME,
@@ -805,6 +809,7 @@ class RuntimeConfig:
             DEFAULT_MAX_COVERAGE_STEPS,
             DEFAULT_MINIMIZE_MOVEMENTS,
             DEFAULT_MOTION_TIMEOUT,
+            DEFAULT_RESYNC_ENDSTOP_MODE,
             DEFAULT_VENETIAN_BACKROTATE_PUBLISH_LAG_SECONDS,
             DEFAULT_VENETIAN_MODE,
             DEFAULT_VENETIAN_POST_SETTLE_HOLD_SECONDS,
@@ -854,6 +859,9 @@ class RuntimeConfig:
                 ),
                 resync_travel_threshold=(
                     int(options.get(CONF_RESYNC_TRAVEL_THRESHOLD) or 0) or None
+                ),
+                resync_endstop_mode=options.get(
+                    CONF_RESYNC_ENDSTOP_MODE, DEFAULT_RESYNC_ENDSTOP_MODE
                 ),
             ),
             manual_override=ManualOverrideSlice(

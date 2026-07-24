@@ -796,6 +796,15 @@ CONF_ENABLE_POSITION_MATCHING = "enable_position_matching"
 # directly also resets the counter (the nightly close is a free re-sync).
 # Unset/0 = disabled.
 CONF_RESYNC_TRAVEL_THRESHOLD = "resync_travel_threshold"
+# Which mechanical end stop the re-sync detour drives to. "nearest" (default)
+# keeps the historical behaviour — the end stop closest to the move's target
+# (auto) or the cover's current position (manual button). "close"/"open" force
+# 0/100 respectively, for actuators that only reference reliably at one stop.
+CONF_RESYNC_ENDSTOP_MODE = "resync_endstop_mode"  # one of RESYNC_ENDSTOP_MODE_*
+RESYNC_ENDSTOP_MODE_NEAREST = "nearest"  # end stop nearest the move (historical)
+RESYNC_ENDSTOP_MODE_CLOSE = "close"  # always re-reference at 0 (fully closed)
+RESYNC_ENDSTOP_MODE_OPEN = "open"  # always re-reference at 100 (fully open)
+DEFAULT_RESYNC_ENDSTOP_MODE = RESYNC_ENDSTOP_MODE_NEAREST
 CONF_START_TIME = "start_time"  # active-window start "HH:MM:SS"
 CONF_START_ENTITY = "start_entity"  # input_datetime overriding start_time
 CONF_END_TIME = "end_time"  # active-window end "HH:MM:SS"

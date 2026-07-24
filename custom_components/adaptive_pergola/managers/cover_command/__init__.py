@@ -22,6 +22,9 @@ from ...const import (
     POSITION_CLOSED,
     POSITION_OPEN,
     POSITION_TOLERANCE_PERCENT,
+    RESYNC_ENDSTOP_MODE_CLOSE,
+    RESYNC_ENDSTOP_MODE_NEAREST,
+    RESYNC_ENDSTOP_MODE_OPEN,
 )
 from ...cover_types.base import (
     CAP_HAS_STOP,
@@ -46,8 +49,24 @@ __all__ = [
     "PositionContext",
     "ServiceCallPlan",
     "build_special_positions",
+    "resolve_resync_endstop",
     "route_service_call",
 ]
+
+
+def resolve_resync_endstop(endstop_mode: str, nearest_to: int) -> int:
+    """Pick the end stop a re-sync detour drives to for ``endstop_mode``.
+
+    ``close``/``open`` force 0/100. ``nearest`` (default, incl. any unknown
+    value) returns the end stop closest to ``nearest_to`` — the move's target
+    for the automatic detour, the cover's current position for the manual
+    Re-Sync button.
+    """
+    if endstop_mode == RESYNC_ENDSTOP_MODE_CLOSE:
+        return POSITION_CLOSED
+    if endstop_mode == RESYNC_ENDSTOP_MODE_OPEN:
+        return POSITION_OPEN
+    return POSITION_OPEN if nearest_to >= 50 else POSITION_CLOSED
 
 
 class CoverCommandService:
@@ -1163,6 +1182,7 @@ class CoverCommandService:
                 service,
                 service_data,
                 threshold=context.resync_travel_threshold,
+                endstop_mode=context.resync_endstop_mode,
                 current=_current,
                 reason=reason,
             )
@@ -1256,10 +1276,11 @@ class CoverCommandService:
         service_data: dict,
         *,
         threshold: int,
+        endstop_mode: str = RESYNC_ENDSTOP_MODE_NEAREST,
         current: int | None,
         reason: str,
     ) -> int | None:
-        """Detour via the nearest mechanical end stop when travel accumulated.
+        """Detour via a mechanical end stop when travel accumulated.
 
         Called from :meth:`apply_position` right before a positional command is
         sent. When the cover's cumulative commanded travel since its last
@@ -1289,7 +1310,7 @@ class CoverCommandService:
         if st.travel_since_resync + planned < threshold:
             return None
 
-        endstop = POSITION_OPEN if target_val >= 50 else POSITION_CLOSED
+        endstop = resolve_resync_endstop(endstop_mode, target_val)
         self._logger.info(
             "[%s] %s accumulated %.0f%% travel since last end-stop (threshold %s%%) "
             "— re-syncing at %s%% before moving to %s%%",

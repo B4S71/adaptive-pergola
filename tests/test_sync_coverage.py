@@ -196,6 +196,7 @@ _KNOWN_OPTION_KEYS: frozenset[str] = frozenset(
         "presence_entity",
         "presence_template",
         "presence_template_mode",
+        "resync_endstop_mode",
         "resync_travel_threshold",
         "start_entity",
         "start_time",
