@@ -1,6 +1,7 @@
 -r requirements.txt
 pre-commit~=4.6
-ruff~=0.15
+# stay on the 0.15 line; 0.16 tightens RUF100 and reorders imports repo-wide
+ruff~=0.15.0
 black~=26.5
 colorlog~=6.10
 pvlib~=0.15
