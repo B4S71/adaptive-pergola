@@ -291,6 +291,23 @@ set_automation_timing:
           step: 5
           mode: box
           unit_of_measurement: "%"
+    resync_endstop_mode:
+      name: End-stop re-sync direction
+      description: >-
+        Which mechanical end stop the re-sync detour drives to. "nearest"
+        (default) picks whichever stop is closer — the move's target for the
+        automatic detour, the current position for the manual Re-Sync button.
+        "close" always references at 0% and "open" always at 100%.
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - value: nearest
+              label: Nearest end stop
+            - value: close
+              label: Always fully closed (0%)
+            - value: open
+              label: Always fully open (100%)
     start_time:
       name: Start time
       description: "Fixed time to start the tracking window (HH:MM:SS). Mutually exclusive with start_entity."

@@ -109,12 +109,17 @@ from .const import (
     DEFAULT_TEMPLATE_COMBINE_MODE,
     MOTION_TIMEOUT_MODE_HOLD,
     MOTION_TIMEOUT_MODE_RETURN,
+    DEFAULT_RESYNC_ENDSTOP_MODE,
+    RESYNC_ENDSTOP_MODE_CLOSE,
+    RESYNC_ENDSTOP_MODE_NEAREST,
+    RESYNC_ENDSTOP_MODE_OPEN,
     CONF_OPEN_CLOSE_THRESHOLD,
     CONF_OUTSIDE_THRESHOLD,
     CONF_OUTSIDETEMP_ENTITY,
     CONF_POSITION_TOLERANCE,
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
+    CONF_RESYNC_ENDSTOP_MODE,
     CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SENSOR_TYPE,
@@ -515,6 +520,20 @@ AUTOMATION_SCHEMA = vol.Schema(
                 step=5,
                 mode=selector.NumberSelectorMode.BOX,
                 unit_of_measurement="%",
+            )
+        ),
+        # Which end stop the re-sync detour drives to (0, 100, or nearest).
+        vol.Optional(
+            CONF_RESYNC_ENDSTOP_MODE, default=DEFAULT_RESYNC_ENDSTOP_MODE
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    RESYNC_ENDSTOP_MODE_NEAREST,
+                    RESYNC_ENDSTOP_MODE_CLOSE,
+                    RESYNC_ENDSTOP_MODE_OPEN,
+                ],
+                mode=selector.SelectSelectorMode.LIST,
+                translation_key="resync_endstop_mode",
             )
         ),
         vol.Optional(

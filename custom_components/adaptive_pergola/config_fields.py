@@ -122,6 +122,7 @@ from .const import (
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
     CONF_PRESENCE_TEMPLATE_MODE,
+    CONF_RESYNC_ENDSTOP_MODE,
     CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SILL_HEIGHT,
@@ -184,6 +185,7 @@ from .const import (
     DEFAULT_TEMPLATE_COMBINE_MODE,
     DEFAULT_MOTION_TIMEOUT,
     DEFAULT_MOTION_TIMEOUT_MODE,
+    DEFAULT_RESYNC_ENDSTOP_MODE,
     DEFAULT_TRANSIT_TIMEOUT_SECONDS,
     DEFAULT_WEATHER_RAIN_THRESHOLD,
     DEFAULT_WEATHER_TIMEOUT,
@@ -195,6 +197,9 @@ from .const import (
     MIN_TRANSIT_TIMEOUT,
     MOTION_TIMEOUT_MODE_HOLD,
     MOTION_TIMEOUT_MODE_RETURN,
+    RESYNC_ENDSTOP_MODE_CLOSE,
+    RESYNC_ENDSTOP_MODE_NEAREST,
+    RESYNC_ENDSTOP_MODE_OPEN,
 )
 
 # =============================================================================
@@ -789,6 +794,24 @@ _AUTOMATION_SPECS = _spec(
             step=5,
             mode=selector.NumberSelectorMode.BOX,
             unit="%",
+        ),
+    ),
+    FieldSpec(
+        CONF_RESYNC_ENDSTOP_MODE,
+        SECTION_AUTOMATION,
+        ValidatorKind.SELECT,
+        default=DEFAULT_RESYNC_ENDSTOP_MODE,
+        select_options=(
+            RESYNC_ENDSTOP_MODE_NEAREST,
+            RESYNC_ENDSTOP_MODE_CLOSE,
+            RESYNC_ENDSTOP_MODE_OPEN,
+        ),
+        make_selector=_select(
+            RESYNC_ENDSTOP_MODE_NEAREST,
+            RESYNC_ENDSTOP_MODE_CLOSE,
+            RESYNC_ENDSTOP_MODE_OPEN,
+            mode=selector.SelectSelectorMode.LIST,
+            translation_key="resync_endstop_mode",
         ),
     ),
     FieldSpec(

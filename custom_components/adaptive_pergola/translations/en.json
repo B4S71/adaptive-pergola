@@ -205,6 +205,7 @@
           "delta_position": "Minimum position adjustment",
           "delta_time": "Minimum interval between position changes",
           "resync_travel_threshold": "End-stop re-sync travel threshold",
+          "resync_endstop_mode": "End-stop re-sync direction",
           "start_time": "Starting time",
           "start_entity": "Entity indicating starting time",
           "end_time": "End time",
@@ -216,6 +217,7 @@
           "delta_position": "Minimum position change (%) required before adjusting the cover. Prevents tiny adjustments as sun moves slowly. Typical values: 1-2% (very responsive, may adjust frequently), 5% (balanced, recommended for most), 10% (less frequent, larger movements). Example: If cover is at 30% and sun moves slightly, only adjust if new position is 35% or more (with 5% threshold). Reduces motor wear and noise from constant tiny adjustments.",
           "delta_time": "Minimum time (minutes) between cover adjustments. Prevents rapid position changes. Typical values: 2-3 min (very responsive, may be noisy), 5-10 min (balanced, recommended), 15-20 min (slow, gentle adjustments). If sun changes rapidly (clouds, shadows), integration waits this long before adjusting again. Reduces motor wear and provides smoother operation. Minimum is 2 minutes.",
           "resync_travel_threshold": "Accumulated commanded travel (%) after which the next mid-range move first drives the cover to the nearest end stop (0/100) to re-reference the motor, then continues to the target. Compensates position drift on actuators that execute many small tracking steps imprecisely (e.g. louvered-roof slats). Example: 20% — after roughly ten 2% adjustments the next move detours via the end stop. Leave empty or 0 to disable.",
+          "resync_endstop_mode": "Which end stop the re-sync detour drives to. 'Nearest end stop' (default, historical behaviour) picks whichever stop is closer — the move's target for the automatic detour, the current position for the manual Re-Sync button. 'Always fully closed' forces 0% and 'Always fully open' forces 100%, for actuators that only re-reference reliably at one end.",
           "start_time": "Don't start automatic control before this time (24-hour format). Use this to sleep in without morning blinds (set to 08:00 or later), match your routine (set to when you wake up), or leave blank to start at sunrise. Example: '07:30' means automatic control begins at 7:30 AM. Manual control still works before this time.",
           "start_entity": "Entity representing starting time state, overriding the fixed start time set above. Useful for automating the start time with an entity (e.g., sensor that provides wake-up time based on calendar or sleep tracking).",
           "end_time": "Stop automatic control after this time (24-hour format). Use this to keep evening privacy (set to 18:00 or 19:00), return to default before bed, or leave blank to continue until sunset. Example: '20:00' means automatic control stops at 8:00 PM. Manual control still works after this time.",
@@ -641,6 +643,7 @@
           "delta_position": "Minimum position adjustment",
           "delta_time": "Minimum interval between position changes",
           "resync_travel_threshold": "End-stop re-sync travel threshold",
+          "resync_endstop_mode": "End-stop re-sync direction",
           "start_time": "Starting time",
           "start_entity": "Entity indicating starting time",
           "end_time": "End time",
@@ -652,6 +655,7 @@
           "delta_position": "Minimum position change (%) required before adjusting the cover. Prevents tiny adjustments as sun moves slowly. Typical values: 1-2% (very responsive, may adjust frequently), 5% (balanced, recommended for most), 10% (less frequent, larger movements). Example: If cover is at 30% and sun moves slightly, only adjust if new position is 35% or more (with 5% threshold). Reduces motor wear and noise from constant tiny adjustments.",
           "delta_time": "Minimum time (minutes) between cover adjustments. Prevents rapid position changes. Typical values: 2-3 min (very responsive, may be noisy), 5-10 min (balanced, recommended), 15-20 min (slow, gentle adjustments). If sun changes rapidly (clouds, shadows), integration waits this long before adjusting again. Reduces motor wear and provides smoother operation. Minimum is 2 minutes.",
           "resync_travel_threshold": "Accumulated commanded travel (%) after which the next mid-range move first drives the cover to the nearest end stop (0/100) to re-reference the motor, then continues to the target. Compensates position drift on actuators that execute many small tracking steps imprecisely (e.g. louvered-roof slats). Example: 20% — after roughly ten 2% adjustments the next move detours via the end stop. Leave empty or 0 to disable.",
+          "resync_endstop_mode": "Which end stop the re-sync detour drives to. 'Nearest end stop' (default, historical behaviour) picks whichever stop is closer — the move's target for the automatic detour, the current position for the manual Re-Sync button. 'Always fully closed' forces 0% and 'Always fully open' forces 100%, for actuators that only re-reference reliably at one end.",
           "start_time": "Don't start automatic control before this time (24-hour format). Use this to sleep in without morning blinds (set to 08:00 or later), match your routine (set to when you wake up), or leave blank to start at sunrise. Example: '07:30' means automatic control begins at 7:30 AM. Manual control still works before this time.",
           "start_entity": "Entity representing starting time state, overriding the fixed start time set above. Useful for automating the start time with an entity (e.g., sensor that provides wake-up time based on calendar or sleep tracking).",
           "end_time": "Stop automatic control after this time (24-hour format). Use this to keep evening privacy (set to 18:00 or 19:00), return to default before bed, or leave blank to continue until sunset. Example: '20:00' means automatic control stops at 8:00 PM. Manual control still works after this time.",
@@ -1385,6 +1389,13 @@
         "return_to_default": "Return to default position",
         "hold_position": "Hold current position"
       }
+    },
+    "resync_endstop_mode": {
+      "options": {
+        "nearest": "Nearest end stop",
+        "close": "Always fully closed (0%)",
+        "open": "Always fully open (100%)"
+      }
     }
   },
   "services": {
@@ -1503,6 +1514,10 @@
         "resync_travel_threshold": {
           "name": "End-stop re-sync travel threshold",
           "description": "Accumulated commanded travel (%) after which the next mid-range move detours via the nearest mechanical end stop (0/100) to re-reference a drifting actuator (0–1000, 0/unset = disabled)."
+        },
+        "resync_endstop_mode": {
+          "name": "End-stop re-sync direction",
+          "description": "Which end stop the re-sync detour drives to: 'nearest' (default), 'close' (always 0%) or 'open' (always 100%). Applies to both the automatic detour and the manual Re-Sync button."
         },
         "start_time": {
           "name": "Start time",

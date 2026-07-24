@@ -284,6 +284,29 @@ class TestFieldValidators:
         with pytest.raises(Exception):
             FIELD_VALIDATORS["tilt_mode"]("mode3")
 
+    def test_resync_endstop_mode_select(self):
+        """The resync-direction validator accepts the three modes and None."""
+        from custom_components.adaptive_pergola.const import CONF_RESYNC_ENDSTOP_MODE
+
+        for mode in ("nearest", "close", "open", None):
+            FIELD_VALIDATORS[CONF_RESYNC_ENDSTOP_MODE](mode)
+
+    def test_resync_endstop_mode_rejects_invalid(self):
+        """An out-of-vocabulary resync direction is rejected."""
+        from custom_components.adaptive_pergola.const import CONF_RESYNC_ENDSTOP_MODE
+
+        with pytest.raises(Exception):
+            FIELD_VALIDATORS[CONF_RESYNC_ENDSTOP_MODE]("sideways")
+
+    def test_resync_endstop_mode_in_automation_timing_section(self):
+        """The field is writable through set_automation_timing."""
+        from custom_components.adaptive_pergola.const import CONF_RESYNC_ENDSTOP_MODE
+        from custom_components.adaptive_pergola.services.options_service import (
+            _SECTION_AUTOMATION_TIMING,
+        )
+
+        assert CONF_RESYNC_ENDSTOP_MODE in _SECTION_AUTOMATION_TIMING
+
     def test_blind_spot_elevation_mode_select(self):
         """Every slot's elevation-mode validator accepts below/above/None (#702)."""
         from custom_components.adaptive_pergola.const import BLIND_SPOT_SLOTS

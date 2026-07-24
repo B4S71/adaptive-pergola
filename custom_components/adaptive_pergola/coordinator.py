@@ -88,8 +88,8 @@ from .const import (
     DIAG_CACHE_KEY,
     DOMAIN,
     LOGGER,
-    POSITION_CLOSED,
     POSITION_TOLERANCE_PERCENT,
+    RESYNC_ENDSTOP_MODE_NEAREST,
     STARTUP_GRACE_PERIOD_SECONDS,
 )
 from .diagnostics.builder import DiagnosticContext, DiagnosticsBuilder
@@ -98,6 +98,7 @@ from .managers.cover_command import (
     CoverCommandService,
     PositionContext,
     build_special_positions,
+    resolve_resync_endstop,
 )
 from .managers.grace_period import GracePeriodManager
 from .managers.manual_override import (
@@ -1551,6 +1552,9 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             # that bind _build_position_context directly) may lack the
             # attribute — absent means the re-sync feature is off.
             resync_travel_threshold=getattr(self, "resync_travel_threshold", None),
+            resync_endstop_mode=getattr(
+                self, "resync_endstop_mode", RESYNC_ENDSTOP_MODE_NEAREST
+            ),
             special_positions=build_special_positions(options),
             inverse_state=self._inverse_state,
             force=force,
@@ -2043,6 +2047,7 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         self.min_change = rc.tracking.min_change
         self.time_threshold = rc.tracking.time_threshold
         self.resync_travel_threshold = rc.tracking.resync_travel_threshold
+        self.resync_endstop_mode = rc.tracking.resync_endstop_mode
         self.manual_reset = rc.manual_override.reset
         self.manual_duration = rc.manual_override.duration
         self.manual_ignore_external = rc.manual_override.ignore_external
@@ -2343,21 +2348,24 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
     async def async_run_resync_cycle(
         self, *, trigger: str = "resync_button"
     ) -> list[str]:
-        """Manual end-stop re-sync cycle: close fully, then restore the pose.
+        """Manual end-stop re-sync cycle: drive to an end stop, then restore.
 
         For each managed cover: capture the current position, drive to the
-        closed end stop (0 — re-referencing a drifted actuator), wait for
-        arrival, then return to the captured position in one accurate move.
-        Both legs go through ``apply_position`` (tracked HA contexts, target
-        bookkeeping, grace periods), so neither can be classified as a manual
-        override. ``force`` + ``bypass_auto_control`` make the button work
-        regardless of gates — including while a manual override is active,
-        whose held pose is simply restored.
+        end stop selected by ``resync_endstop_mode`` (re-referencing a drifted
+        actuator), wait for arrival, then return to the captured position in
+        one accurate move. ``nearest`` picks the end stop closest to the
+        captured position; ``close``/``open`` force 0/100. Both legs go through
+        ``apply_position`` (tracked HA contexts, target bookkeeping, grace
+        periods), so neither can be classified as a manual override. ``force``
+        + ``bypass_auto_control`` make the button work regardless of gates —
+        including while a manual override is active, whose held pose is simply
+        restored.
 
         Returns the covers that were actually cycled.
         """
         cycled: list[str] = []
         options = self.config_entry.options
+        mode = getattr(self, "resync_endstop_mode", RESYNC_ENDSTOP_MODE_NEAREST)
         for entity in self.entities:
             return_to = self._cmd_svc.get_current_position(entity)
             if return_to is None:
@@ -2365,25 +2373,26 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                     "Re-sync cycle: %s has no readable position — skipped", entity
                 )
                 continue
+            endstop = resolve_resync_endstop(mode, return_to)
             ctx = self._build_position_context(
                 entity, options, force=True, bypass_auto_control=True
             )
             outcome, detail = await self._cmd_svc.apply_position(
-                entity, POSITION_CLOSED, trigger, ctx
+                entity, endstop, trigger, ctx
             )
             if outcome != "sent":
-                # Already closed (same_position) still counts as referenced;
-                # anything else (unavailable, disabled) aborts this cover.
+                # Already at the end stop (same_position) still counts as
+                # referenced; anything else (unavailable, disabled) aborts.
                 if detail != "same_position":
                     _LOGGER.warning(
-                        "Re-sync cycle: close leg for %s not sent (%s) — skipped",
+                        "Re-sync cycle: reference leg for %s not sent (%s) — skipped",
                         entity,
                         detail,
                     )
                     continue
             else:
-                await self._cmd_svc.wait_for_position(entity, POSITION_CLOSED)
-            if return_to == POSITION_CLOSED:
+                await self._cmd_svc.wait_for_position(entity, endstop)
+            if return_to == endstop:
                 cycled.append(entity)
                 continue
             ctx = self._build_position_context(
