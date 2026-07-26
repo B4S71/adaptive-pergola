@@ -307,6 +307,51 @@ class TestFieldValidators:
 
         assert CONF_RESYNC_ENDSTOP_MODE in _SECTION_AUTOMATION_TIMING
 
+    def test_resync_movement_threshold_range(self):
+        """The movement-count validator accepts the 0–100 range and None."""
+        from custom_components.adaptive_pergola.const import (
+            CONF_RESYNC_MOVEMENT_THRESHOLD,
+        )
+
+        for value in (0, 4, 100, None):
+            FIELD_VALIDATORS[CONF_RESYNC_MOVEMENT_THRESHOLD](value)
+
+    def test_resync_movement_threshold_rejects_out_of_range(self):
+        """A movement count above the max is rejected."""
+        from custom_components.adaptive_pergola.const import (
+            CONF_RESYNC_MOVEMENT_THRESHOLD,
+        )
+
+        with pytest.raises(Exception):
+            FIELD_VALIDATORS[CONF_RESYNC_MOVEMENT_THRESHOLD](101)
+
+    def test_resync_combine_mode_select(self):
+        """The combine-mode validator accepts 'and'/'or' and None."""
+        from custom_components.adaptive_pergola.const import CONF_RESYNC_COMBINE_MODE
+
+        for mode in ("and", "or", None):
+            FIELD_VALIDATORS[CONF_RESYNC_COMBINE_MODE](mode)
+
+    def test_resync_combine_mode_rejects_invalid(self):
+        """An out-of-vocabulary combine mode is rejected."""
+        from custom_components.adaptive_pergola.const import CONF_RESYNC_COMBINE_MODE
+
+        with pytest.raises(Exception):
+            FIELD_VALIDATORS[CONF_RESYNC_COMBINE_MODE]("xor")
+
+    def test_resync_movement_fields_in_automation_timing_section(self):
+        """Both new fields are writable through set_automation_timing."""
+        from custom_components.adaptive_pergola.const import (
+            CONF_RESYNC_COMBINE_MODE,
+            CONF_RESYNC_MOVEMENT_THRESHOLD,
+        )
+        from custom_components.adaptive_pergola.services.options_service import (
+            _SECTION_AUTOMATION_TIMING,
+        )
+
+        assert CONF_RESYNC_MOVEMENT_THRESHOLD in _SECTION_AUTOMATION_TIMING
+        assert CONF_RESYNC_COMBINE_MODE in _SECTION_AUTOMATION_TIMING
+
     def test_blind_spot_elevation_mode_select(self):
         """Every slot's elevation-mode validator accepts below/above/None (#702)."""
         from custom_components.adaptive_pergola.const import BLIND_SPOT_SLOTS

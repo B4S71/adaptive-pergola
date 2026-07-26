@@ -49,6 +49,11 @@ class PerEntityState:
     # detour (CONF_RESYNC_TRAVEL_THRESHOLD); reset whenever a command lands
     # on an end stop.
     travel_since_resync: float = 0.0
+    # Count of discrete moves (ACP-commanded *and* detected manual) since the
+    # cover last visited a mechanical end stop. Drives the movement-count
+    # re-sync trigger (CONF_RESYNC_MOVEMENT_THRESHOLD); reset alongside
+    # ``travel_since_resync`` whenever a move lands on an end stop.
+    movements_since_resync: int = 0
     # When the travel counter last reset — i.e. the last time the cover was
     # referenced at an end stop (endpoint command, endpoint-origin leg, or a
     # re-sync detour). Surfaced by the diagnostics sensors; None until the
@@ -76,6 +81,12 @@ class PositionContext:
     # Accumulated-travel end-stop re-sync threshold (percent of travel);
     # None/0 = feature disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
     resync_travel_threshold: int | None = None
+    # Movement-count end-stop re-sync threshold (number of discrete moves);
+    # None/0 = disabled. See CONF_RESYNC_MOVEMENT_THRESHOLD.
+    resync_movement_threshold: int | None = None
+    # How the travel and movement thresholds combine when both are set:
+    # "and" (default) or "or". See CONF_RESYNC_COMBINE_MODE.
+    resync_combine_mode: str = "and"
     # Which end stop the re-sync detour drives to: "nearest" (default), "close"
     # (always 0) or "open" (always 100). See CONF_RESYNC_ENDSTOP_MODE.
     resync_endstop_mode: str = "nearest"

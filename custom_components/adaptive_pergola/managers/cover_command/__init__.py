@@ -22,6 +22,8 @@ from ...const import (
     POSITION_CLOSED,
     POSITION_OPEN,
     POSITION_TOLERANCE_PERCENT,
+    RESYNC_COMBINE_MODE_AND,
+    RESYNC_COMBINE_MODE_OR,
     RESYNC_ENDSTOP_MODE_CLOSE,
     RESYNC_ENDSTOP_MODE_NEAREST,
     RESYNC_ENDSTOP_MODE_OPEN,
@@ -50,8 +52,40 @@ __all__ = [
     "ServiceCallPlan",
     "build_special_positions",
     "resolve_resync_endstop",
+    "resync_should_trigger",
     "route_service_call",
 ]
+
+
+def resync_should_trigger(
+    *,
+    travel_since: float,
+    planned: int,
+    travel_threshold: int | None,
+    movements_since: int,
+    movement_threshold: int | None,
+    combine_mode: str,
+) -> bool:
+    """Decide whether the upcoming move should detour via an end stop.
+
+    The travel arm fires when the accumulated travel plus this move's
+    ``planned`` distance reaches ``travel_threshold``; the movement arm fires
+    when the accumulated move count plus this move (counted as one) reaches
+    ``movement_threshold``. When BOTH thresholds are configured they combine
+    per ``combine_mode`` (``"or"`` → either arm; anything else, incl. the
+    ``"and"`` default → both arms). When only one threshold is set that arm
+    governs alone; when neither is set the feature is off and this returns
+    ``False``.
+    """
+    travel_on = bool(travel_threshold) and (travel_since + planned) >= travel_threshold
+    moves_on = bool(movement_threshold) and (movements_since + 1) >= movement_threshold
+    if travel_threshold and movement_threshold:
+        if combine_mode == RESYNC_COMBINE_MODE_OR:
+            return travel_on or moves_on
+        return travel_on and moves_on
+    # Exactly one (or neither) threshold configured: the inactive arm's flag is
+    # already False, so a plain OR yields "the configured arm, or nothing".
+    return travel_on or moves_on
 
 
 def resolve_resync_endstop(endstop_mode: str, nearest_to: int) -> int:
@@ -342,8 +376,29 @@ class CoverCommandService:
         s = self._get(entity_id)
         return {
             "travel_since_resync": round(s.travel_since_resync, 1),
+            "movements_since_resync": s.movements_since_resync,
             "last_resync_time": s.last_resync_at,
         }
+
+    def note_manual_movement(self, entity_id: str) -> None:
+        """Count a detected manual cover move toward the movement-count re-sync.
+
+        Wired to the manual-override manager's ``on_manual_move`` edge, which
+        fires for *every* detected user move — not only the not-manual→manual
+        transition — so five successive jogs count as five. A move that settles
+        on a mechanical end stop (0/100) re-references the actuator and resets
+        both re-sync counters; any other move increments the movement counter
+        by one. Mirrors the end-stop accounting :meth:`apply_position` performs
+        for ACP-commanded moves.
+        """
+        s = self.state(entity_id)
+        pos = self._get_current_position(entity_id)
+        if pos is not None and pos in (POSITION_CLOSED, POSITION_OPEN):
+            s.travel_since_resync = 0.0
+            s.movements_since_resync = 0
+            s.last_resync_at = dt.datetime.now(dt.UTC)
+        else:
+            s.movements_since_resync += 1
 
     def has_target(self, entity_id: str) -> bool:
         """Return True if a target is currently recorded for ``entity_id``."""
@@ -529,6 +584,7 @@ class CoverCommandService:
                 s.last_reconcile_at.isoformat() if s.last_reconcile_at else None
             ),
             "travel_since_resync": round(s.travel_since_resync, 1),
+            "movements_since_resync": s.movements_since_resync,
             "last_resync_time": (
                 s.last_resync_at.isoformat() if s.last_resync_at else None
             ),
@@ -1176,12 +1232,16 @@ class CoverCommandService:
         # the target below. Position-capable services only — open/close/stop
         # routes land on an end stop anyway.
         resynced_from: int | None = None
-        if supports_position and context.resync_travel_threshold:
+        if supports_position and (
+            context.resync_travel_threshold or context.resync_movement_threshold
+        ):
             resynced_from = await self._maybe_resync_at_endstop(
                 entity_id,
                 service,
                 service_data,
-                threshold=context.resync_travel_threshold,
+                travel_threshold=context.resync_travel_threshold,
+                movement_threshold=context.resync_movement_threshold,
+                combine_mode=context.resync_combine_mode,
                 endstop_mode=context.resync_endstop_mode,
                 current=_current,
                 reason=reason,
@@ -1242,13 +1302,18 @@ class CoverCommandService:
             "close_cover",
         ):
             _st.travel_since_resync = 0.0
+            _st.movements_since_resync = 0
             _st.last_resync_at = dt.datetime.now(dt.UTC)
         elif supports_position and _origin is not None:
             if _origin in (POSITION_CLOSED, POSITION_OPEN):
+                # Leg departing a hard reference: accurate, counts as a fresh
+                # start — both counters reset, this move itself does not add.
                 _st.travel_since_resync = 0.0
+                _st.movements_since_resync = 0
                 _st.last_resync_at = dt.datetime.now(dt.UTC)
             else:
                 _st.travel_since_resync += abs(position - _origin)
+                _st.movements_since_resync += 1
 
         # Cover-type policy hook: dual-axis covers (venetian) run their
         # settle+tilt sequence here. Default policies are no-ops, so vertical /
@@ -1275,20 +1340,22 @@ class CoverCommandService:
         service: str,
         service_data: dict,
         *,
-        threshold: int,
+        travel_threshold: int | None,
+        movement_threshold: int | None = None,
+        combine_mode: str = RESYNC_COMBINE_MODE_AND,
         endstop_mode: str = RESYNC_ENDSTOP_MODE_NEAREST,
         current: int | None,
         reason: str,
     ) -> int | None:
-        """Detour via a mechanical end stop when travel accumulated.
+        """Detour via a mechanical end stop when drift has accumulated.
 
         Called from :meth:`apply_position` right before a positional command is
-        sent. When the cover's cumulative commanded travel since its last
-        end-stop visit (plus the upcoming move) exceeds ``threshold``, command
-        the end stop nearest the target first, wait for the cover to report it
-        (bounded by ``transit_timeout_seconds``), and let the caller continue
-        with the real move — now starting from a freshly re-referenced
-        actuator.
+        sent. A detour fires when the accumulated travel and/or the accumulated
+        move count since the last end-stop visit — combined per ``combine_mode``
+        by :func:`resync_should_trigger` — crosses the configured threshold(s).
+        The end stop nearest the target is commanded first, the cover is given
+        until ``transit_timeout_seconds`` to report it, then the caller
+        continues with the real move from a freshly re-referenced actuator.
 
         Returns the end-stop position when a detour ran (the caller uses it as
         the travel origin of the follow-up move), else ``None``. The wire-space
@@ -1300,24 +1367,34 @@ class CoverCommandService:
             (v for k, v in service_data.items() if k != ATTR_ENTITY_ID), None
         )
         if target_val is None or target_val in (POSITION_CLOSED, POSITION_OPEN):
-            # Endpoint moves reset the counter in apply_position; no detour.
+            # Endpoint moves reset the counters in apply_position; no detour.
             return None
         if current is not None and current in (POSITION_CLOSED, POSITION_OPEN):
             # Departing from a hard stop — the actuator is freshly referenced;
-            # apply_position resets the counter for this leg.
+            # apply_position resets the counters for this leg.
             return None
         planned = abs(target_val - current) if current is not None else 0
-        if st.travel_since_resync + planned < threshold:
+        if not resync_should_trigger(
+            travel_since=st.travel_since_resync,
+            planned=planned,
+            travel_threshold=travel_threshold,
+            movements_since=st.movements_since_resync,
+            movement_threshold=movement_threshold,
+            combine_mode=combine_mode,
+        ):
             return None
 
         endstop = resolve_resync_endstop(endstop_mode, target_val)
         self._logger.info(
-            "[%s] %s accumulated %.0f%% travel since last end-stop (threshold %s%%) "
-            "— re-syncing at %s%% before moving to %s%%",
+            "[%s] %s accumulated %.0f%% travel / %d moves since last end-stop "
+            "(travel≥%s, moves≥%s, %s) — re-syncing at %s%% before moving to %s%%",
             reason,
             entity_id,
             st.travel_since_resync + planned,
-            threshold,
+            st.movements_since_resync + 1,
+            travel_threshold,
+            movement_threshold,
+            combine_mode,
             endstop,
             target_val,
         )
@@ -1351,9 +1428,10 @@ class CoverCommandService:
             self._restore_final_leg_bookkeeping(entity_id, target_val)
             return None
 
-        # Counter resets on the *attempt*: even a partial detour must not
+        # Counters reset on the *attempt*: even a partial detour must not
         # re-trigger a cycle on every subsequent move.
         st.travel_since_resync = 0.0
+        st.movements_since_resync = 0
         st.last_resync_at = dt.datetime.now(dt.UTC)
 
         if not await self.wait_for_position(entity_id, endstop):

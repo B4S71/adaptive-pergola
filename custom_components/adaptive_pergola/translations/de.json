@@ -178,6 +178,8 @@
           "delta_time": "Minimales Intervall zwischen Positionsänderungen",
           "resync_travel_threshold": "Endlagen-Resync Fahrweg-Schwelle",
           "resync_endstop_mode": "Endlagen-Resync Richtung",
+          "resync_movement_threshold": "Endanschlag-Re-Sync Bewegungsschwelle",
+          "resync_combine_mode": "Endanschlag-Re-Sync Kombinationsmodus",
           "start_time": "Startzeit",
           "start_entity": "Entität, die die Startzeit angibt",
           "end_time": "Endzeit",
@@ -190,6 +192,8 @@
           "delta_time": "Mindestzeit (in Minuten) zwischen Beschattungsanpassungen. Verhindert schnelle Positionsänderungen. Typische Werte: 2-3 Minuten (sehr reaktiv, kann laut sein), 5-10 Minuten (ausgewogen, empfohlen), 15-20 Minuten (langsam, sanfte Anpassungen). Wenn die Sonne sich schnell ändert (Wolken, Schatten), wartet die Integration diese lange, bevor sie erneut anpasst. Reduziert Motorverschleiß und bietet einen reibungsloseren Betrieb. Minimum ist 2 Minuten.",
           "resync_travel_threshold": "Aufsummierter kommandierter Fahrweg (%), ab dem die nächste Bewegung zuerst die nächstgelegene Endlage (0/100) anfährt, um den Motor neu zu referenzieren, und erst dann zur Zielposition fährt. Kompensiert Positionsdrift bei Antrieben, die viele kleine Nachführschritte ungenau ausführen (z. B. Lamellendach). Beispiel: 20 % — nach etwa zehn 2-%-Anpassungen fährt die nächste Bewegung über die Endlage. Leer oder 0 = deaktiviert.",
           "resync_endstop_mode": "An welche Endlage der Resync-Umweg fährt. „Nächstgelegene Endlage“ (Standard, bisheriges Verhalten) wählt die jeweils nähere Endlage — bei der automatischen Kompensation das Bewegungsziel, beim manuellen Re-Sync-Button die aktuelle Position. „Immer vollständig geschlossen“ erzwingt 0 % und „Immer vollständig geöffnet“ erzwingt 100 %, für Antriebe, die nur an einer Endlage zuverlässig referenzieren.",
+          "resync_movement_threshold": "Anzahl einzelner Fahrten seit der letzten Endanschlag-Referenzierung, nach der die nächste Fahrt im mittleren Bereich einen Umweg über einen Endanschlag macht. Jede Fahrt zählt als eine – unabhängig von der Größe: eine einzelne 50%-Fahrt ist 1, fünf getrennte 10%- (oder 1%-) Fahrten sind 5 – sodass viele kleine Korrekturen einen Re-Sync auslösen, auch wenn ihre Gesamtstrecke gering ist. Sowohl ACP-gesteuerte als auch erkannte manuelle Fahrten zählen; eine Fahrt, die auf 0/100 endet, referenziert den Aktor neu und setzt den Zähler zurück. Leer lassen oder 0 zum Deaktivieren.",
+          "resync_combine_mode": "Wie die Wegstrecken- (%) und die Bewegungsanzahl-Schwelle kombiniert werden, wenn beide gesetzt sind. 'Beide Schwellen (UND)' (Standard) synchronisiert erst, wenn beide überschritten sind; 'Eine der Schwellen (ODER)' synchronisiert, sobald eine überschritten ist. Ohne Bedeutung, wenn nur eine Schwelle konfiguriert ist.",
           "start_time": "Starten Sie die automatische Steuerung nicht vor dieser Zeit (24-Stunden-Format). Verwenden Sie dies, um auszuschlafen, ohne morgens Jalousien zu haben (auf 08:00 oder später einstellen), Ihre Routine zu treffen (auf die Zeit einstellen, wenn Sie aufwachen) oder leer lassen, um bei Sonnenaufgang zu beginnen. Beispiel: '07:30' bedeutet, dass die automatische Steuerung um 7:30 Uhr beginnt. Die manuelle Steuerung funktioniert vor dieser Zeit weiterhin.",
           "start_entity": "Entity, die den Startzeitstatus darstellt und die oben festgelegte feste Startzeit außer Kraft setzt. Nützlich zur Automatisierung der Startzeit mit einer Entity (z. B. Sensor, der die Aufwachzeit basierend auf Kalender oder Schlafverfolgung bereitstellt).",
           "end_time": "Beenden Sie die automatische Steuerung nach dieser Zeit (24-Stunden-Format). Verwenden Sie diese Option, um den Datenschutz am Abend aufrechtzuerhalten (auf 18:00 oder 19:00 einstellen), zur Standardeinstellung vor dem Schlafengehen zurückkehren oder leer lassen, um bis Sonnenuntergang fortzufahren. Beispiel: '20:00' bedeutet, dass die automatische Steuerung um 20:00 Uhr endet. Die manuelle Steuerung funktioniert nach dieser Zeit weiterhin.",
@@ -622,6 +626,8 @@
           "delta_time": "Minimales Intervall zwischen Positionsänderungen",
           "resync_travel_threshold": "Endlagen-Resync Fahrweg-Schwelle",
           "resync_endstop_mode": "Endlagen-Resync Richtung",
+          "resync_movement_threshold": "Endanschlag-Re-Sync Bewegungsschwelle",
+          "resync_combine_mode": "Endanschlag-Re-Sync Kombinationsmodus",
           "start_time": "Startzeit",
           "start_entity": "Entität, die die Startzeit angibt",
           "end_time": "Endzeit",
@@ -634,6 +640,8 @@
           "delta_time": "Mindestzeit (in Minuten) zwischen Beschattungsanpassungen. Verhindert schnelle Positionsänderungen. Typische Werte: 2-3 Minuten (sehr reaktiv, kann laut sein), 5-10 Minuten (ausgewogen, empfohlen), 15-20 Minuten (langsam, sanfte Anpassungen). Wenn die Sonne sich schnell ändert (Wolken, Schatten), wartet die Integration diese lange, bevor sie erneut anpasst. Reduziert Motorverschleiß und bietet einen reibungsloseren Betrieb. Minimum ist 2 Minuten.",
           "resync_travel_threshold": "Aufsummierter kommandierter Fahrweg (%), ab dem die nächste Bewegung zuerst die nächstgelegene Endlage (0/100) anfährt, um den Motor neu zu referenzieren, und erst dann zur Zielposition fährt. Kompensiert Positionsdrift bei Antrieben, die viele kleine Nachführschritte ungenau ausführen (z. B. Lamellendach). Beispiel: 20 % — nach etwa zehn 2-%-Anpassungen fährt die nächste Bewegung über die Endlage. Leer oder 0 = deaktiviert.",
           "resync_endstop_mode": "An welche Endlage der Resync-Umweg fährt. „Nächstgelegene Endlage“ (Standard, bisheriges Verhalten) wählt die jeweils nähere Endlage — bei der automatischen Kompensation das Bewegungsziel, beim manuellen Re-Sync-Button die aktuelle Position. „Immer vollständig geschlossen“ erzwingt 0 % und „Immer vollständig geöffnet“ erzwingt 100 %, für Antriebe, die nur an einer Endlage zuverlässig referenzieren.",
+          "resync_movement_threshold": "Anzahl einzelner Fahrten seit der letzten Endanschlag-Referenzierung, nach der die nächste Fahrt im mittleren Bereich einen Umweg über einen Endanschlag macht. Jede Fahrt zählt als eine – unabhängig von der Größe: eine einzelne 50%-Fahrt ist 1, fünf getrennte 10%- (oder 1%-) Fahrten sind 5 – sodass viele kleine Korrekturen einen Re-Sync auslösen, auch wenn ihre Gesamtstrecke gering ist. Sowohl ACP-gesteuerte als auch erkannte manuelle Fahrten zählen; eine Fahrt, die auf 0/100 endet, referenziert den Aktor neu und setzt den Zähler zurück. Leer lassen oder 0 zum Deaktivieren.",
+          "resync_combine_mode": "Wie die Wegstrecken- (%) und die Bewegungsanzahl-Schwelle kombiniert werden, wenn beide gesetzt sind. 'Beide Schwellen (UND)' (Standard) synchronisiert erst, wenn beide überschritten sind; 'Eine der Schwellen (ODER)' synchronisiert, sobald eine überschritten ist. Ohne Bedeutung, wenn nur eine Schwelle konfiguriert ist.",
           "start_time": "Starten Sie die automatische Steuerung nicht vor dieser Zeit (24-Stunden-Format). Verwenden Sie dies, um auszuschlafen, ohne morgens Jalousien zu haben (auf 08:00 oder später einstellen), Ihre Routine zu treffen (auf die Zeit einstellen, wenn Sie aufwachen) oder leer lassen, um bei Sonnenaufgang zu beginnen. Beispiel: '07:30' bedeutet, dass die automatische Steuerung um 7:30 Uhr beginnt. Die manuelle Steuerung funktioniert vor dieser Zeit weiterhin.",
           "start_entity": "Entity, die den Startzeitstatus darstellt und die oben festgelegte feste Startzeit außer Kraft setzt. Nützlich zur Automatisierung der Startzeit mit einer Entity (z. B. Sensor, der die Aufwachzeit basierend auf Kalender oder Schlafverfolgung bereitstellt).",
           "end_time": "Beenden Sie die automatische Steuerung nach dieser Zeit (24-Stunden-Format). Verwenden Sie diese Option, um den Datenschutz am Abend aufrechtzuerhalten (auf 18:00 oder 19:00 einstellen), zur Standardeinstellung vor dem Schlafengehen zurückkehren oder leer lassen, um bis Sonnenuntergang fortzufahren. Beispiel: '20:00' bedeutet, dass die automatische Steuerung um 20:00 Uhr endet. Die manuelle Steuerung funktioniert nach dieser Zeit weiterhin.",
@@ -1385,6 +1393,12 @@
         "open": "Immer vollständig geöffnet (100 %)"
       }
     },
+    "resync_combine_mode": {
+      "options": {
+        "and": "Beide Schwellen (UND)",
+        "or": "Eine der Schwellen (ODER)"
+      }
+    },
     "template_combine_mode": {
       "options": {
         "or": "ODER — anwesend, wenn die Vorlage wahr ist oder ein Sensor aktiv ist (Standard)",
@@ -1435,6 +1449,14 @@
         "resync_travel_threshold": {
           "name": "Endlagen-Resync Fahrweg-Schwelle",
           "description": "Aufsummierter Fahrweg (%), ab dem die nächste Bewegung über die nächstgelegene mechanische Endlage (0/100) fährt, um einen driftenden Antrieb neu zu referenzieren (0–1000, 0/leer = deaktiviert)."
+        },
+        "resync_movement_threshold": {
+          "name": "Endanschlag-Re-Sync Bewegungsschwelle",
+          "description": "Anzahl einzelner Fahrten seit der letzten Endanschlag-Referenzierung, nach der ein Re-Sync-Umweg ausgelöst wird; jede Fahrt zählt als eine, unabhängig von der Größe (eine 50%-Fahrt ist 1, fünf 10%-Fahrten sind 5). Sowohl ACP-gesteuerte als auch manuelle Fahrten zählen (0–100, 0/nicht gesetzt = deaktiviert)."
+        },
+        "resync_combine_mode": {
+          "name": "Endanschlag-Re-Sync Kombinationsmodus",
+          "description": "Wie die Wegstrecken-% und die Bewegungsanzahl-Schwelle kombiniert werden, wenn beide gesetzt sind: 'and' (Standard, beide müssen überschritten sein) oder 'or' (eine genügt). Ohne Bedeutung, wenn nur eine Schwelle konfiguriert ist."
         },
         "resync_endstop_mode": {
           "name": "Endlagen-Resync Richtung",
