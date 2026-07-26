@@ -805,6 +805,22 @@ RESYNC_ENDSTOP_MODE_NEAREST = "nearest"  # end stop nearest the move (historical
 RESYNC_ENDSTOP_MODE_CLOSE = "close"  # always re-reference at 0 (fully closed)
 RESYNC_ENDSTOP_MODE_OPEN = "open"  # always re-reference at 100 (fully open)
 DEFAULT_RESYNC_ENDSTOP_MODE = RESYNC_ENDSTOP_MODE_NEAREST
+# Alternative (or additional) re-sync trigger: count of *movements* since the
+# last end-stop reference, rather than the cumulative travel percentage above.
+# Each discrete move counts as one — a single continuous 50% jog is 1, five
+# separate 10% (or 1%) jogs are 5 — so many small corrections trigger a re-sync
+# even when their summed travel is modest. Both ACP-commanded moves and detected
+# manual moves count; a move that lands on an end stop (0/100) re-references the
+# actuator and resets the counter. Unset/0 = disabled.
+CONF_RESYNC_MOVEMENT_THRESHOLD = "resync_movement_threshold"
+# How the travel-percent threshold and the movement-count threshold combine when
+# BOTH are configured. "and" (default) re-syncs only once both are exceeded;
+# "or" re-syncs as soon as either is. When only one threshold is set, that one
+# governs and this option is irrelevant.
+CONF_RESYNC_COMBINE_MODE = "resync_combine_mode"  # one of RESYNC_COMBINE_MODE_*
+RESYNC_COMBINE_MODE_AND = "and"  # both thresholds must be exceeded
+RESYNC_COMBINE_MODE_OR = "or"  # either threshold triggers
+DEFAULT_RESYNC_COMBINE_MODE = RESYNC_COMBINE_MODE_AND
 CONF_START_TIME = "start_time"  # active-window start "HH:MM:SS"
 CONF_START_ENTITY = "start_entity"  # input_datetime overriding start_time
 CONF_END_TIME = "end_time"  # active-window end "HH:MM:SS"
@@ -1336,6 +1352,10 @@ _RANGE_RESYNC_TRAVEL_THRESHOLD = (
     0,
     1000,
 )  # CONF_RESYNC_TRAVEL_THRESHOLD, percent of travel
+_RANGE_RESYNC_MOVEMENT_THRESHOLD = (
+    0,
+    100,
+)  # CONF_RESYNC_MOVEMENT_THRESHOLD, count of moves
 
 # Manual override.
 _RANGE_MANUAL_THRESHOLD = (0, 99)  # CONF_MANUAL_THRESHOLD, percent

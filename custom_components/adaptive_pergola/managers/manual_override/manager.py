@@ -75,6 +75,7 @@ class AdaptivePergolaManager:
         detector: OverrideDetector | None = None,
         on_engaged: Callable[[str], None] | None = None,
         on_cleared: Callable[[list[str]], None] | None = None,
+        on_manual_move: Callable[[str], None] | None = None,
     ) -> None:
         """Initialize the AdaptivePergolaManager.
 
@@ -90,6 +91,10 @@ class AdaptivePergolaManager:
                 transitions into manual override via a detection channel.
             on_cleared: Callback fired with a list of entity_ids whenever
                 manual override is cleared (reset or auto-expiry).
+            on_manual_move: Callback fired with the entity_id on *every*
+                detected manual move (not only the not-manual→manual edge), so
+                successive user jogs are each counted. Wired to the end-stop
+                re-sync movement counter.
 
         """
         self.hass = hass
@@ -121,6 +126,7 @@ class AdaptivePergolaManager:
         )
         self._on_engaged = on_engaged
         self._on_cleared = on_cleared
+        self._on_manual_move = on_manual_move
         # Last ACP command time per entity (float UTC timestamp), feeding the
         # ``seconds_since_command`` context field for time-based detectors.
         self._last_command_at: dict[str, float] = {}
@@ -135,10 +141,13 @@ class AdaptivePergolaManager:
         *,
         on_engaged: Callable[[str], None] | None = None,
         on_cleared: Callable[[list[str]], None] | None = None,
+        on_manual_move: Callable[[str], None] | None = None,
     ) -> None:
         """Register edge-transition callbacks after construction."""
         self._on_engaged = on_engaged
         self._on_cleared = on_cleared
+        if on_manual_move is not None:
+            self._on_manual_move = on_manual_move
 
     def set_acp_context_predicate(self, fn: Callable[[str | None], bool]) -> None:
         """Register the predicate that recognises ACP-originated context ids."""
@@ -312,6 +321,13 @@ class AdaptivePergolaManager:
             was_manual = self.is_cover_manual(entity_id)
             self.mark_manual_control(entity_id)
             set_timestamp()
+            # Count every detected manual move — including repeat jogs while the
+            # cover is already under override — toward the end-stop re-sync
+            # movement counter. ACP-commanded moves never reach here (they are
+            # rejected upstream by wait-for-target / grace / ACP-context), so
+            # this does not double-count the apply_position accounting.
+            if self._on_manual_move is not None:
+                self._on_manual_move(entity_id)
             if not was_manual:
                 self._detector.on_marked(entity_id)
                 if self._on_engaged is not None:

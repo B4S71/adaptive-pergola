@@ -291,6 +291,35 @@ set_automation_timing:
           step: 5
           mode: box
           unit_of_measurement: "%"
+    resync_movement_threshold:
+      name: End-stop re-sync movement threshold
+      description: >-
+        Number of discrete moves since the last end-stop reference after which
+        a re-sync detour fires — counting each move as one regardless of size
+        (a single 50% jog is 1, five 10% jogs are 5). Both ACP-commanded and
+        manual moves count (0–100, 0/unset = disabled). Combine with the travel
+        threshold via resync_combine_mode.
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          mode: box
+          unit_of_measurement: "moves"
+    resync_combine_mode:
+      name: End-stop re-sync combine mode
+      description: >-
+        How the travel-% and movement-count thresholds combine when BOTH are
+        set. "and" (default) re-syncs only once both are exceeded; "or" re-syncs
+        as soon as either is. Irrelevant when only one threshold is configured.
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - value: "and"
+              label: Both thresholds (AND)
+            - value: "or"
+              label: Either threshold (OR)
     resync_endstop_mode:
       name: End-stop re-sync direction
       description: >-

@@ -109,7 +109,10 @@ from .const import (
     DEFAULT_TEMPLATE_COMBINE_MODE,
     MOTION_TIMEOUT_MODE_HOLD,
     MOTION_TIMEOUT_MODE_RETURN,
+    DEFAULT_RESYNC_COMBINE_MODE,
     DEFAULT_RESYNC_ENDSTOP_MODE,
+    RESYNC_COMBINE_MODE_AND,
+    RESYNC_COMBINE_MODE_OR,
     RESYNC_ENDSTOP_MODE_CLOSE,
     RESYNC_ENDSTOP_MODE_NEAREST,
     RESYNC_ENDSTOP_MODE_OPEN,
@@ -119,7 +122,9 @@ from .const import (
     CONF_POSITION_TOLERANCE,
     CONF_PRESENCE_ENTITY,
     CONF_PRESENCE_TEMPLATE,
+    CONF_RESYNC_COMBINE_MODE,
     CONF_RESYNC_ENDSTOP_MODE,
+    CONF_RESYNC_MOVEMENT_THRESHOLD,
     CONF_RESYNC_TRAVEL_THRESHOLD,
     CONF_RETURN_SUNSET,
     CONF_SENSOR_TYPE,
@@ -520,6 +525,30 @@ AUTOMATION_SCHEMA = vol.Schema(
                 step=5,
                 mode=selector.NumberSelectorMode.BOX,
                 unit_of_measurement="%",
+            )
+        ),
+        # Movement-count re-sync: number of discrete moves since the last
+        # end stop. Cleared = disabled; stripped by optional_entities().
+        vol.Optional(CONF_RESYNC_MOVEMENT_THRESHOLD): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=100,
+                step=1,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="moves",
+            )
+        ),
+        # How the two thresholds combine when both are set (and / or).
+        vol.Optional(
+            CONF_RESYNC_COMBINE_MODE, default=DEFAULT_RESYNC_COMBINE_MODE
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    RESYNC_COMBINE_MODE_AND,
+                    RESYNC_COMBINE_MODE_OR,
+                ],
+                mode=selector.SelectSelectorMode.LIST,
+                translation_key="resync_combine_mode",
             )
         ),
         # Which end stop the re-sync detour drives to (0, 100, or nearest).
@@ -3004,7 +3033,12 @@ class ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         """Manage automation options."""
         if user_input is not None:
             self.optional_entities(
-                [CONF_START_ENTITY, CONF_END_ENTITY, CONF_RESYNC_TRAVEL_THRESHOLD],
+                [
+                    CONF_START_ENTITY,
+                    CONF_END_ENTITY,
+                    CONF_RESYNC_TRAVEL_THRESHOLD,
+                    CONF_RESYNC_MOVEMENT_THRESHOLD,
+                ],
                 user_input,
             )
             self.config.update(user_input)
@@ -3434,7 +3468,12 @@ class OptionsFlowHandler(OptionsFlow):
         """Manage automation options."""
         if user_input is not None:
             self.optional_entities(
-                [CONF_START_ENTITY, CONF_END_ENTITY, CONF_RESYNC_TRAVEL_THRESHOLD],
+                [
+                    CONF_START_ENTITY,
+                    CONF_END_ENTITY,
+                    CONF_RESYNC_TRAVEL_THRESHOLD,
+                    CONF_RESYNC_MOVEMENT_THRESHOLD,
+                ],
                 user_input,
             )
             # A cleared TimeSelector either omits the key or coerces to the blank

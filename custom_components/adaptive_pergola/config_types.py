@@ -700,6 +700,12 @@ class TrackingSlice:
     # Accumulated-travel end-stop re-sync threshold (percent of travel);
     # None/0 = disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
     resync_travel_threshold: int | None = None
+    # Movement-count end-stop re-sync threshold (number of discrete moves);
+    # None/0 = disabled. See CONF_RESYNC_MOVEMENT_THRESHOLD.
+    resync_movement_threshold: int | None = None
+    # How the travel and movement thresholds combine when both are set:
+    # "and" (default) or "or". See CONF_RESYNC_COMBINE_MODE.
+    resync_combine_mode: str = "and"
     # Which end stop the re-sync detour drives to: "nearest" (default), "close"
     # (always 0) or "open" (always 100). See CONF_RESYNC_ENDSTOP_MODE.
     resync_endstop_mode: str = "nearest"
@@ -777,7 +783,9 @@ class RuntimeConfig:
             CONF_MOTION_TIMEOUT,
             CONF_OPEN_CLOSE_THRESHOLD,
             CONF_POSITION_TOLERANCE,
+            CONF_RESYNC_COMBINE_MODE,
             CONF_RESYNC_ENDSTOP_MODE,
+            CONF_RESYNC_MOVEMENT_THRESHOLD,
             CONF_RESYNC_TRAVEL_THRESHOLD,
             CONF_START_ENTITY,
             CONF_START_TIME,
@@ -809,6 +817,7 @@ class RuntimeConfig:
             DEFAULT_MAX_COVERAGE_STEPS,
             DEFAULT_MINIMIZE_MOVEMENTS,
             DEFAULT_MOTION_TIMEOUT,
+            DEFAULT_RESYNC_COMBINE_MODE,
             DEFAULT_RESYNC_ENDSTOP_MODE,
             DEFAULT_VENETIAN_BACKROTATE_PUBLISH_LAG_SECONDS,
             DEFAULT_VENETIAN_MODE,
@@ -859,6 +868,12 @@ class RuntimeConfig:
                 ),
                 resync_travel_threshold=(
                     int(options.get(CONF_RESYNC_TRAVEL_THRESHOLD) or 0) or None
+                ),
+                resync_movement_threshold=(
+                    int(options.get(CONF_RESYNC_MOVEMENT_THRESHOLD) or 0) or None
+                ),
+                resync_combine_mode=options.get(
+                    CONF_RESYNC_COMBINE_MODE, DEFAULT_RESYNC_COMBINE_MODE
                 ),
                 resync_endstop_mode=options.get(
                     CONF_RESYNC_ENDSTOP_MODE, DEFAULT_RESYNC_ENDSTOP_MODE

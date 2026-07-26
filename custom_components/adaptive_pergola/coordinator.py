@@ -84,6 +84,7 @@ from .const import (
     CUSTOM_POSITION_SLOTS,
     DEFAULT_DEBUG_EVENT_BUFFER_SIZE,
     DEFAULT_MANUAL_OVERRIDE_STRATEGY,
+    DEFAULT_RESYNC_COMBINE_MODE,
     DEFAULT_TRANSIT_TIMEOUT_SECONDS,
     DIAG_CACHE_KEY,
     DOMAIN,
@@ -442,7 +443,10 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         # every current and future detector inherits this without coordinator
         # changes. The ACP-origin predicate lets detectors distinguish
         # ACP-issued context ids from genuine user actions.
-        self.manager.set_transition_callbacks(on_engaged=self._cmd_svc.discard_target)
+        self.manager.set_transition_callbacks(
+            on_engaged=self._cmd_svc.discard_target,
+            on_manual_move=self._cmd_svc.note_manual_movement,
+        )
         self.manager.set_acp_context_predicate(self._cmd_svc.was_acp_position_context)
 
         # Late-bind cover-type policy dependencies (e.g. VenetianPolicy
@@ -1552,6 +1556,10 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             # that bind _build_position_context directly) may lack the
             # attribute — absent means the re-sync feature is off.
             resync_travel_threshold=getattr(self, "resync_travel_threshold", None),
+            resync_movement_threshold=getattr(self, "resync_movement_threshold", None),
+            resync_combine_mode=getattr(
+                self, "resync_combine_mode", DEFAULT_RESYNC_COMBINE_MODE
+            ),
             resync_endstop_mode=getattr(
                 self, "resync_endstop_mode", RESYNC_ENDSTOP_MODE_NEAREST
             ),
@@ -2047,6 +2055,8 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         self.min_change = rc.tracking.min_change
         self.time_threshold = rc.tracking.time_threshold
         self.resync_travel_threshold = rc.tracking.resync_travel_threshold
+        self.resync_movement_threshold = rc.tracking.resync_movement_threshold
+        self.resync_combine_mode = rc.tracking.resync_combine_mode
         self.resync_endstop_mode = rc.tracking.resync_endstop_mode
         self.manual_reset = rc.manual_override.reset
         self.manual_duration = rc.manual_override.duration

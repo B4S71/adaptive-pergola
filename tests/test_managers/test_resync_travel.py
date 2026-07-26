@@ -41,7 +41,13 @@ def svc(mock_hass):
     )
 
 
-def _ctx(threshold: int | None, endstop_mode: str = "nearest") -> PositionContext:
+def _ctx(
+    threshold: int | None,
+    endstop_mode: str = "nearest",
+    *,
+    movement_threshold: int | None = None,
+    combine_mode: str = "and",
+) -> PositionContext:
     """PositionContext that passes every gate, with the resync threshold set."""
     return PositionContext(
         auto_control=True,
@@ -51,6 +57,8 @@ def _ctx(threshold: int | None, endstop_mode: str = "nearest") -> PositionContex
         time_threshold=0,
         special_positions=[0, 100],
         resync_travel_threshold=threshold,
+        resync_movement_threshold=movement_threshold,
+        resync_combine_mode=combine_mode,
         resync_endstop_mode=endstop_mode,
     )
 
@@ -71,6 +79,8 @@ async def _apply(
     threshold,
     service_name="set_cover_tilt_position",
     endstop_mode="nearest",
+    movement_threshold=None,
+    combine_mode="and",
 ):
     """Run apply_position with all gates green and a stubbed service route."""
     _stub_state(mock_hass, current)
@@ -90,7 +100,15 @@ async def _apply(
         patch(f"{MOD}.asyncio.sleep", new=AsyncMock()),
     ):
         return await svc.apply_position(
-            "cover.test", target, "solar", _ctx(threshold, endstop_mode)
+            "cover.test",
+            target,
+            "solar",
+            _ctx(
+                threshold,
+                endstop_mode,
+                movement_threshold=movement_threshold,
+                combine_mode=combine_mode,
+            ),
         )
 
 
@@ -465,3 +483,237 @@ def test_resolve_resync_endstop(mode, nearest_to, expected):
     )
 
     assert resolve_resync_endstop(mode, nearest_to) == expected
+
+
+# --- movement-count trigger + combine mode -----------------------------------
+
+
+@pytest.mark.parametrize(
+    (
+        "travel_since",
+        "planned",
+        "travel_threshold",
+        "movements_since",
+        "movement_threshold",
+        "combine_mode",
+        "expected",
+    ),
+    [
+        # movement arm only (the upcoming move counts as one)
+        (0, 0, None, 3, 4, "and", True),  # 3+1=4 >= 4 → fires (only arm)
+        (0, 0, None, 3, 4, "or", True),  # 4 >= 4 → fires (only arm)
+        (0, 0, None, 2, 4, "and", False),  # 2+1=3 < 4 → no
+        # travel arm only
+        (19, 2, 20, 0, None, "and", True),  # 21 >= 20
+        (5, 2, 20, 0, None, "and", False),  # 7 < 20
+        # both set, AND → both must fire
+        (19, 2, 20, 5, 4, "and", True),  # travel 21>=20 AND moves 6>=4
+        (5, 2, 20, 5, 4, "and", False),  # travel 7<20 → AND fails
+        (19, 2, 20, 1, 4, "and", False),  # moves 2<4 → AND fails
+        # both set, OR → either fires
+        (5, 2, 20, 5, 4, "or", True),  # moves 6>=4
+        (19, 2, 20, 1, 4, "or", True),  # travel 21>=20
+        (5, 2, 20, 1, 4, "or", False),  # neither
+        # neither configured → off
+        (500, 50, None, 500, None, "and", False),
+    ],
+)
+def test_resync_should_trigger(
+    travel_since,
+    planned,
+    travel_threshold,
+    movements_since,
+    movement_threshold,
+    combine_mode,
+    expected,
+):
+    """The pure combine-decision honours each arm and the AND/OR mode."""
+    from custom_components.adaptive_pergola.managers.cover_command import (
+        resync_should_trigger,
+    )
+
+    assert (
+        resync_should_trigger(
+            travel_since=travel_since,
+            planned=planned,
+            travel_threshold=travel_threshold,
+            movements_since=movements_since,
+            movement_threshold=movement_threshold,
+            combine_mode=combine_mode,
+        )
+        is expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("travel_since", "expected_first_at_4th"),
+    [(0, True)],
+)
+def test_resync_should_trigger_counts_current_move(travel_since, expected_first_at_4th):
+    """The upcoming move counts as one: threshold 4 fires on the 4th move."""
+    from custom_components.adaptive_pergola.managers.cover_command import (
+        resync_should_trigger,
+    )
+
+    def fires(moves_done):
+        return resync_should_trigger(
+            travel_since=travel_since,
+            planned=0,
+            travel_threshold=None,
+            movements_since=moves_done,
+            movement_threshold=4,
+            combine_mode="and",
+        )
+
+    assert [fires(n) for n in range(5)] == [False, False, False, True, True]
+
+
+@pytest.mark.asyncio
+async def test_midrange_moves_increment_movement_counter(svc, mock_hass):
+    """Each mid-range leg adds one to the movement counter, regardless of size."""
+    await _apply(svc, mock_hass, current=40, target=90, threshold=None)  # 50% jog
+    assert svc.state("cover.test").movements_since_resync == 1
+    await _apply(svc, mock_hass, current=90, target=89, threshold=None)  # 1% jog
+    assert svc.state("cover.test").movements_since_resync == 2
+
+
+@pytest.mark.asyncio
+async def test_endpoint_move_resets_movement_counter(svc, mock_hass):
+    """Landing on an end stop resets the movement counter."""
+    svc.state("cover.test").movements_since_resync = 7
+    await _apply(svc, mock_hass, current=40, target=100, threshold=None)
+    assert svc.state("cover.test").movements_since_resync == 0
+
+
+@pytest.mark.asyncio
+async def test_leg_departing_endstop_resets_movement_counter(svc, mock_hass):
+    """A move starting AT an end stop resets movements (fresh reference)."""
+    svc.state("cover.test").movements_since_resync = 5
+    await _apply(svc, mock_hass, current=0, target=37, threshold=None)
+    assert svc.state("cover.test").movements_since_resync == 0
+
+
+@pytest.mark.asyncio
+async def test_detour_fires_on_movement_threshold_alone(svc, mock_hass):
+    """Five small jogs trigger a detour on movement count even at low travel."""
+    st = svc.state("cover.test")
+    st.movements_since_resync = 3  # this move is the 4th
+    st.travel_since_resync = 6  # summed travel stays modest
+    with patch.object(svc, "_at_target", return_value=True):
+        outcome, _ = await _apply(
+            svc,
+            mock_hass,
+            current=90,
+            target=92,
+            threshold=None,  # travel arm disabled
+            movement_threshold=4,
+        )
+    assert outcome == "sent"
+    assert mock_hass.services.async_call.await_count == 2  # detour + real move
+    assert svc.state("cover.test").movements_since_resync == 0
+
+
+@pytest.mark.asyncio
+async def test_no_detour_below_movement_threshold(svc, mock_hass):
+    """Below the move count and with no travel arm: one direct call."""
+    st = svc.state("cover.test")
+    st.movements_since_resync = 1  # 1+1=2 < 4
+    st.travel_since_resync = 500
+    outcome, _ = await _apply(
+        svc, mock_hass, current=90, target=92, threshold=None, movement_threshold=4
+    )
+    assert outcome == "sent"
+    assert mock_hass.services.async_call.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_combine_and_requires_both_arms(svc, mock_hass):
+    """AND: a satisfied move count alone does not detour when travel is low."""
+    st = svc.state("cover.test")
+    st.movements_since_resync = 9  # move arm satisfied
+    st.travel_since_resync = 5  # travel arm not (5+2 < 20)
+    outcome, _ = await _apply(
+        svc,
+        mock_hass,
+        current=90,
+        target=92,
+        threshold=20,
+        movement_threshold=4,
+        combine_mode="and",
+    )
+    assert outcome == "sent"
+    assert mock_hass.services.async_call.await_count == 1  # no detour
+
+
+@pytest.mark.asyncio
+async def test_combine_or_fires_on_either_arm(svc, mock_hass):
+    """OR: a satisfied move count detours even when travel is low."""
+    st = svc.state("cover.test")
+    st.movements_since_resync = 9
+    st.travel_since_resync = 5
+    with patch.object(svc, "_at_target", return_value=True):
+        outcome, _ = await _apply(
+            svc,
+            mock_hass,
+            current=90,
+            target=92,
+            threshold=20,
+            movement_threshold=4,
+            combine_mode="or",
+        )
+    assert outcome == "sent"
+    assert mock_hass.services.async_call.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_snapshot_and_diagnostics_expose_movement_counter(svc, mock_hass):
+    """Both diagnostic surfaces carry the movement counter."""
+    await _apply(svc, mock_hass, current=40, target=50, threshold=None)
+    assert svc.state("cover.test").movements_since_resync == 1
+    assert svc.get_entity_state_snapshot("cover.test")["movements_since_resync"] == 1
+    assert svc.resync_diagnostics("cover.test")["movements_since_resync"] == 1
+
+
+# --- manual-move counting (note_manual_movement) ------------------------------
+
+
+def test_note_manual_movement_increments_for_midrange(svc, mock_hass):
+    """A manual move that settles mid-range adds one to the counter."""
+    with patch.object(svc, "_get_current_position", return_value=55):
+        svc.note_manual_movement("cover.test")
+        svc.note_manual_movement("cover.test")
+    assert svc.state("cover.test").movements_since_resync == 2
+
+
+def test_note_manual_movement_resets_at_endstop(svc, mock_hass):
+    """A manual move landing on 0/100 re-references — reset both counters."""
+    st = svc.state("cover.test")
+    st.movements_since_resync = 4
+    st.travel_since_resync = 40
+    with patch.object(svc, "_get_current_position", return_value=100):
+        svc.note_manual_movement("cover.test")
+    assert st.movements_since_resync == 0
+    assert st.travel_since_resync == 0
+    assert svc.resync_diagnostics("cover.test")["last_resync_time"] is not None
+
+
+@pytest.mark.asyncio
+async def test_note_manual_movement_then_acp_move_detours(svc, mock_hass):
+    """Manual jogs accumulate; the next ACP move detours once the count is met."""
+    with patch.object(svc, "_get_current_position", return_value=55):
+        for _ in range(5):  # five manual jogs
+            svc.note_manual_movement("cover.test")
+    assert svc.state("cover.test").movements_since_resync == 5
+
+    # threshold 4 → the next ACP move detours (5 already ≥ 4)
+    with patch.object(svc, "_at_target", return_value=True):
+        outcome, _ = await _apply(
+            svc,
+            mock_hass,
+            current=90,
+            target=92,
+            threshold=None,
+            movement_threshold=4,
+        )
+    assert outcome == "sent"
+    assert mock_hass.services.async_call.await_count == 2

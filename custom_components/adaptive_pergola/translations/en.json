@@ -206,6 +206,8 @@
           "delta_time": "Minimum interval between position changes",
           "resync_travel_threshold": "End-stop re-sync travel threshold",
           "resync_endstop_mode": "End-stop re-sync direction",
+          "resync_movement_threshold": "End-stop re-sync movement threshold",
+          "resync_combine_mode": "End-stop re-sync combine mode",
           "start_time": "Starting time",
           "start_entity": "Entity indicating starting time",
           "end_time": "End time",
@@ -218,6 +220,8 @@
           "delta_time": "Minimum time (minutes) between cover adjustments. Prevents rapid position changes. Typical values: 2-3 min (very responsive, may be noisy), 5-10 min (balanced, recommended), 15-20 min (slow, gentle adjustments). If sun changes rapidly (clouds, shadows), integration waits this long before adjusting again. Reduces motor wear and provides smoother operation. Minimum is 2 minutes.",
           "resync_travel_threshold": "Accumulated commanded travel (%) after which the next mid-range move first drives the cover to the nearest end stop (0/100) to re-reference the motor, then continues to the target. Compensates position drift on actuators that execute many small tracking steps imprecisely (e.g. louvered-roof slats). Example: 20% — after roughly ten 2% adjustments the next move detours via the end stop. Leave empty or 0 to disable.",
           "resync_endstop_mode": "Which end stop the re-sync detour drives to. 'Nearest end stop' (default, historical behaviour) picks whichever stop is closer — the move's target for the automatic detour, the current position for the manual Re-Sync button. 'Always fully closed' forces 0% and 'Always fully open' forces 100%, for actuators that only re-reference reliably at one end.",
+          "resync_movement_threshold": "Number of discrete moves since the last end-stop reference after which the next mid-range move detours via an end stop. Each move counts as one regardless of size — a single 50% jog is 1, five separate 10% (or 1%) jogs are 5 — so many small corrections trigger a re-sync even when their summed travel is modest. Both ACP-commanded and detected manual moves count; a move landing on 0/100 re-references the actuator and resets the counter. Leave empty or 0 to disable.",
+          "resync_combine_mode": "How the travel-percent and movement-count thresholds combine when both are set. 'Both thresholds (AND)' (default) re-syncs only once both are exceeded; 'Either threshold (OR)' re-syncs as soon as either is. Irrelevant when only one threshold is configured.",
           "start_time": "Don't start automatic control before this time (24-hour format). Use this to sleep in without morning blinds (set to 08:00 or later), match your routine (set to when you wake up), or leave blank to start at sunrise. Example: '07:30' means automatic control begins at 7:30 AM. Manual control still works before this time.",
           "start_entity": "Entity representing starting time state, overriding the fixed start time set above. Useful for automating the start time with an entity (e.g., sensor that provides wake-up time based on calendar or sleep tracking).",
           "end_time": "Stop automatic control after this time (24-hour format). Use this to keep evening privacy (set to 18:00 or 19:00), return to default before bed, or leave blank to continue until sunset. Example: '20:00' means automatic control stops at 8:00 PM. Manual control still works after this time.",
@@ -644,6 +648,8 @@
           "delta_time": "Minimum interval between position changes",
           "resync_travel_threshold": "End-stop re-sync travel threshold",
           "resync_endstop_mode": "End-stop re-sync direction",
+          "resync_movement_threshold": "End-stop re-sync movement threshold",
+          "resync_combine_mode": "End-stop re-sync combine mode",
           "start_time": "Starting time",
           "start_entity": "Entity indicating starting time",
           "end_time": "End time",
@@ -656,6 +662,8 @@
           "delta_time": "Minimum time (minutes) between cover adjustments. Prevents rapid position changes. Typical values: 2-3 min (very responsive, may be noisy), 5-10 min (balanced, recommended), 15-20 min (slow, gentle adjustments). If sun changes rapidly (clouds, shadows), integration waits this long before adjusting again. Reduces motor wear and provides smoother operation. Minimum is 2 minutes.",
           "resync_travel_threshold": "Accumulated commanded travel (%) after which the next mid-range move first drives the cover to the nearest end stop (0/100) to re-reference the motor, then continues to the target. Compensates position drift on actuators that execute many small tracking steps imprecisely (e.g. louvered-roof slats). Example: 20% — after roughly ten 2% adjustments the next move detours via the end stop. Leave empty or 0 to disable.",
           "resync_endstop_mode": "Which end stop the re-sync detour drives to. 'Nearest end stop' (default, historical behaviour) picks whichever stop is closer — the move's target for the automatic detour, the current position for the manual Re-Sync button. 'Always fully closed' forces 0% and 'Always fully open' forces 100%, for actuators that only re-reference reliably at one end.",
+          "resync_movement_threshold": "Number of discrete moves since the last end-stop reference after which the next mid-range move detours via an end stop. Each move counts as one regardless of size — a single 50% jog is 1, five separate 10% (or 1%) jogs are 5 — so many small corrections trigger a re-sync even when their summed travel is modest. Both ACP-commanded and detected manual moves count; a move landing on 0/100 re-references the actuator and resets the counter. Leave empty or 0 to disable.",
+          "resync_combine_mode": "How the travel-percent and movement-count thresholds combine when both are set. 'Both thresholds (AND)' (default) re-syncs only once both are exceeded; 'Either threshold (OR)' re-syncs as soon as either is. Irrelevant when only one threshold is configured.",
           "start_time": "Don't start automatic control before this time (24-hour format). Use this to sleep in without morning blinds (set to 08:00 or later), match your routine (set to when you wake up), or leave blank to start at sunrise. Example: '07:30' means automatic control begins at 7:30 AM. Manual control still works before this time.",
           "start_entity": "Entity representing starting time state, overriding the fixed start time set above. Useful for automating the start time with an entity (e.g., sensor that provides wake-up time based on calendar or sleep tracking).",
           "end_time": "Stop automatic control after this time (24-hour format). Use this to keep evening privacy (set to 18:00 or 19:00), return to default before bed, or leave blank to continue until sunset. Example: '20:00' means automatic control stops at 8:00 PM. Manual control still works after this time.",
@@ -1396,6 +1404,12 @@
         "close": "Always fully closed (0%)",
         "open": "Always fully open (100%)"
       }
+    },
+    "resync_combine_mode": {
+      "options": {
+        "and": "Both thresholds (AND)",
+        "or": "Either threshold (OR)"
+      }
     }
   },
   "services": {
@@ -1514,6 +1528,14 @@
         "resync_travel_threshold": {
           "name": "End-stop re-sync travel threshold",
           "description": "Accumulated commanded travel (%) after which the next mid-range move detours via the nearest mechanical end stop (0/100) to re-reference a drifting actuator (0–1000, 0/unset = disabled)."
+        },
+        "resync_movement_threshold": {
+          "name": "End-stop re-sync movement threshold",
+          "description": "Number of discrete moves since the last end-stop reference after which a re-sync detour fires, counting each move as one regardless of size (a single 50% jog is 1, five 10% jogs are 5). Both ACP-commanded and manual moves count (0–100, 0/unset = disabled)."
+        },
+        "resync_combine_mode": {
+          "name": "End-stop re-sync combine mode",
+          "description": "How the travel-% and movement-count thresholds combine when both are set: 'and' (default, both must be exceeded) or 'or' (either triggers). Irrelevant when only one threshold is configured."
         },
         "resync_endstop_mode": {
           "name": "End-stop re-sync direction",
