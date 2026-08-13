@@ -29,6 +29,7 @@ from ..const import (
     CONF_LR_FOOTPRINT_Y,
     CONF_LR_LOW_SUN_POSITION,
     CONF_LR_MAX_LIGHT_POSITION,
+    CONF_LR_PAST_AXIS_SAFETY_DEG,
     CONF_LR_PLANE_PITCH,
     CONF_LR_PROTECTED_HEIGHT,
     CONF_LR_ROOF_HEIGHT,
@@ -37,6 +38,7 @@ from ..const import (
     CONF_LR_SHADE_EXT_AZIMUTH_2,
     CONF_LR_SHADE_EXT_DISTANCE_1,
     CONF_LR_SHADE_EXT_DISTANCE_2,
+    CONF_LR_SHADE_MARGIN_CM,
     CONF_LR_SLAT_CHORD,
     CONF_LR_SLAT_SPACING,
     CONF_LR_SLAT_THICKNESS,
@@ -53,10 +55,12 @@ from ..const import (
     DEFAULT_LR_AXIS_AZIMUTH,
     DEFAULT_LR_FOOTPRINT_X,
     DEFAULT_LR_FOOTPRINT_Y,
+    DEFAULT_LR_PAST_AXIS_SAFETY_DEG,
     DEFAULT_LR_PLANE_PITCH,
     DEFAULT_LR_PROTECTED_HEIGHT,
     DEFAULT_LR_ROOF_HEIGHT,
     DEFAULT_LR_SHADE_AIRFLOW,
+    DEFAULT_LR_SHADE_MARGIN_CM,
     DEFAULT_LR_SLAT_CHORD,
     DEFAULT_LR_SLAT_SPACING,
     DEFAULT_LR_SLAT_THICKNESS,
@@ -65,8 +69,10 @@ from ..const import (
     _RANGE_LR_AXIS_AZIMUTH,
     _RANGE_LR_LOW_SUN_POSITION,
     _RANGE_LR_MAX_LIGHT_POSITION,
+    _RANGE_LR_PAST_AXIS_SAFETY_DEG,
     _RANGE_LR_SHADE_EXT_AZIMUTH,
     _RANGE_LR_SHADE_EXT_DISTANCE,
+    _RANGE_LR_SHADE_MARGIN_CM,
     _RANGE_LR_TILT_VERTICAL_PCT,
     _RANGE_MORNING_HOLD,
     _RANGE_MORNING_LEAD,
@@ -112,6 +118,9 @@ LOUVERED_ROOF_SLAT_KEYS: tuple[str, ...] = (
     CONF_LR_SLAT_CHORD,
     CONF_LR_SLAT_THICKNESS,
     CONF_LR_SLAT_SPACING,
+    # Also stored in centimetres, so it converts with the slat dimensions it is
+    # compared against (the shadow overlap is a slat-scale length).
+    CONF_LR_SHADE_MARGIN_CM,
 )
 
 
@@ -272,6 +281,24 @@ def geometry_louvered_roof_schema(hass: HomeAssistant | None = None) -> vol.Sche
             vol.Optional(CONF_LR_SHADE_EXT_DISTANCE_2): _metre_selector(
                 *_RANGE_LR_SHADE_EXT_DISTANCE
             ),
+            # Shade safety margins — how far past the bare grazing pose the shade
+            # angle sits so actuator tolerance and slat play cannot open a
+            # sun-line. Raise if light stripes appear, lower for more light and
+            # airflow. The cm margin applies to every shade pose; the degree
+            # margin only to the past-axis (morning/evening reopening) wing,
+            # where a low oblique sun stretches a grazing gap into a long line.
+            vol.Optional(
+                CONF_LR_SHADE_MARGIN_CM,
+                default=slat_default(DEFAULT_LR_SHADE_MARGIN_CM, hass),
+            ): slat_selector(
+                hass,
+                min_cm=_RANGE_LR_SHADE_MARGIN_CM[0],
+                max_cm=_RANGE_LR_SHADE_MARGIN_CM[1],
+            ),
+            vol.Optional(
+                CONF_LR_PAST_AXIS_SAFETY_DEG,
+                default=DEFAULT_LR_PAST_AXIS_SAFETY_DEG,
+            ): _deg_selector(*_RANGE_LR_PAST_AXIS_SAFETY_DEG),
             # Backs the "Shade airflow" runtime switch (option-backed). Shown here
             # too so config-flow users can set the default and so the key is a
             # valid live option for validation.

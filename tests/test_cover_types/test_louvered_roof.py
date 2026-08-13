@@ -99,6 +99,8 @@ def _build(
     slat_spacing: float = 20.0,
     tilt_calibration: tuple = (),
     shade_extensions: tuple = (),
+    shade_margin_cm: float = 1.9,
+    past_axis_safety_deg: float = 5.0,
     **cover_overrides,
 ) -> AdaptiveLouveredRoofCover:
     """Construct an AdaptiveLouveredRoofCover from flat kwargs."""
@@ -119,6 +121,8 @@ def _build(
         low_sun_position=low_sun_position,
         tilt_calibration=tilt_calibration,
         shade_extensions=shade_extensions,
+        shade_margin_cm=shade_margin_cm,
+        past_axis_safety_deg=past_axis_safety_deg,
     )
     return AdaptiveLouveredRoofCover(
         logger=MagicMock(),
@@ -1191,3 +1195,112 @@ class TestLowSunPosition:
         )
         # 35 % maps below vertical; converting back must return ~35 %.
         assert round(cover.calculate_percentage()) == pytest.approx(35, abs=1)
+
+
+# ---------------------------------------------------------------------------
+# Configurable shade safety margins
+# ---------------------------------------------------------------------------
+
+
+class TestConfigurableShadeMargins:
+    """The two safety margins are user options, not baked-in constants.
+
+    Defaults reproduce the previously hard-coded values (1.9 cm / 5°) so an
+    existing entry is unaffected; raising them closes the pose further (fewer
+    sun-lines), lowering them opens it (more light and airflow).
+    """
+
+    def test_defaults_match_the_legacy_constants(self) -> None:
+        """An unset config behaves exactly like the old fixed constants."""
+        from custom_components.adaptive_pergola.engine.covers.louvered_roof import (
+            _BLOCK_OVERLAP_MARGIN_CM,
+            _PAST_AXIS_SAFETY_DEG,
+        )
+
+        cover = _reporting_site(30.0, sol_azi=272.0, fov_right=180)
+        assert cover.shade_margin_cm == _BLOCK_OVERLAP_MARGIN_CM
+        assert cover.past_axis_safety_deg == _PAST_AXIS_SAFETY_DEG
+
+    def test_larger_margin_closes_the_tracking_side_pose(self) -> None:
+        """More overlap ⇒ a flatter (more closed) pinch at the axis end."""
+        base = _reporting_site(
+            30.0, sol_azi=272.0, fov_right=180, tilt_calibration=_SITE_CAL
+        )
+        wide = _reporting_site(
+            30.0,
+            sol_azi=272.0,
+            fov_right=180,
+            tilt_calibration=_SITE_CAL,
+            shade_margin_cm=4.0,
+        )
+        assert wide._delta_eff() > base._delta_eff()
+        assert wide.calculate_percentage() < base.calculate_percentage()
+        # Still a real blocking pose, just a safer one.
+        assert _block_margin(wide, wide.calculate_position()) >= 0.05
+
+    def test_zero_margin_falls_back_to_bare_grazing(self) -> None:
+        """0 cm reproduces the raw grazing half-angle (no safety inflation)."""
+        cover = _reporting_site(30.0, sol_azi=272.0, fov_right=180, shade_margin_cm=0.0)
+        assert cover._delta_eff() == pytest.approx(cover.blocking_half_angle, abs=1e-6)
+
+    def test_past_axis_angle_only_moves_the_reopening_wing(self) -> None:
+        """The degree margin steepens/flattens the evening wing exclusively."""
+        # Past-axis wing (evening reopening) — responds to the option.
+        evening_base = _reporting_site(
+            17.0, sol_azi=284.0, fov_right=180, tilt_calibration=_SITE_CAL
+        )
+        evening_safe = _reporting_site(
+            17.0,
+            sol_azi=284.0,
+            fov_right=180,
+            tilt_calibration=_SITE_CAL,
+            past_axis_safety_deg=15.0,
+        )
+        evening_base.calculate_position()
+        evening_safe.calculate_position()
+        assert evening_base._last_calc_details["far_side"] is True
+        assert evening_safe.calculate_percentage() < evening_base.calculate_percentage()
+
+        # Tracking side — the same option must NOT move it.
+        noon_base = _reporting_site(55.8, sol_azi=231.2, tilt_calibration=_SITE_CAL)
+        noon_safe = _reporting_site(
+            55.8,
+            sol_azi=231.2,
+            tilt_calibration=_SITE_CAL,
+            past_axis_safety_deg=15.0,
+        )
+        noon_base.calculate_position()
+        assert noon_base._last_calc_details["far_side"] is False
+        assert noon_safe.calculate_percentage() == noon_base.calculate_percentage()
+
+    def test_margins_surface_in_the_calc_trace(self) -> None:
+        """Diagnostics report the margins actually in force, not the defaults."""
+        cover = _reporting_site(
+            30.0,
+            sol_azi=272.0,
+            fov_right=180,
+            shade_margin_cm=3.5,
+            past_axis_safety_deg=12.0,
+        )
+        cover.calculate_position()
+        assert cover._last_calc_details["overlap_margin_cm"] == pytest.approx(3.5)
+        assert cover._last_calc_details["past_axis_safety_deg"] == pytest.approx(12.0)
+
+    def test_options_round_trip_through_config(self) -> None:
+        """The config-entry keys land on the dataclass fields."""
+        from custom_components.adaptive_pergola.config_types import LouveredRoofConfig
+        from custom_components.adaptive_pergola.const import (
+            CONF_LR_PAST_AXIS_SAFETY_DEG,
+            CONF_LR_SHADE_MARGIN_CM,
+        )
+
+        cfg = LouveredRoofConfig.from_options(
+            {CONF_LR_SHADE_MARGIN_CM: 3.5, CONF_LR_PAST_AXIS_SAFETY_DEG: 12}
+        )
+        assert cfg.shade_margin_cm == pytest.approx(3.5)
+        assert cfg.past_axis_safety_deg == pytest.approx(12.0)
+
+        # Absent keys fall back to the shipped defaults.
+        blank = LouveredRoofConfig.from_options({})
+        assert blank.shade_margin_cm == pytest.approx(1.9)
+        assert blank.past_axis_safety_deg == pytest.approx(5.0)

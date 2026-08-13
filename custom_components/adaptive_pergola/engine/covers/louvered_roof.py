@@ -76,10 +76,17 @@ _MIN_TRACK_ELEVATION_DEG = 1.0
 # world deviation (sun-position error, servo tolerance, slat play, the thin-slat
 # idealisation) lets the direct beam slip through. Instead we require the shadow
 # to fall a fixed distance PAST the next slat's edge — a constant projected
-# overlap in centimetres (the user's "1 cm of shadow on the next slat"), tuned so
-# the flat pinch at an axis end lands on the measured safe pose (≈13 % at due
-# west for the reporting site). A fixed-cm margin (not a fraction) matches the
-# physical mental model and stays safe where the gap is largest.
+# overlap in centimetres (the user's "1 cm of shadow on the next slat"). A
+# fixed-cm margin (not a fraction) matches the physical mental model and stays
+# safe where the gap is largest.
+#
+# Both margins are user-configurable (CONF_LR_SHADE_MARGIN_CM /
+# CONF_LR_PAST_AXIS_SAFETY_DEG); the constants below are the fallbacks used
+# when an ``lr_config`` is absent, and match the shipped defaults. Raise the
+# margins if sun-lines still appear, lower them for more light and airflow.
+#
+# Defaults tuned so the flat pinch at an axis end lands on the measured safe
+# pose (≈13 % at due west for the reporting site).
 _BLOCK_OVERLAP_MARGIN_CM = 1.9
 
 # Extra safety angle for the past-axis (morning/evening reopening) wing only:
@@ -153,6 +160,29 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         default position (night handling).
         """
         return self.valid_elevation and not self.sunset_valid
+
+    # ---- safety margins ---------------------------------------------------
+
+    @property
+    def shade_margin_cm(self) -> float:
+        """Configured overlap margin (cm), falling back to the module default.
+
+        Read through a property (not straight off ``lr_config``) so the engine
+        keeps working when constructed without a config — the calc trace and
+        several unit tests build bare covers.
+        """
+        value = getattr(self.lr_config, "shade_margin_cm", None)
+        if value is None:
+            return _BLOCK_OVERLAP_MARGIN_CM
+        return max(0.0, float(value))
+
+    @property
+    def past_axis_safety_deg(self) -> float:
+        """Configured past-axis extra flatness (deg), falling back to the default."""
+        value = getattr(self.lr_config, "past_axis_safety_deg", None)
+        if value is None:
+            return _PAST_AXIS_SAFETY_DEG
+        return max(0.0, float(value))
 
     # ---- geometry ---------------------------------------------------------
 
@@ -356,7 +386,7 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
             return 0.0
         phi_t = degrees(atan2(lr.slat_thickness, lr.slat_chord))
         gap = lr.slat_spacing * sin(radians(self.profile_angle))
-        arg = min(0.999999, max(0.0, (gap + _BLOCK_OVERLAP_MARGIN_CM) / r))
+        arg = min(0.999999, max(0.0, (gap + self.shade_margin_cm) / r))
         return max(0.0, degrees(asin(arg)) - phi_t)
 
     def _perpendicular_angle(self) -> float:
@@ -427,12 +457,13 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
         # beam; as the sun sets it rises past vertical, and there vertical itself
         # is the most-open blocking pose ``≤`` vertical (going past would imply the
         # sun from below). ``min(β − Δ_eff, vertical)`` captures both. Sits an
-        # extra ``_PAST_AXIS_SAFETY_DEG`` flatter than the bare grazing edge (low
-        # oblique sun magnifies a grazing gap into a visible line): the reopening
-        # is a little more closed (≈56 % vs 60 % at 19:00 on the reporting site)
-        # and reaches the vertical cap slightly later (less steep).
+        # extra ``past_axis_safety_deg`` flatter than the bare grazing edge (low
+        # oblique sun magnifies a grazing gap into a visible line): at the
+        # shipped 5° the reopening is a little more closed (≈56 % vs 60 % at
+        # 19:00 on the reporting site) and reaches the vertical cap slightly
+        # later (less steep). Raise the option to close it further.
         if abs(self.gamma_roof) > 90.0:
-            theta = min(beta - d_eff - _PAST_AXIS_SAFETY_DEG, vertical)
+            theta = min(beta - d_eff - self.past_axis_safety_deg, vertical)
             return max(lo, min(hi, theta))
 
         flat = beta - d_eff
@@ -505,7 +536,8 @@ class AdaptiveLouveredRoofCover(AdaptiveGeneralCover):
             "blocking_half_angle_deg": round(self.blocking_half_angle, 2),
             "delta_eff_deg": round(self._delta_eff(), 2),
             "perpendicular_deg": round(self._perpendicular_angle(), 2),
-            "overlap_margin_cm": _BLOCK_OVERLAP_MARGIN_CM,
+            "overlap_margin_cm": round(self.shade_margin_cm, 2),
+            "past_axis_safety_deg": round(self.past_axis_safety_deg, 2),
             "slat_angle_deg": round(theta, 2),
             "mode": mode,
             "needs_shade": mode == MODE_MAX_SHADE,

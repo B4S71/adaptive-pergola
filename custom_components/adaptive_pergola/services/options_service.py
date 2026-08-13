@@ -116,6 +116,8 @@ from ..const import (
     CONF_LR_ROOF_HEIGHT,
     CONF_LR_SHADE_AIRFLOW,
     CONF_LR_SLAT_CHORD,
+    CONF_LR_SHADE_MARGIN_CM,
+    CONF_LR_PAST_AXIS_SAFETY_DEG,
     CONF_LR_SLAT_SPACING,
     CONF_LR_SLAT_THICKNESS,
     CONF_LR_THETA_MAX,
@@ -144,6 +146,8 @@ from ..const import (
     _RANGE_LR_PLANE_PITCH,
     _RANGE_LR_PROTECTED_HEIGHT,
     _RANGE_LR_ROOF_HEIGHT,
+    _RANGE_LR_SHADE_MARGIN_CM,
+    _RANGE_LR_PAST_AXIS_SAFETY_DEG,
     _RANGE_LR_SLAT_CM,
     _RANGE_LR_SLAT_THICKNESS,
     _RANGE_LR_THETA,
@@ -455,6 +459,8 @@ FIELD_VALIDATORS: dict[str, Any] = {
     CONF_LR_MAX_LIGHT_POSITION: _num(*_RANGE_LR_MAX_LIGHT_POSITION),
     CONF_LR_LOW_SUN_POSITION: _num(*_RANGE_LR_LOW_SUN_POSITION),
     CONF_LR_AIRFLOW_BY_TEMP: _bool_v(),
+    CONF_LR_SHADE_MARGIN_CM: _num(*_RANGE_LR_SHADE_MARGIN_CM),
+    CONF_LR_PAST_AXIS_SAFETY_DEG: _num(*_RANGE_LR_PAST_AXIS_SAFETY_DEG),
     # Shading-extension arms + vertical-tilt mapping. These are UI-settable
     # louvered geometry that was never wired into the service allowlists;
     # they belong to the cover-type policy schema, not FIELD_SPECS, so the
@@ -914,6 +920,8 @@ _SECTION_GEOMETRY_LOUVERED = frozenset(
         CONF_LR_MAX_LIGHT_POSITION,
         CONF_LR_LOW_SUN_POSITION,
         CONF_LR_AIRFLOW_BY_TEMP,
+        CONF_LR_SHADE_MARGIN_CM,
+        CONF_LR_PAST_AXIS_SAFETY_DEG,
         CONF_LR_SHADE_EXT_AZIMUTH_1,
         CONF_LR_SHADE_EXT_AZIMUTH_2,
         CONF_LR_SHADE_EXT_DISTANCE_1,

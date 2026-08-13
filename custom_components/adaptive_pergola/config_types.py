@@ -479,6 +479,14 @@ class LouveredRoofConfig:
     theta_min: float = 0.0
     theta_max: float = 135.0
     shade_airflow: bool = True
+    # Shade safety margins — how far PAST the bare grazing pose the shade angle
+    # sits, so actuator tolerance / slat play / the thin-slat idealisation
+    # cannot open a sun-line. ``shade_margin_cm`` is projected shadow overlap
+    # onto the next slat (all poses); ``past_axis_safety_deg`` is extra
+    # flatness on the past-axis (morning/evening reopening) wing only, where a
+    # low oblique sun magnifies a grazing gap. Both 0 = bare grazing geometry.
+    shade_margin_cm: float = 1.9
+    past_axis_safety_deg: float = 5.0
     # Fixed tilt % to hold when no shading is needed, instead of the sun-tracking
     # max-light curve. None = track the sun (max-light). Replaces park_at_default.
     max_light_position: int | None = None
@@ -508,10 +516,12 @@ class LouveredRoofConfig:
             CONF_LR_FOOTPRINT_Y,
             CONF_LR_LOW_SUN_POSITION,
             CONF_LR_MAX_LIGHT_POSITION,
+            CONF_LR_PAST_AXIS_SAFETY_DEG,
             CONF_LR_PLANE_PITCH,
             CONF_LR_PROTECTED_HEIGHT,
             CONF_LR_ROOF_HEIGHT,
             CONF_LR_SHADE_AIRFLOW,
+            CONF_LR_SHADE_MARGIN_CM,
             CONF_LR_SLAT_CHORD,
             CONF_LR_SLAT_SPACING,
             CONF_LR_SLAT_THICKNESS,
@@ -520,10 +530,12 @@ class LouveredRoofConfig:
             DEFAULT_LR_AXIS_AZIMUTH,
             DEFAULT_LR_FOOTPRINT_X,
             DEFAULT_LR_FOOTPRINT_Y,
+            DEFAULT_LR_PAST_AXIS_SAFETY_DEG,
             DEFAULT_LR_PLANE_PITCH,
             DEFAULT_LR_PROTECTED_HEIGHT,
             DEFAULT_LR_ROOF_HEIGHT,
             DEFAULT_LR_SHADE_AIRFLOW,
+            DEFAULT_LR_SHADE_MARGIN_CM,
             DEFAULT_LR_SLAT_CHORD,
             DEFAULT_LR_SLAT_SPACING,
             DEFAULT_LR_SLAT_THICKNESS,
@@ -549,6 +561,10 @@ class LouveredRoofConfig:
             theta_max=_f(CONF_LR_THETA_MAX, DEFAULT_LR_THETA_MAX),
             shade_airflow=bool(
                 options.get(CONF_LR_SHADE_AIRFLOW, DEFAULT_LR_SHADE_AIRFLOW)
+            ),
+            shade_margin_cm=_f(CONF_LR_SHADE_MARGIN_CM, DEFAULT_LR_SHADE_MARGIN_CM),
+            past_axis_safety_deg=_f(
+                CONF_LR_PAST_AXIS_SAFETY_DEG, DEFAULT_LR_PAST_AXIS_SAFETY_DEG
             ),
             max_light_position=(
                 int(options[CONF_LR_MAX_LIGHT_POSITION])

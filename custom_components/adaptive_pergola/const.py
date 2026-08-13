@@ -142,6 +142,22 @@ CONF_LR_LOW_SUN_POSITION = "lr_low_sun_position"
 CONF_LR_AIRFLOW_BY_TEMP = (
     "lr_airflow_by_temp"  # drive airflow flavor from climate temps
 )
+# --- Shade safety margins -------------------------------------------------
+# The raw grazing shade pose sits EXACTLY on the blocking boundary: adjacent
+# slat shadows just touch, so any real-world deviation (actuator tolerance,
+# slat play, the thin-slat idealisation) lets a sun-line slip through. These
+# two knobs push the pose past that boundary; raise them if light stripes
+# still appear, lower them for more light/airflow.
+#
+# Overlap margin (cm): require the shadow to land this far ONTO the next slat
+# instead of merely reaching its edge. Applies to every shade pose via the
+# engine's ``_delta_eff``. 0 = grazing (no margin).
+CONF_LR_SHADE_MARGIN_CM = "lr_shade_margin_cm"
+# Extra flatness (deg) for the past-axis wing ONLY — the morning/evening
+# reopening, where the sun is low and oblique so a grazing gap stretches into
+# a long visible line. Sits this many degrees flatter than the bare grazing
+# edge. 0 = no extra angle beyond the overlap margin.
+CONF_LR_PAST_AXIS_SAFETY_DEG = "lr_past_axis_safety_deg"
 # Tilt-mapping calibration. The angle→% map is linear by default, but real
 # actuators are often nonlinear (a crank linkage that passes top-dead-centre at
 # vertical, so °/% changes there). This field is the tilt % at which the slats
@@ -173,6 +189,12 @@ DEFAULT_LR_THETA_MIN = 0  # degrees — single-ended: flat (0) is fully closed
 DEFAULT_LR_THETA_MAX = 135  # degrees — primary side reaches 135°
 DEFAULT_LR_SHADE_AIRFLOW = True  # airflow flavor by default
 DEFAULT_LR_AIRFLOW_BY_TEMP = False  # use the manual airflow flavor by default
+# Shade safety margins. Defaults preserve the previously hard-coded engine
+# constants, so an existing entry behaves identically until the user changes
+# them (tuned so the flat pinch at an axis end lands on the measured safe pose,
+# ≈13 % at due west, and the evening reopening on ≈56 % at 19:00).
+DEFAULT_LR_SHADE_MARGIN_CM = 1.9  # cm of shadow past the next slat's edge
+DEFAULT_LR_PAST_AXIS_SAFETY_DEG = 5.0  # degrees flatter on the past-axis wing
 CONF_FOV_LEFT = "fov_left"  # left half-FOV from azimuth, degrees 0-180
 CONF_FOV_RIGHT = "fov_right"  # right half-FOV from azimuth, degrees 0-180
 DEFAULT_FOV_LEFT = 90  # degrees; matches config flow default
@@ -1306,6 +1328,12 @@ _RANGE_LR_MAX_LIGHT_POSITION = (0, 100)  # CONF_LR_MAX_LIGHT_POSITION, % (blank=
 _RANGE_LR_LOW_SUN_POSITION = (0, 100)  # CONF_LR_LOW_SUN_POSITION, % (blank=pin at cap)
 _RANGE_LR_SHADE_EXT_AZIMUTH = (0, 359)  # CONF_LR_SHADE_EXT_AZIMUTH_*, degrees
 _RANGE_LR_SHADE_EXT_DISTANCE = (0.0, 30.0)  # CONF_LR_SHADE_EXT_DISTANCE_*, m (0=off)
+# CONF_LR_SHADE_MARGIN_CM, cm of shadow past the next slat (0 = bare grazing).
+# Capped at 10 cm: beyond roughly half a slat chord the margin dominates the
+# geometry and pins the pose flat all day.
+_RANGE_LR_SHADE_MARGIN_CM = (0.0, 10.0)
+# CONF_LR_PAST_AXIS_SAFETY_DEG, degrees flatter on the past-axis wing (0 = off).
+_RANGE_LR_PAST_AXIS_SAFETY_DEG = (0, 30)
 
 # Geometry — tilt / venetian slats.
 _RANGE_TILT_DEPTH = (0.1, 15.0)  # CONF_TILT_DEPTH, cm

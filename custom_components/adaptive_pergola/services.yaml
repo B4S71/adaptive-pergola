@@ -1107,6 +1107,36 @@ set_geometry:
           options:
             - mode1
             - mode2
+    lr_shade_margin_cm:
+      name: Shade overlap margin
+      description: >-
+        Louvered roof only. How far the slat shadow must fall ONTO the next
+        lamella instead of merely reaching its edge, in centimetres (0–10 cm,
+        canonical metric regardless of HA locale). This is the safety margin
+        that keeps sun-lines out despite actuator tolerance and slat play.
+        Raise it if light stripes still appear; lower it for more light and
+        airflow. 0 = bare grazing geometry (shadows just touch). Default 1.9.
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          mode: slider
+          unit_of_measurement: cm
+    lr_past_axis_safety_deg:
+      name: Past-axis safety angle
+      description: >-
+        Louvered roof only. Extra flatness in degrees applied ONLY on the
+        past-axis wing — the morning/evening reopening, where a low oblique sun
+        stretches a grazing gap into a long visible line (0–30°). Applied on top
+        of the shade overlap margin. 0 = no extra angle. Default 5.
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+          mode: slider
+          unit_of_measurement: "°"
 
 set_venetian:
   name: Set venetian options
