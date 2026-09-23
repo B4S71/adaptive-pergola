@@ -395,11 +395,6 @@ async def _trigger_async_apply_user_position(coord):
             "check_adaptive_time",
             new_callable=lambda: True,
         ),
-        _patch.object(
-            AdaptiveDataUpdateCoordinator,
-            "_is_glare_zone_enabled",
-            new=MagicMock(return_value=False),
-        ),
     ):
         await coord.async_apply_user_position(
             "cover.test", 42, trigger="set_position", force=True

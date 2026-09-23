@@ -1048,7 +1048,6 @@ class TestHandlerPriorities:
             "motion_timeout",
             "cloud_suppression",
             "climate",
-            "glare_zone",
             "solar",
         ]
 

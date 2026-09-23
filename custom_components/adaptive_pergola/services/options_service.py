@@ -57,7 +57,6 @@ from ..const import (
     CONF_FORCE_OVERRIDE_MIN_MODE,
     CONF_FORCE_OVERRIDE_POSITION,
     CONF_FORCE_OVERRIDE_SENSORS,
-    CONF_GLARE_ZONE_PRIORITY,
     CONF_HEIGHT_WIN,
     CONF_INTERP,
     CONF_INTERP_END,
@@ -610,13 +609,6 @@ FIELD_VALIDATORS: dict[str, Any] = {
         for slot_keys in CUSTOM_POSITION_SLOTS.values()
     },
     **{slot_keys["enabled"]: _bool_v() for slot_keys in CUSTOM_POSITION_SLOTS.values()},
-    # Glare zones 1–4 — name is free-form text; x/y/radius/z pull ranges from
-    # OPTION_RANGES (bounds mirror config_flow._build_glare_zones_schema).
-    **{
-        f"glare_zone_{i}_{axis}": _range(f"glare_zone_{i}_{axis}")
-        for i in range(1, 5)
-        for axis in ("x", "y", "radius", "z")
-    },
     # Motion
     CONF_MOTION_SENSORS: _entities_v(),
     CONF_MOTION_MEDIA_PLAYERS: _entities_v(),
@@ -681,7 +673,6 @@ FIELD_VALIDATORS: dict[str, Any] = {
     CONF_MOTION_TIMEOUT_PRIORITY: _range(CONF_MOTION_TIMEOUT_PRIORITY),
     CONF_CLOUD_SUPPRESSION_PRIORITY: _range(CONF_CLOUD_SUPPRESSION_PRIORITY),
     CONF_CLIMATE_PRIORITY: _range(CONF_CLIMATE_PRIORITY),
-    CONF_GLARE_ZONE_PRIORITY: _range(CONF_GLARE_ZONE_PRIORITY),
     CONF_SOLAR_PRIORITY: _range(CONF_SOLAR_PRIORITY),
 }
 
@@ -938,15 +929,6 @@ _SECTION_GEOMETRY_ALL = (
     | _SECTION_GEOMETRY_LOUVERED
 )
 
-_SECTION_VENETIAN = frozenset(
-    {
-        CONF_VENETIAN_POST_SETTLE_HOLD,
-        CONF_VENETIAN_TILT_SKIP_ABOVE,
-        CONF_VENETIAN_BACKROTATE_PUBLISH_LAG,
-        CONF_VENETIAN_MODE,
-    }
-)
-
 _SECTION_PIPELINE_PRIORITIES = frozenset(
     {
         CONF_WEATHER_PRIORITY,
@@ -954,7 +936,6 @@ _SECTION_PIPELINE_PRIORITIES = frozenset(
         CONF_MOTION_TIMEOUT_PRIORITY,
         CONF_CLOUD_SUPPRESSION_PRIORITY,
         CONF_CLIMATE_PRIORITY,
-        CONF_GLARE_ZONE_PRIORITY,
         CONF_SOLAR_PRIORITY,
     }
 )
@@ -974,7 +955,6 @@ ALL_SETTABLE_KEYS: frozenset[str] = (
     | _SECTION_BLIND_SPOT
     | _SECTION_INTERPOLATION
     | _SECTION_GEOMETRY_ALL
-    | _SECTION_VENETIAN
     | _SECTION_PIPELINE_PRIORITIES
     | frozenset(v for keys in CUSTOM_POSITION_SLOTS.values() for v in keys.values())
 )
@@ -1430,9 +1410,6 @@ def register_options_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, "set_geometry", _section_handler(_SECTION_GEOMETRY_ALL)
     )
-    hass.services.async_register(
-        DOMAIN, "set_venetian", _section_handler(_SECTION_VENETIAN)
-    )
 
     async def _custom_pos_handler(call: ServiceCall) -> None:
         await _handle_set_custom_position(hass, call)
@@ -1461,6 +1438,5 @@ OPTIONS_SERVICE_NAMES: tuple[str, ...] = (
     "set_blind_spot",
     "set_interpolation",
     "set_geometry",
-    "set_venetian",
     "set_option",
 )

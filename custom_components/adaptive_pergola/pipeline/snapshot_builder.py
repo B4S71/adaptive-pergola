@@ -1,8 +1,8 @@
 """Pipeline snapshot construction.
 
 `PipelineSnapshotBuilder` aggregates HA entity reads, options, manager state,
-and policy-derived glare-zone configuration into a single
-:class:`PipelineSnapshot` for the pipeline registry to evaluate.
+and policy-derived runtime config into a single :class:`PipelineSnapshot` for
+the pipeline registry to evaluate.
 
 It is composed by the coordinator and constructed once at coordinator
 initialisation.  The builder holds no per-cycle state: every value that
@@ -23,7 +23,6 @@ the same composed-class pattern that Phase B established with
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from collections.abc import Callable
 
 from homeassistant.const import ATTR_FRIENDLY_NAME
 
@@ -302,7 +301,6 @@ class PipelineSnapshotBuilder:
         weather_override_active: bool,
         in_time_window: bool,
         current_cover_position: int | None,
-        is_glare_zone_enabled: Callable[[int], bool],
         effective_default: int | None = None,
         is_sunset_active: bool | None = None,
         cover_capabilities: dict | None = None,
@@ -315,12 +313,6 @@ class PipelineSnapshotBuilder:
         ``async_apply_user_position`` (which evaluates a preemption check
         outside the update cycle) can still build a valid snapshot without
         knowing those values.
-
-        ``is_glare_zone_enabled(idx)`` returns the current state of the
-        per-instance glare-zone master switch for zone ``idx``.  The coordinator
-        owns those switch attributes (``glare_zone_0``, ``glare_zone_1`` …);
-        the builder reads them through this callable so it never reaches back
-        into ``coordinator.self``.
 
         ``cover_capabilities`` maps each bound entity_id to its
         ``CoverCapabilities``.  It drives the sun-tracking floor rollup
@@ -343,13 +335,6 @@ class PipelineSnapshotBuilder:
                 sunset_off=sunset_off,
                 sunrise_off=sunrise_off,
             )
-
-        glare_zones_cfg = self._policy.glare_zones_config(self._config_service, options)
-        active_zone_names: set[str] = set()
-        if glare_zones_cfg is not None:
-            for idx, zone in enumerate(glare_zones_cfg.zones):
-                if is_glare_zone_enabled(idx):
-                    active_zone_names.add(zone.name)
 
         # Sun-tracking floor rollup (#569): switch the 1 % floor off only when
         # every bound entity supports the policy's position axis. A mixed
@@ -410,8 +395,6 @@ class PipelineSnapshotBuilder:
             weather_bypass_auto_control=options.get(
                 CONF_WEATHER_BYPASS_AUTO_CONTROL, True
             ),
-            glare_zones=glare_zones_cfg,
-            active_zone_names=frozenset(active_zone_names),
             in_time_window=in_time_window,
             motion_control_enabled=self._toggles.motion_control,
             custom_position_sensors=self.read_custom_position_sensors(options),

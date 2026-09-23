@@ -11,7 +11,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_CLIMATE_MODE,
     CONF_CLOUD_SUPPRESSION,
     CONF_DEFAULT_HEIGHT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_SUN_TRACKING,
     CONF_IRRADIANCE_ENTITY,
     CONF_LUX_ENTITY,
@@ -397,49 +396,6 @@ def test_switch_without_display_name_uses_switch_name():
     )
     assert switch.name == "Automatic Control"
     assert switch._attr_unique_id == "entry_abc_Automatic Control"
-
-
-# ---------------------------------------------------------------------------
-# Conditional switch creation — integration
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-async def test_glare_zone_switches_created_when_configured(hass) -> None:
-    """Glare zone switches are created for each named zone."""
-    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
-
-    options = dict(VERTICAL_OPTIONS)
-    options[CONF_ENABLE_GLARE_ZONES] = True
-    options["glare_zone_1_name"] = "Zone One"
-    options["glare_zone_2_name"] = "Zone Two"
-    options["glare_zone_3_name"] = ""  # unnamed — skipped
-    options["glare_zone_4_name"] = ""
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "Glare Switch Test", CONF_SENSOR_TYPE: CoverType.BLIND},
-        options=options,
-        entry_id="glare_sw_01",
-        title="Glare Switch Test",
-    )
-    entry.add_to_hass(hass)
-    with _patch_coordinator_refresh():
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    from homeassistant.helpers import entity_registry as er
-
-    reg = er.async_get(hass)
-    switch_entities = [
-        e
-        for e in reg.entities.values()
-        if e.config_entry_id == entry.entry_id and e.domain == "switch"
-    ]
-    switch_names = [e.unique_id for e in switch_entities]
-    # Should have 2 glare zone switches (2 named zones)
-    glare_switches = [s for s in switch_names if "Glare Zone" in s]
-    assert len(glare_switches) == 2
 
 
 # ---------------------------------------------------------------------------

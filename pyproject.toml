@@ -1,11 +1,12 @@
 [project]
 name = "adaptive-pergola"
-version = "0.6.3-beta3"
+version = "0.7.0-beta1"
 description = "Adaptive louvered-roof (pergola) automation for Home Assistant — pergola-only split of Adaptive Cover Pro"
 requires-python = ">=3.13"
 dependencies = [
   "homeassistant>=2026.4.0",
   "astral",
+  "numpy>=2.3.2",
   "pandas",
 ]
 

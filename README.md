@@ -49,7 +49,6 @@ It is designed for pergolas exposed via a Home Assistant `cover` entity that sup
 - **Morning position** — hold a low pose before and just after sunrise (condensation run-off / dawn gap), with an optional post-sunrise hold.
 - **Weather protection** — wind, rain and lockout sensors, cloud suppression, and solar-forecast gating over the active window.
 - **Manual override** — automatic detection of user commands, a configurable hold window, a reset button, and status sensors so automation resumes cleanly.
-- **Building Profile** — share one sensor/weather configuration across several pergola sections.
 - **Fully UI-configured** — geometry, kinematics calibration, climate, weather and behaviour are all set up through the config flow; no YAML required.
 - **Optional managed proxy cover** — presents the pergola as a clean **tilt** cover and ships **position-driven slat icons** that visually track the current louvre angle (0 % flat → 100 % vertical).
 

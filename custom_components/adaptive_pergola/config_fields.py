@@ -64,7 +64,6 @@ from .const import (
     CONF_DISTANCE,
     CONF_DRY_RUN,
     CONF_ENABLE_BLIND_SPOT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_MAX_POSITION,
     CONF_ENABLE_MIN_POSITION,
     CONF_ENABLE_MY_POSITION_ENTITIES,
@@ -212,14 +211,13 @@ from .const import (
 # =============================================================================
 # Section names match the config-flow step ids and the options-menu keys. The
 # order here is the canonical common-section order used by the options menu and
-# the full setup flow (geometry / glare_zones are inserted per cover type).
+# the full setup flow (geometry is inserted per cover type).
 
 SECTION_GEOMETRY = "geometry"
 SECTION_SUN_TRACKING = "sun_tracking"
 SECTION_POSITION = "position"
 SECTION_INTERP = "interp"
 SECTION_BLIND_SPOT = "blind_spot"
-SECTION_GLARE_ZONES = "glare_zones"
 SECTION_AUTOMATION = "automation"
 SECTION_LIGHT_CLOUD = "light_cloud"
 SECTION_TEMPERATURE_CLIMATE = "temperature_climate"
@@ -1245,7 +1243,6 @@ PIPELINE_PRIORITY_KEYS: tuple[str, ...] = (
     const.CONF_MOTION_TIMEOUT_PRIORITY,
     const.CONF_CLOUD_SUPPRESSION_PRIORITY,
     const.CONF_CLIMATE_PRIORITY,
-    const.CONF_GLARE_ZONE_PRIORITY,
     const.CONF_SOLAR_PRIORITY,
 )
 
@@ -1271,20 +1268,6 @@ def pipeline_priorities_schema() -> vol.Schema:
         vol.Optional(key): priority_slider_builtin() for key in PIPELINE_PRIORITY_KEYS
     }
     return vol.Schema(schema)
-
-
-# Glare-zones enable toggle — appended to the sun-tracking section for cover
-# types that support glare zones (blind). Config-flow-only (no validator / no
-# range), matching the legacy behaviour.
-_GLARE_TOGGLE_SPECS = _spec(
-    FieldSpec(
-        CONF_ENABLE_GLARE_ZONES,
-        SECTION_GLARE_ZONES,
-        ValidatorKind.NONE,
-        default=False,
-        make_selector=_bool(),
-    ),
-)
 
 
 # --- Dynamic-section fields: spec metadata only (selector via builder) ---
@@ -1735,26 +1718,6 @@ _GEOMETRY_SPECS = _spec(
     ),
 )
 
-# Glare-zone per-zone fields (vertical-only). 4 zones × x/y/radius/z.
-_GLARE_ZONE_SPECS = _spec(
-    *[
-        FieldSpec(
-            f"glare_zone_{i}_{axis}",
-            SECTION_GLARE_ZONES,
-            ValidatorKind.RANGE,
-            rng=rng,
-        )
-        for i in range(1, 5)
-        for axis, rng in (
-            ("x", const._RANGE_GLARE_ZONE_X),
-            ("y", const._RANGE_GLARE_ZONE_Y),
-            ("radius", const._RANGE_GLARE_ZONE_RADIUS),
-            ("z", const._RANGE_GLARE_ZONE_Z),
-        )
-    ]
-)
-
-
 # =============================================================================
 # Registry assembly
 # =============================================================================
@@ -1765,8 +1728,6 @@ _ALL_SPEC_GROUPS: tuple[list[FieldSpec], ...] = (
     _POSITION_SPECS,
     _INTERP_SPECS,
     _BLIND_SPOT_SPECS,
-    _GLARE_TOGGLE_SPECS,
-    _GLARE_ZONE_SPECS,
     _AUTOMATION_SPECS,
     _LIGHT_CLOUD_SPECS,
     _TEMPERATURE_CLIMATE_SPECS,
@@ -1844,8 +1805,8 @@ def section_keys(section: str) -> tuple[str, ...]:
     return tuple(s.key for s in FIELD_SPECS.values() if s.section == section)
 
 
-#: Default ordered list of the common sections (geometry / glare_zones inserted
-#: per cover type by the policy). Order follows the legacy options menu so the
+#: Default ordered list of the common sections (geometry inserted per cover
+#: type by the policy). Order follows the legacy options menu so the
 #: assembled menu stays familiar (gated sections like interp/blind_spot are
 #: filtered by their enable toggle in the menu builder, but kept here so
 #: ``live_option_keys`` covers them for validation).

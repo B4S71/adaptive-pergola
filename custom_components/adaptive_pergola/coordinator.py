@@ -92,6 +92,7 @@ from .const import (
     POSITION_TOLERANCE_PERCENT,
     RESYNC_ENDSTOP_MODE_NEAREST,
     STARTUP_GRACE_PERIOD_SECONDS,
+    STATIC_TARGET_TOLERANCE_PERCENT,
 )
 from .diagnostics.builder import DiagnosticContext, DiagnosticsBuilder
 from .diagnostics.event_buffer import EventBuffer
@@ -175,6 +176,19 @@ def _read_time_entity(hass: HomeAssistant, entity_id: str | None) -> dt.datetime
 # online-from-None case; issue #546 the unavailable-comeback case), not a real
 # position change — it must not feed numeric manual-override detection.
 _NON_POSITION_COVER_STATES = ("unavailable", "unknown")
+
+_STATIC_TARGET_CONTROL_METHODS = frozenset(
+    {
+        ControlMethod.DEFAULT,
+        ControlMethod.MORNING,
+        ControlMethod.MANUAL,
+        ControlMethod.CUSTOM_POSITION,
+        ControlMethod.MOTION,
+        ControlMethod.FORCE,
+        ControlMethod.WEATHER,
+        ControlMethod.CLOUD,
+    }
+)
 
 
 @dataclass
@@ -540,15 +554,6 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
     def last_skipped_action(self) -> dict:
         """Delegate to CoverCommandService.last_skipped_action."""
         return self._cmd_svc.last_skipped_action
-
-    def _is_glare_zone_enabled(self, idx: int) -> bool:
-        """Return the per-instance glare-zone switch for ``zone idx``.
-
-        The coordinator owns the dynamic ``glare_zone_N`` attributes the
-        switch platform writes to.  Exposed as a callable so the snapshot
-        builder can read them without reaching back into ``self``.
-        """
-        return getattr(self, f"glare_zone_{idx}", True)
 
     @property
     def is_motion_detected(self) -> bool:
@@ -1209,7 +1214,6 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             weather_override_active=self.is_weather_override_active,
             in_time_window=self.check_adaptive_time,
             current_cover_position=self._compute_mean_cover_position(),
-            is_glare_zone_enabled=self._is_glare_zone_enabled,
             effective_default=effective_default,
             is_sunset_active=is_sunset_active,
             cover_capabilities=getattr(
@@ -1441,12 +1445,6 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         # diagnostic for this cycle reports the *previous* completed success).
         self._last_update_success_time = dt.datetime.now(dt.UTC)
 
-        # Determine glare_active from last calculation details (vertical covers only)
-        glare_active = False
-        if hasattr(self._cover_data, "_last_calc_details"):
-            details = self._cover_data._last_calc_details  # noqa: SLF001
-            glare_active = len(details.get("glare_zones_active", [])) > 0
-
         # Issue #742: now that the gate verdict is resolved for this cycle, arm a
         # single wake at grace expiry if the gate is HOLDING its last-known value.
         self._schedule_gate_fallback_wake()
@@ -1463,7 +1461,6 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                 "sun_motion": self._cover_data.direct_sun_valid,
                 "manual_override": self.manager.binary_cover_manual,
                 "manual_list": self.manager.manual_controlled,
-                "glare_active": glare_active,
                 "held_position": self._pipeline_result.held_position,
             },
             attributes={
@@ -1546,6 +1543,14 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                 result's ``use_my_position`` so either source can enable it.
 
         """
+        control_method = (
+            self._pipeline_result.control_method if self._pipeline_result else None
+        )
+        target_tolerance = (
+            STATIC_TARGET_TOLERANCE_PERCENT
+            if control_method in _STATIC_TARGET_CONTROL_METHODS
+            else 0
+        )
         return PositionContext(
             auto_control=self.automatic_control or self._pipeline_bypasses_auto_control,
             manual_override=self.manager.is_cover_manual(entity),
@@ -1564,6 +1569,7 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                 self, "resync_endstop_mode", RESYNC_ENDSTOP_MODE_NEAREST
             ),
             special_positions=build_special_positions(options),
+            target_tolerance=target_tolerance,
             inverse_state=self._inverse_state,
             force=force,
             is_safety=is_safety,
@@ -2290,7 +2296,6 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             weather_override_active=self.is_weather_override_active,
             in_time_window=self.check_adaptive_time,
             current_cover_position=self._compute_mean_cover_position(),
-            is_glare_zone_enabled=self._is_glare_zone_enabled,
             cover_capabilities=getattr(
                 getattr(self, "_snapshot", None), "cover_capabilities", None
             ),

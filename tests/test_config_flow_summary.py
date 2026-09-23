@@ -29,7 +29,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_DELTA_TIME,
     CONF_DISTANCE,
     CONF_ENABLE_BLIND_SPOT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_MAX_POSITION,
     CONF_ENABLE_MIN_POSITION,
     CONF_ENTITIES,
@@ -171,7 +170,6 @@ def _full_vertical() -> dict:
             CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud_coverage",
             CONF_CLOUD_COVERAGE_THRESHOLD: 50,
             CONF_CLOUD_SUPPRESSION: True,
-            CONF_ENABLE_GLARE_ZONES: True,
             CONF_WINDOW_WIDTH: 1.5,
         }
     )
@@ -651,64 +649,6 @@ def test_blind_spot_multiple_slots_render_one_line_each():
     assert summary.count("Blind spot") == 2
     assert "10°" in summary
     assert "60°" in summary
-
-
-# ---------------------------------------------------------------------------
-# Section 2: Glare Zones
-# ---------------------------------------------------------------------------
-
-
-def test_glare_zones_hidden_when_disabled():
-    """Glare zone bullet absent when not enabled."""
-    cfg = {CONF_ENABLE_GLARE_ZONES: False, CONF_WINDOW_WIDTH: 1.5}
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "Glare zones" not in summary
-
-
-def test_glare_zones_shown_when_enabled():
-    """Glare zone bullet appears with zone names and window width."""
-    cfg = {
-        CONF_ENABLE_GLARE_ZONES: True,
-        CONF_WINDOW_WIDTH: 1.5,
-        "glare_zone_1_name": "Desk",
-        "glare_zone_2_name": "",
-    }
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "Glare zones" in summary
-    assert "1.50m" in summary
-    assert "Desk" in summary
-
-
-def test_glare_zones_not_shown_for_awning():
-    """Glare zone bullet absent for awning type."""
-    cfg = {CONF_ENABLE_GLARE_ZONES: True, CONF_WINDOW_WIDTH: 1.0}
-    summary = _build_config_summary(cfg, CoverType.AWNING)
-    assert "Glare zones" not in summary
-
-
-def test_glare_zones_summary_omits_z_when_all_zones_floor_level():
-    """No 'Z height' tag when every named zone has Z=0."""
-    cfg = {
-        CONF_ENABLE_GLARE_ZONES: True,
-        CONF_WINDOW_WIDTH: 1.5,
-        "glare_zone_1_name": "Desk",
-        "glare_zone_1_z": 0.0,
-    }
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "Z height" not in summary
-
-
-def test_glare_zones_summary_shows_z_when_any_zone_above_floor():
-    """'Z height' tag surfaces when at least one named zone has Z > 0."""
-    cfg = {
-        CONF_ENABLE_GLARE_ZONES: True,
-        CONF_WINDOW_WIDTH: 1.5,
-        "glare_zone_1_name": "Eye",
-        "glare_zone_1_z": 1.1,
-    }
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "Z height" in summary
-    assert "1.10m" in summary
 
 
 # ---------------------------------------------------------------------------
@@ -1383,25 +1323,6 @@ def test_priority_climate_active():
     assert "✅Climate" in summary
 
 
-def test_priority_glare_zone_active_for_vertical():
-    """Glare Zone shows ✅ for vertical blind when enabled."""
-    cfg = {CONF_ENABLE_GLARE_ZONES: True}
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "✅Glare" in summary
-
-
-def test_priority_glare_zone_hidden_for_awning():
-    """Glare Zone entry is omitted entirely for awning covers."""
-    summary = _build_config_summary({CONF_ENABLE_GLARE_ZONES: True}, CoverType.AWNING)
-    assert "Glare" not in summary
-
-
-def test_priority_glare_zone_hidden_for_tilt():
-    """Glare Zone entry is omitted entirely for tilt covers."""
-    summary = _build_config_summary({}, CoverType.TILT)
-    assert "Glare" not in summary
-
-
 def test_priority_default_position_reflected():
     """Default handler shows the configured default height in the narrative."""
     cfg = {CONF_DEFAULT_HEIGHT: 75}
@@ -1409,8 +1330,8 @@ def test_priority_default_position_reflected():
     assert "75%" in summary
 
 
-def test_priority_all_nine_handlers_full_config():
-    """Full config shows all nine handlers as ✅ in the priority chain."""
+def test_priority_all_eight_handlers_full_config():
+    """Full config shows all fixed/runtime handlers as ✅ in the priority chain."""
     cfg = _full_vertical()
     summary = _build_config_summary(cfg, CoverType.BLIND)
     for token in [
@@ -1420,7 +1341,6 @@ def test_priority_all_nine_handlers_full_config():
         "✅Manual",
         "✅Cloud",
         "✅Climate",
-        "✅Glare",
         "✅Solar",
         "✅Default",
     ]:
@@ -1461,30 +1381,10 @@ def test_sun_tracking_default_enabled_shows_tracking_message():
     assert "Sun tracking disabled" not in summary
 
 
-def test_glare_zones_shown_when_sun_tracking_disabled():
-    """Glare zones remain in summary when sun tracking is off (issue #238)."""
-    cfg = {
-        CONF_ENABLE_SUN_TRACKING: False,
-        CONF_ENABLE_GLARE_ZONES: True,
-        "glare_zone_1_name": "Desk",
-    }
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "Glare" in summary
-    assert "Desk" in summary
-
-
 def test_sun_tracking_disabled_priority_chain_shows_solar_inactive():
     """Priority chain marks Solar as inactive when sun tracking is off."""
-    cfg = {CONF_ENABLE_SUN_TRACKING: False, CONF_ENABLE_GLARE_ZONES: False}
+    cfg = {CONF_ENABLE_SUN_TRACKING: False}
     summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "❌Solar" in summary
-
-
-def test_priority_chain_glare_independent_of_sun_tracking():
-    """Priority chain shows Glare as active even with sun tracking off, when glare zones enabled."""
-    cfg = {CONF_ENABLE_SUN_TRACKING: False, CONF_ENABLE_GLARE_ZONES: True}
-    summary = _build_config_summary(cfg, CoverType.BLIND)
-    assert "✅Glare" in summary
     assert "❌Solar" in summary
 
 
@@ -1898,7 +1798,6 @@ def test_priority_badges_on_every_rule():
         "[75]",
         "[60]",
         "[50]",
-        "[45]",
         "[40]",
         "[0]",
     ):
@@ -2406,55 +2305,16 @@ def test_cloudy_position_no_warning_when_suppression_on():
 
 
 # ---------------------------------------------------------------------------
-# Tilt MODE2 + min_position footgun warning (issue #373)
+# Louvered roof summary regressions
 # ---------------------------------------------------------------------------
 
 
-def _mode2_warning_markers_present(summary: str) -> bool:
-    """Look for the MODE2-min-position footgun warning by its diagnostic markers."""
+def test_louvered_roof_summary_ignores_legacy_mode2_warning_branch():
+    """Legacy MODE2 warning logic must not fire for pergola-only cover type."""
+    cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 50}
+    summary = _build_config_summary(cfg, CoverType.LOUVERED_ROOF)
     lower = summary.lower()
-    return (
-        "⚠️" in summary
-        and "mode2" in lower
-        and "min position" in lower
-        and "open" in lower
-    )
-
-
-def test_tilt_mode2_with_high_min_position_shows_warning():
-    """MODE2 + min_position ≥ 50 surfaces the footgun (issue #373)."""
-    cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 50}
-    summary = _build_config_summary(cfg, CoverType.TILT)
-    assert _mode2_warning_markers_present(summary), (
-        f"Expected MODE2-min-pos warning markers in summary, got:\n{summary}"
-    )
-
-
-def test_tilt_mode1_with_high_min_position_no_warning():
-    """MODE1 + min_position ≥ 50 must NOT surface the MODE2-specific warning."""
-    cfg = {CONF_TILT_MODE: "mode1", CONF_MIN_POSITION: 50}
-    summary = _build_config_summary(cfg, CoverType.TILT)
-    assert not _mode2_warning_markers_present(summary), (
-        f"MODE1 must not trigger MODE2 warning, got:\n{summary}"
-    )
-
-
-def test_tilt_mode2_min_position_zero_no_warning():
-    """MODE2 + min_position 0 leaves the open band alone, no warning."""
-    cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 0}
-    summary = _build_config_summary(cfg, CoverType.TILT)
-    assert not _mode2_warning_markers_present(summary), (
-        f"MODE2 + min_pos 0 must not warn, got:\n{summary}"
-    )
-
-
-def test_venetian_mode2_with_high_min_position_shows_warning():
-    """Venetian MODE2 + min_position ≥ 50 surfaces the same footgun."""
-    cfg = {CONF_TILT_MODE: "mode2", CONF_MIN_POSITION: 50}
-    summary = _build_config_summary(cfg, CoverType.VENETIAN)
-    assert _mode2_warning_markers_present(summary), (
-        f"Expected MODE2-min-pos warning for venetian, got:\n{summary}"
-    )
+    assert "mode2" not in lower or "⚠️" not in summary
 
 
 # ---------------------------------------------------------------------------

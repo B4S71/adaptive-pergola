@@ -1086,12 +1086,11 @@ class CoverCommandService:
         # at the target is a true no-op that causes audible relay clicks on many
         # motors (issue #290), so we suppress it here.
         #
-        # For non-endpoint targets (normal solar tracking moves) this gate uses
-        # EXACT equality only — it is NOT a hysteresis band.  Movement hysteresis
-        # (how big a move must be before we re-command) is owned solely by
-        # _check_position_delta below, governed by the user's CONF_DELTA_POSITION.
-        # Using the reconciliation tolerance for all targets conflated the two
-        # concepts and suppressed legitimate small tracking moves (issue #567).
+        # Dynamic targets (normal solar/glare/climate tracking) use EXACT
+        # equality only — movement hysteresis remains owned by
+        # _check_position_delta and CONF_DELTA_POSITION (issue #567). Static
+        # targets may supply a small target_tolerance so actuator reporting
+        # rounding does not re-send the same fixed pose indefinitely.
         #
         # For the two hard mechanical endpoints (0 and 100) the delta gate is
         # bypassed entirely (special-target bypass, issue #629/#127), so there is
@@ -1111,6 +1110,10 @@ class CoverCommandService:
             and _current is not None
             and (
                 _current == position
+                or (
+                    context.target_tolerance > 0
+                    and abs(_current - position) <= context.target_tolerance
+                )
                 or (position in (0, 100) and self._at_target(_current, position))
             )
         ):

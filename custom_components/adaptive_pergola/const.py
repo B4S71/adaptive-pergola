@@ -249,21 +249,6 @@ DEFAULT_AWNING_MAX_ANGLE = 175  # degrees — reporter's full sweep (#412)
 DEFAULT_AWNING_HOUSING_OFFSET = 0.0  # metres
 DEFAULT_AWNING_PIVOT_OFFSET = 0.0  # metres
 
-# Vertical-drop (lip-height) shade model for the oscillating awning (#586).
-# The drop-arm's fabric lip descends as the arm sweeps past horizontal, shading
-# the window face down to a protected boundary. The solver scans the arm-sweep
-# arc and selects the smallest angle whose lip shadow reaches the boundary.
-#
-# Default/fallback protected boundary on the window face (window-bottom datum,
-# metres). The LIVE boundary is derived from the inherited vertical sill/depth/
-# distance solve (the exposed-glass height); this constant is only the fallback
-# when that solve leaves the whole face exposed.
-OSCILLATING_PROTECTED_BOUNDARY_DEFAULT = 0.0  # metres (window bottom)
-# Arc-scan resolution: number of arm-angle samples across the [min, max] sweep.
-# 0.1° steps over a 180° sweep — fine enough that the pinned positions are
-# stable to <0.1%.
-OSCILLATING_ARC_SCAN_SAMPLES = 1801
-
 
 # =============================================================================
 # 5. Tilt / Venetian Slat Geometry
@@ -487,14 +472,6 @@ def _blind_spot_slot_keys(n: int) -> dict[str, str]:
 BLIND_SPOT_SLOTS: dict[int, dict[str, str]] = {
     n: _blind_spot_slot_keys(n) for n in BLIND_SPOT_SLOT_NUMBERS
 }
-
-
-# =============================================================================
-# 10. Glare Zones
-# =============================================================================
-# Optional glare-zone handler (priority 45 in the override pipeline).
-
-CONF_ENABLE_GLARE_ZONES = "enable_glare_zones"  # activate glare-zone handler
 
 
 # =============================================================================
@@ -970,6 +947,12 @@ POSITION_CHECK_INTERVAL_MINUTES = 1  # minutes — recheck cadence
 # the fixed floor for the manual-override threshold (effective_manual_threshold
 # in managers/manual_override.py reads this constant directly, NOT the option).
 POSITION_TOLERANCE_PERCENT = 3  # % — "position matches" tolerance (default)
+# Fixed arrival band for non-tracking targets. Static poses such as morning,
+# default, weather and custom positions must tolerate normal actuator-reporting
+# rounding without re-sending the same command on every unrelated state update.
+# Solar/glare/climate tracking deliberately receives 0 so its small movements
+# remain governed only by CONF_DELTA_POSITION (issue #567).
+STATIC_TARGET_TOLERANCE_PERCENT = 2
 MAX_POSITION_RETRIES = 3  # maximum re-send attempts before giving up
 # Default for CONF_ENABLE_POSITION_MATCHING (issue #591). False = matching off:
 # command once, no resend; a settle past tolerance becomes a manual override.
@@ -1291,14 +1274,6 @@ _RANGE_HEIGHT_WIN = (0.1, 50.0)  # CONF_HEIGHT_WIN, metres
 _RANGE_WINDOW_WIDTH = (0.1, 50.0)  # CONF_WINDOW_WIDTH, metres
 _RANGE_WINDOW_DEPTH = (0.0, 5.0)  # CONF_WINDOW_DEPTH, metres
 _RANGE_SILL_HEIGHT = (0.0, 50.0)  # CONF_SILL_HEIGHT, metres
-
-# Glare zones — per-zone X/Y/Radius/Z bounds. Mirror the selector ranges in
-# config_flow._build_glare_zones_schema so changes stay in sync.
-_RANGE_GLARE_ZONE_X = (-5.0, 5.0)  # along the wall, metres
-_RANGE_GLARE_ZONE_Y = (0.0, 10.0)  # into the room, metres
-_RANGE_GLARE_ZONE_RADIUS = (0.1, 2.0)  # zone radius, metres
-_RANGE_GLARE_ZONE_Z = (0.0, 3.0)  # target height above floor, metres
-DEFAULT_GLARE_ZONE_Z = 0.0  # default — protects a floor disk (current behaviour)
 
 # Geometry — awning.
 _RANGE_LENGTH_AWNING = (0.3, 6.0)  # CONF_LENGTH_AWNING, metres

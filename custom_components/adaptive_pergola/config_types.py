@@ -268,7 +268,6 @@ class VerticalConfig:
     h_win: float
     window_depth: float = 0.0
     sill_height: float = 0.0
-    glare_zones: GlareZonesConfig | None = None
 
 
 @dataclass

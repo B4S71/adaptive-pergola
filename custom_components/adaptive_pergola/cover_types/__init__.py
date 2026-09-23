@@ -5,10 +5,8 @@ and routes every cover-type-specific decision through it, so the shared
 code paths (coordinator update cycle, cover command service, manual
 override detection, config flow) never branch on cover type.
 
-Adaptive Pergola ships only the louvered-roof (pergola) cover type plus
-the virtual Building Profile entry type. The other Adaptive Cover Pro
-policies (blind, awning, tilt, venetian, …) were removed in the pergola
-split; the shared calc engine under ``engine/covers/`` is retained.
+Adaptive Pergola ships only the louvered-roof (pergola) cover type. The other
+Adaptive Cover Pro policies were removed in the pergola split.
 """
 
 from __future__ import annotations

@@ -39,7 +39,6 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_DISTANCE,
     CONF_ENABLE_BLIND_SPOT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_MAX_POSITION,
     CONF_ENABLE_MIN_POSITION,
     CONF_ENABLE_MY_POSITION_ENTITIES,
@@ -192,12 +191,8 @@ from .helpers import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Cover-type picker options, derived from the policy registry so a new cover
-# type appears in the create flow automatically (no edit here). Order follows
-# registration order (blind, awning, tilt, venetian, …). Virtual entry types
-# that drive no cover (Building Profile) are filtered out via the
-# ``controls_cover`` discriminator — they get their own top-level create option,
-# not a cover-type dropdown entry.
+# Cover-type picker options are derived from the policy registry. Adaptive
+# Pergola currently registers only the louvered-roof policy.
 
 
 _STANDALONE_SENTINEL = "__standalone__"
@@ -1593,9 +1588,6 @@ def _build_config_summary(  # noqa: C901, PLR0912, PLR0915
         if sensor_type is not None and sensor_type in POLICY_REGISTRY
         else LouveredRoofPolicy()
     )
-    has_glare = summary_policy.supports_glare_zones and bool(
-        config.get(CONF_ENABLE_GLARE_ZONES)
-    )
 
     def _pos_label(raw_pct: int, use_my: bool) -> str:
         """Render a target as 'My (N%)' when the My preset flag is active."""
@@ -2009,35 +2001,6 @@ def _build_config_summary(  # noqa: C901, PLR0912, PLR0915
             L["rules.climate"].format(detail=cl_str) + _badge(_prio["climate"])
         )
 
-    # Glare zones — vertical only (45, below climate)
-    if has_glare:
-        zone_names = [
-            config.get(f"glare_zone_{i}_name")
-            for i in range(1, 5)
-            if config.get(f"glare_zone_{i}_name")
-        ]
-        width = config.get(CONF_WINDOW_WIDTH)
-        gz_parts = []
-        if zone_names:
-            gz_parts.append(L["glare.zones"].format(names=", ".join(zone_names)))
-        if width:
-            gz_parts.append(L["glare.window"].format(width=float(width)))
-        z_values = [
-            float(config.get(f"glare_zone_{i}_z") or 0.0)
-            for i in range(1, 5)
-            if config.get(f"glare_zone_{i}_name")
-        ]
-        if any(z > 0 for z in z_values):
-            gz_parts.append(
-                L["glare.z_height"].format(
-                    values=", ".join(L["glare.z_value"].format(z=z) for z in z_values)
-                )
-            )
-        gz_str = f" ({', '.join(gz_parts)})" if gz_parts else ""
-        lines.append(
-            L["rules.glare"].format(detail=gz_str) + _badge(_prio["glare_zone"])
-        )
-
     # Solar tracking — baseline calculation (40)
     azimuth = config.get(CONF_AZIMUTH)
     fov_l = config.get(CONF_FOV_LEFT)
@@ -2338,8 +2301,13 @@ def _build_config_summary(  # noqa: C901, PLR0912, PLR0915
     # >= 50% collapses every climate/glare-control decision to the floor and
     # the cover stops blocking heat or glare. Surface this as a ⚠️ line so
     # users see it before saving the config.
+    supports_mode2_floor_warning = False
+    if sensor_type in POLICY_REGISTRY:
+        supports_mode2_floor_warning = bool(
+            get_policy(sensor_type).custom_position_includes_tilt
+        )
     if (
-        sensor_type in (CoverType.TILT, CoverType.VENETIAN)
+        supports_mode2_floor_warning
         and _tilt_is_mode2(config.get(CONF_TILT_MODE))
         and min_pos is not None
         and min_pos >= MODE2_OPEN_HORIZONTAL_PERCENT
@@ -2393,8 +2361,6 @@ def _build_config_summary(  # noqa: C901, PLR0912, PLR0915
         has_cloud=has_cloud,
         has_climate=has_climate,
         sun_tracking_enabled=sun_tracking_enabled,
-        has_glare=has_glare,
-        supports_glare=summary_policy.supports_glare_zones,
         custom_slots=_custom_slots,
         priorities=_handler_priority_overrides(config),
     )
@@ -2433,8 +2399,6 @@ def _render_priority_scale(config: dict, policy) -> str:
         has_cloud=True,
         has_climate=True,
         sun_tracking_enabled=True,
-        has_glare=True,
-        supports_glare=policy.supports_glare_zones,
         custom_slots=custom_slots,
         priorities=_handler_priority_overrides(config),
     )
@@ -3253,7 +3217,7 @@ class OptionsFlowHandler(OptionsFlow):
         self.current_config: dict = dict(config_entry.data)
         self.options = dict(config_entry.options)
         self.sensor_type: CoverType = (  # type: ignore[misc]
-            self.current_config.get(CONF_SENSOR_TYPE) or CoverType.BLIND
+            self.current_config.get(CONF_SENSOR_TYPE) or CoverType.LOUVERED_ROOF
         )
 
     async def async_step_init(

@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 from ..config_context_adapter import ConfigContextAdapter
 from ..config_types import (
     CoverConfig,
-    GlareZone,
-    GlareZonesConfig,
     HorizontalConfig,
     TiltConfig,
     VerticalConfig,
@@ -21,7 +19,6 @@ from ..config_types import (
 from ..const import (
     CONF_AWNING_ANGLE,
     CONF_DISTANCE,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_HEIGHT_WIN,
     CONF_LENGTH_AWNING,
     CONF_MAX_TILT,
@@ -31,9 +28,7 @@ from ..const import (
     CONF_TILT_DISTANCE,
     CONF_TILT_MODE,
     CONF_WINDOW_DEPTH,
-    CONF_WINDOW_WIDTH,
     DEFAULT_DISTANCE,
-    DEFAULT_GLARE_ZONE_Z,
     DEFAULT_MAX_TILT,
     DEFAULT_MIN_TILT,
     DEFAULT_WINDOW_HEIGHT,
@@ -146,35 +141,4 @@ class ConfigurationService:
             mode=options.get(CONF_TILT_MODE),
             max_tilt=options.get(CONF_MAX_TILT, DEFAULT_MAX_TILT),
             min_tilt=options.get(CONF_MIN_TILT, DEFAULT_MIN_TILT),
-        )
-
-    def get_glare_zones_config(self, options: dict) -> GlareZonesConfig | None:
-        """Build GlareZonesConfig from config entry options.
-
-        Returns None if glare zones are disabled or no zones have names.
-        """
-        if not options.get(CONF_ENABLE_GLARE_ZONES):
-            return None
-
-        zones = []
-        for i in range(1, 5):  # zones 1–4
-            name = options.get(f"glare_zone_{i}_name", "")
-            if not name:
-                continue
-            zones.append(
-                GlareZone(
-                    name=name,
-                    x=float(options.get(f"glare_zone_{i}_x", 0.0)),
-                    y=float(options.get(f"glare_zone_{i}_y", 1.0)),
-                    radius=float(options.get(f"glare_zone_{i}_radius", 0.3)),
-                    z=float(options.get(f"glare_zone_{i}_z", DEFAULT_GLARE_ZONE_Z)),
-                )
-            )
-
-        if not zones:
-            return None
-
-        return GlareZonesConfig(
-            zones=zones,
-            window_width=float(options.get(CONF_WINDOW_WIDTH, 1.0)),
         )

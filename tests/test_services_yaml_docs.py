@@ -92,7 +92,6 @@ REGISTERED_SERVICES = {
     "set_blind_spot",
     "set_interpolation",
     "set_geometry",
-    "set_venetian",
     "set_option",
 }
 

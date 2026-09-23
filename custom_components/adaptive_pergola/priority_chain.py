@@ -24,7 +24,6 @@ from .pipeline.handlers import (
     ClimateHandler,
     CloudSuppressionHandler,
     DefaultHandler,
-    GlareZoneHandler,
     ManualOverrideHandler,
     MotionTimeoutHandler,
     SolarHandler,
@@ -58,8 +57,6 @@ def build_priority_chain(
     has_cloud: bool,
     has_climate: bool,
     sun_tracking_enabled: bool,
-    has_glare: bool,
-    supports_glare: bool,
     custom_slots: Iterable[Sequence] = (),
     priorities: Mapping[str, int] | None = None,
 ) -> list[PriorityChainEntry]:
@@ -87,8 +84,6 @@ def build_priority_chain(
         PriorityChainEntry(_prio(SolarHandler), "Solar", sun_tracking_enabled),
         PriorityChainEntry(DefaultHandler.priority, "Default", True),
     ]
-    if supports_glare:
-        entries.append(PriorityChainEntry(_prio(GlareZoneHandler), "Glare", has_glare))
     for slot_tuple in custom_slots:
         slot = slot_tuple[0]
         priority = slot_tuple[3]

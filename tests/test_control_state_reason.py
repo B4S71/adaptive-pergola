@@ -7,7 +7,7 @@ sunset offset, and blind spot.
 
 from unittest.mock import patch, PropertyMock
 
-from custom_components.adaptive_pergola.calculation import AdaptiveVerticalCover
+from tests.compat_engines import AdaptiveVerticalCover
 from tests.cover_helpers import build_vertical_cover
 
 

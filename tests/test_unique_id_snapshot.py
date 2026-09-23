@@ -23,7 +23,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.adaptive_pergola.const import (
     CONF_CLIMATE_MODE,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_FORCE_OVERRIDE_SENSORS,
     CONF_IRRADIANCE_ENTITY,
     CONF_LUX_ENTITY,
@@ -44,11 +43,9 @@ ENTRY_ID = "snap_entry"
 
 
 # Maximally-configured options: every conditional entity gate is on.
-# - cover_blind: glare-zone switches + glare_active binary sensor
 # - climate_mode + temp/lux/irradiance entities: 4 climate-related switches +
 #   climate_status sensor
 # - motion_sensors: motion_control switch
-# - 2 named glare zones: 2 glare-zone switches with user-text in the unique_id
 MAX_OPTIONS = {
     **VERTICAL_OPTIONS,
     CONF_CLIMATE_MODE: True,
@@ -57,9 +54,6 @@ MAX_OPTIONS = {
     CONF_IRRADIANCE_ENTITY: "sensor.irradiance",
     CONF_MOTION_SENSORS: ["binary_sensor.motion_a"],
     CONF_FORCE_OVERRIDE_SENSORS: ["binary_sensor.force_a"],
-    CONF_ENABLE_GLARE_ZONES: True,
-    "glare_zone_1_name": "Living Room",
-    "glare_zone_2_name": "Kitchen",
 }
 
 
@@ -107,12 +101,9 @@ EXPECTED_UNIQUE_ID_SUFFIXES = sorted(
         "Irradiance",
         "Return to default when disabled",
         "Motion Control",
-        "Glare Zone: Living Room",
-        "Glare Zone: Kitchen",
         # --- binary_sensor platform ---
         "sun_motion",
         "manual_override",
-        "glare_active",
         "position_mismatch",
         # --- button platform ---
         "Reset Manual Override",

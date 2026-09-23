@@ -11,7 +11,7 @@ from ..types import PipelineResult, PipelineSnapshot
 class MorningPositionHandler(OverrideHandler):
     """Hold the configured pre-sunrise "morning" position before sunrise.
 
-    Priority 43 — above SolarHandler (40), below GlareZoneHandler (45). Fires
+    Priority 43 — above SolarHandler (40). Fires
     whenever the pre-sunrise window is active (``snapshot.morning_active``),
     which the coordinator computes from the sunrise resume boundary and the
     configured lead time. Unlike SolarHandler it does NOT gate on sun visibility

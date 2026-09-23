@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from tests.compat_engines import AdaptiveVerticalCover
 from tests.cover_helpers import (
     build_vertical_cover,
     build_tilt_cover,
@@ -81,9 +82,6 @@ def test_getattr_unknown_field_raises():
 def test_control_state_reason_default_fallback():
     """Returns 'Default' when sun is valid but not direct, not in blind spot, and not sunset."""
     from unittest.mock import patch, PropertyMock
-    from custom_components.adaptive_pergola.engine.covers.vertical import (
-        AdaptiveVerticalCover,
-    )
 
     cover = build_vertical_cover(**_common_kwargs(), h_win=2.0, distance=0.5)
 
@@ -121,9 +119,6 @@ def test_control_state_reason_default_fallback():
 def test_control_state_reason_direct_sun():
     """Returns 'Direct Sun' when direct_sun_valid is True."""
     from unittest.mock import patch, PropertyMock
-    from custom_components.adaptive_pergola.engine.covers.vertical import (
-        AdaptiveVerticalCover,
-    )
 
     cover = build_vertical_cover(**_common_kwargs(), h_win=2.0, distance=0.5)
 
@@ -142,9 +137,6 @@ def test_control_state_reason_direct_sun():
 def test_control_state_reason_sunset_offset():
     """Returns 'Default: Sunset Offset' when sunset_valid is True."""
     from unittest.mock import patch, PropertyMock
-    from custom_components.adaptive_pergola.engine.covers.vertical import (
-        AdaptiveVerticalCover,
-    )
 
     cover = build_vertical_cover(**_common_kwargs(), h_win=2.0, distance=0.5)
 

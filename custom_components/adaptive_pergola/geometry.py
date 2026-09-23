@@ -64,16 +64,9 @@ def _edge_case(
     Companion to :func:`_safety_margin`; see it for the caching rationale.
 
     Only the very-low-elevation guard remains (issue #600). The former
-    extreme-gamma and very-high-elevation branches were removed: the
-    projection in ``AdaptiveVerticalCover.calculate_position`` now carries its
-    own numerical guards — ``MIN_COS_GAMMA_CLAMP`` on the ``cos(gamma)``
-    divisor, ``MIN_TAN_ELEVATION_CLAMP`` on the sill division, and the
-    ``effective_distance < 0 → 0`` clamp (#358/#559) — so those two branches
-    either duplicated the normal path (very high elevation) or contradicted it
-    (extreme gamma forced fully-closed where the grazing geometry is open,
-    the root cause of #598). The low-elevation floor is retained as a
-    deliberate policy: a sun on the horizon should drive full coverage, and
-    the normal path does not enforce that for a zero-sill window.
+    extreme-gamma and very-high-elevation branches duplicated or contradicted
+    the normal projection path. The low-elevation floor remains deliberate: a
+    sun on the horizon should drive full coverage.
 
     ``gamma``, ``distance`` and ``h_win`` are unused now but kept on the
     signature so the cached call site and ``EdgeCaseHandler.check_and_handle``

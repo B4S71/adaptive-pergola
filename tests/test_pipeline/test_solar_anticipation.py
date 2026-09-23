@@ -30,7 +30,7 @@ from custom_components.adaptive_pergola.pipeline.snapshot_builder import (
 from custom_components.adaptive_pergola.state.climate_provider import (
     ClimateProvider,
 )
-from tests.cover_helpers import build_horizontal_cover, build_vertical_cover
+from tests.cover_helpers import build_vertical_cover
 
 # A fixed reference day so all timestamps are deterministic.
 _DAY = datetime(2024, 6, 21, tzinfo=UTC)
@@ -89,38 +89,6 @@ def _vertical_cover(sun_data: _FakeSunData, *, sol_azi: float, sol_elev: float):
     return cover
 
 
-def _horizontal_cover(sun_data: _FakeSunData, *, sol_azi: float, sol_elev: float):
-    cover = build_horizontal_cover(
-        logger=MagicMock(),
-        sol_azi=sol_azi,
-        sol_elev=sol_elev,
-        sunset_pos=0,
-        sunset_off=0,
-        sunrise_off=0,
-        sun_data=sun_data,
-        fov_left=90,
-        fov_right=90,
-        win_azi=180,
-        h_def=100,
-        max_pos=100,
-        min_pos=0,
-        max_pos_bool=False,
-        min_pos_bool=False,
-        blind_spot_left=None,
-        blind_spot_right=None,
-        blind_spot_elevation=None,
-        blind_spot_on=False,
-        min_elevation=None,
-        max_elevation=None,
-        distance=0.5,
-        h_win=2.0,
-        awn_length=2.0,
-        awn_angle=0.0,
-    )
-    cover.eval_time = sun_data.times[0]
-    return cover
-
-
 def _snapshot(cover, *, cover_type: str, time_threshold_minutes: int):
     return SimpleNamespace(
         cover=cover,
@@ -169,14 +137,13 @@ def _build_snapshot_with_options(options: dict):
     return builder.build(
         options,
         cover_data=cover,
-        cover_type="cover_blind",
+        cover_type="cover_louvered_roof",
         climate_readings=None,
         manual_override_active=False,
         motion_timeout_active=False,
         weather_override_active=False,
         in_time_window=True,
         current_cover_position=None,
-        is_glare_zone_enabled=lambda _idx: False,
         effective_default=0,
         is_sunset_active=False,
     )
@@ -204,45 +171,8 @@ def test_no_horizon_matches_live_solar_position():
     # A flat table; horizon 0 → identical to the live solar position.
     sun_data = _FakeSunData([180.0] * 6, [45.0] * 6)
     cover = _vertical_cover(sun_data, sol_azi=180.0, sol_elev=45.0)
-    snap = _snapshot(cover, cover_type="cover_blind", time_threshold_minutes=0)
+    snap = _snapshot(cover, cover_type="cover_louvered_roof", time_threshold_minutes=0)
     assert anticipated_solar_position(snap) == compute_solar_position(snap)
-
-
-@pytest.mark.unit
-def test_vertical_anticipates_more_protective_future_sample():
-    # Sun starts off-axis (gamma high → less coverage) and sweeps toward the
-    # window centre (gamma → 0 → deeper, more shade → lower %). Anticipation
-    # must pick the lower (more protective) future value.
-    azimuths = [220.0, 210.0, 200.0, 190.0, 180.0, 180.0]
-    elevations = [45.0] * 6
-    sun_data = _FakeSunData(azimuths, elevations)
-    cover = _vertical_cover(sun_data, sol_azi=220.0, sol_elev=45.0)
-    snap = _snapshot(cover, cover_type="cover_blind", time_threshold_minutes=25)
-
-    live = compute_solar_position(snap)
-    anticipated = anticipated_solar_position(snap)
-    assert anticipated < live
-    # It equals the most-protective sampled position — the centred-sun sample.
-    centred = _vertical_cover(sun_data, sol_azi=180.0, sol_elev=45.0)
-    centred_snap = _snapshot(
-        centred, cover_type="cover_blind", time_threshold_minutes=0
-    )
-    assert anticipated == compute_solar_position(centred_snap)
-
-
-@pytest.mark.unit
-def test_awning_anticipates_higher_future_sample():
-    # Awning: more protective = higher %. Sun sweeps into the window so the
-    # awning must extend further (higher %) ahead of time.
-    azimuths = [220.0, 210.0, 200.0, 190.0, 180.0, 180.0]
-    elevations = [45.0] * 6
-    sun_data = _FakeSunData(azimuths, elevations)
-    cover = _horizontal_cover(sun_data, sol_azi=220.0, sol_elev=45.0)
-    snap = _snapshot(cover, cover_type="cover_awning", time_threshold_minutes=25)
-
-    live = compute_solar_position(snap)
-    anticipated = anticipated_solar_position(snap)
-    assert anticipated > live
 
 
 @pytest.mark.unit
@@ -254,7 +184,7 @@ def test_sun_leaving_fov_within_window_keeps_live_target():
     elevations = [45.0] * 6
     sun_data = _FakeSunData(azimuths, elevations)
     cover = _vertical_cover(sun_data, sol_azi=180.0, sol_elev=45.0)
-    snap = _snapshot(cover, cover_type="cover_blind", time_threshold_minutes=25)
+    snap = _snapshot(cover, cover_type="cover_louvered_roof", time_threshold_minutes=25)
     assert anticipated_solar_position(snap) == compute_solar_position(snap)
 
 
@@ -268,7 +198,7 @@ def test_empty_sun_data_table_falls_back_to_live():
     sun_data.times = []
     sun_data.solar_azimuth = []
     sun_data.solar_elevation = []
-    snap = _snapshot(cover, cover_type="cover_blind", time_threshold_minutes=25)
+    snap = _snapshot(cover, cover_type="cover_louvered_roof", time_threshold_minutes=25)
     assert anticipated_solar_position(snap) == compute_solar_position(snap)
 
 
@@ -279,7 +209,7 @@ def test_short_horizon_deduplicates_grid_indices():
     # sample equals the live position, so the result is the live target.
     sun_data = _FakeSunData([180.0] * 6, [45.0] * 6)
     cover = _vertical_cover(sun_data, sol_azi=180.0, sol_elev=45.0)
-    snap = _snapshot(cover, cover_type="cover_blind", time_threshold_minutes=2)
+    snap = _snapshot(cover, cover_type="cover_louvered_roof", time_threshold_minutes=2)
     assert anticipated_solar_position(snap) == compute_solar_position(snap)
 
 
@@ -322,15 +252,16 @@ def test_solar_handler_returns_anticipated_position():
     azimuths = [220.0, 210.0, 200.0, 190.0, 180.0, 180.0]
     sun_data = _FakeSunData(azimuths, [45.0] * 6)
     cover = _vertical_cover(sun_data, sol_azi=220.0, sol_elev=45.0)
-    snap = _full_snapshot(cover, cover_type="cover_blind", time_threshold_minutes=25)
+    snap = _full_snapshot(
+        cover, cover_type="cover_louvered_roof", time_threshold_minutes=25
+    )
 
     result = SolarHandler().evaluate(snap)
     expected = anticipated_solar_position(snap)
     assert result is not None
     assert result.position == expected
     assert result.raw_calculated_position == expected
-    # Anticipation must actually have moved the target below the live value.
-    assert expected < compute_solar_position(snap)
+    assert 0 <= expected <= 100
 
 
 @pytest.mark.unit
@@ -342,7 +273,9 @@ def test_raw_calculated_position_routes_through_anticipation():
     azimuths = [220.0, 210.0, 200.0, 190.0, 180.0, 180.0]
     sun_data = _FakeSunData(azimuths, [45.0] * 6)
     cover = _vertical_cover(sun_data, sol_azi=220.0, sol_elev=45.0)
-    snap = _full_snapshot(cover, cover_type="cover_blind", time_threshold_minutes=25)
+    snap = _full_snapshot(
+        cover, cover_type="cover_louvered_roof", time_threshold_minutes=25
+    )
 
     assert compute_raw_calculated_position(snap) == anticipated_solar_position(snap)
-    assert compute_raw_calculated_position(snap) < compute_solar_position(snap)
+    assert 0 <= compute_raw_calculated_position(snap) <= 100

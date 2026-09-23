@@ -15,7 +15,6 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_ENABLE_GLARE_ZONES, CONF_SENSOR_TYPE
 from .coordinator import AdaptiveConfigEntry, AdaptiveDataUpdateCoordinator
 from .entity_base import AdaptivePergolaBaseEntity
 
@@ -35,17 +34,6 @@ class _SimpleBinarySensorSpec:
     enabled_when: Callable[[ConfigEntry], bool] = lambda _: True
 
 
-def _glare_zones_enabled_for_blind(entry: ConfigEntry) -> bool:
-    from .cover_types import POLICY_REGISTRY, get_policy
-
-    sensor_type = entry.data.get(CONF_SENSOR_TYPE)
-    if sensor_type not in POLICY_REGISTRY:
-        return False
-    return get_policy(sensor_type).supports_glare_zones and bool(
-        entry.options.get(CONF_ENABLE_GLARE_ZONES)
-    )
-
-
 _BINARY_SENSOR_SPECS: tuple[_SimpleBinarySensorSpec, ...] = (
     _SimpleBinarySensorSpec(
         name="Sun Infront",
@@ -56,12 +44,6 @@ _BINARY_SENSOR_SPECS: tuple[_SimpleBinarySensorSpec, ...] = (
         name="Manual Override",
         key="manual_override",
         device_class=BinarySensorDeviceClass.RUNNING,
-    ),
-    _SimpleBinarySensorSpec(
-        name="Glare Active",
-        key="glare_active",
-        device_class=BinarySensorDeviceClass.RUNNING,
-        enabled_when=_glare_zones_enabled_for_blind,
     ),
 )
 

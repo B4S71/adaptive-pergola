@@ -383,7 +383,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) ->
     # async_setup_entry) — nothing to unload.
     if entry.data.get(CONF_SENSOR_TYPE) not in POLICY_REGISTRY:
         return True
+    coordinator = getattr(entry, "runtime_data", None)
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        if coordinator is not None:
+            await coordinator.async_shutdown()
         await async_unload_services(hass)
     return unload_ok
 

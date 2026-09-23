@@ -875,7 +875,7 @@ class TestClimateHandlerControlMethodOnLowLightBranch:
 
 def _make_tilt_mode2_cover(*, gamma_deg: float, valid: bool, min_pos: int):
     """Mock AdaptiveTiltCover for the issue-#373 GLARE_CONTROL pipeline test."""
-    from custom_components.adaptive_pergola.engine.covers import AdaptiveTiltCover
+    from tests.compat_engines import AdaptiveTiltCover
 
     cover = MagicMock(spec=AdaptiveTiltCover)
     cover.direct_sun_valid = valid

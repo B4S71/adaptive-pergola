@@ -42,6 +42,7 @@ from ..const import (
     CONF_TILT_MODE,
     CONF_WINDOW_DEPTH,
     DEFAULT_BLIND_SPOT_ELEVATION_MODE,
+    CoverType,
     DOMAIN,
 )
 
@@ -68,7 +69,7 @@ async def async_handle_export(call: ServiceCall) -> dict:
     options = entry.options
     name = entry.data.get("name", "unknown")
     cover_type = entry.data.get(CONF_SENSOR_TYPE) or options.get(
-        CONF_SENSOR_TYPE, "cover_blind"
+        CONF_SENSOR_TYPE, CoverType.LOUVERED_ROOF.value
     )
 
     return {

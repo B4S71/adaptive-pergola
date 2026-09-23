@@ -2,7 +2,7 @@
 
 Covers:
 - Pure unit tests for validate_options_patch, _validate_fields, _cross_field_validate
-- Integration tests for all 15 per-section + generic set_option services
+- Integration tests for all pergola per-section + generic set_option services
 - Reload propagation (async_update_entry called)
 - Custom position slot routing
 - List-field replace semantics
@@ -66,8 +66,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_SUNSET_USE_MY,
     CONF_TEMP_HIGH,
     CONF_TEMP_LOW,
-    CONF_VENETIAN_MODE,
-    CONF_VENETIAN_POST_SETTLE_HOLD,
     CONF_WEATHER_BYPASS_AUTO_CONTROL,
     CONF_WEATHER_OVERRIDE_POSITION,
     CONF_WEATHER_SEVERE_SENSORS,
@@ -75,13 +73,11 @@ from custom_components.adaptive_pergola.const import (
     CONF_WEATHER_WIND_SPEED_THRESHOLD,
     DOMAIN,
     CoverType,
-    VENETIAN_MODE_POSITION_AND_TILT,
 )
 from custom_components.adaptive_pergola.services.options_service import (
     ALL_SETTABLE_KEYS,
     FIELD_VALIDATORS,
     IDENTITY_KEYS,
-    OPTIONS_SERVICE_NAMES,
     _SECTION_CLIMATE,
     _cross_field_validate,
     apply_options_patch,
@@ -680,7 +676,6 @@ class TestServiceRegistration:
             "set_blind_spot",
             "set_interpolation",
             "set_geometry",
-            "set_venetian",
             "set_option",
         ]:
             assert hass.services.has_service(DOMAIN, service), (
@@ -1532,119 +1527,6 @@ class TestReloadPropagation:
             )
 
         mock_update.assert_not_called()
-
-
-class TestSetVenetian:
-    """Tests for set_venetian service (Phase 5 Step 10)."""
-
-    def test_set_venetian_in_options_service_names(self):
-        """set_venetian must be listed in OPTIONS_SERVICE_NAMES for proper unload."""
-        assert "set_venetian" in OPTIONS_SERVICE_NAMES
-
-    async def test_set_venetian_service_registered(self, hass: HomeAssistant):
-        """set_venetian service is registered after integration setup."""
-        await _setup(hass, entry_id="ven_reg_01")
-        assert hass.services.has_service(DOMAIN, "set_venetian"), (
-            "Service 'set_venetian' not registered"
-        )
-
-    async def test_set_venetian_updates_post_settle_hold(self, hass: HomeAssistant):
-        """set_venetian updates venetian_post_settle_hold in options."""
-        await _setup(hass, entry_id="ven_hold_01")
-        with (
-            patch.object(hass.config_entries, "async_update_entry") as mock_update,
-            patch.object(hass.config_entries, "async_reload", new_callable=AsyncMock),
-        ):
-            await _call(
-                hass,
-                "set_venetian",
-                {CONF_VENETIAN_POST_SETTLE_HOLD: 5.0},
-            )
-
-        mock_update.assert_called_once()
-        new_opts = mock_update.call_args[1]["options"]
-        assert new_opts[CONF_VENETIAN_POST_SETTLE_HOLD] == 5.0
-
-    async def test_set_venetian_updates_mode(self, hass: HomeAssistant):
-        """set_venetian updates venetian_mode in options."""
-        await _setup(hass, entry_id="ven_mode_01")
-        with (
-            patch.object(hass.config_entries, "async_update_entry") as mock_update,
-            patch.object(hass.config_entries, "async_reload", new_callable=AsyncMock),
-        ):
-            await _call(
-                hass,
-                "set_venetian",
-                {CONF_VENETIAN_MODE: VENETIAN_MODE_POSITION_AND_TILT},
-            )
-
-        mock_update.assert_called_once()
-        new_opts = mock_update.call_args[1]["options"]
-        assert new_opts[CONF_VENETIAN_MODE] == VENETIAN_MODE_POSITION_AND_TILT
-
-    async def test_set_venetian_rejects_out_of_range_hold(self, hass: HomeAssistant):
-        """set_venetian rejects venetian_post_settle_hold out of range."""
-        await _setup(hass, entry_id="ven_range_01")
-        with pytest.raises((ServiceValidationError, Exception)):
-            await _call(
-                hass,
-                "set_venetian",
-                {CONF_VENETIAN_POST_SETTLE_HOLD: 99.0},
-            )
-
-    async def test_set_venetian_rejects_invalid_mode(self, hass: HomeAssistant):
-        """set_venetian rejects an unknown venetian_mode string."""
-        await _setup(hass, entry_id="ven_mode_invalid_01")
-        with pytest.raises((ServiceValidationError, Exception)):
-            await _call(
-                hass,
-                "set_venetian",
-                {CONF_VENETIAN_MODE: "invalid_mode_xyz"},
-            )
-
-    async def test_set_venetian_uses_default_hold_when_cleared(
-        self, hass: HomeAssistant
-    ):
-        """Clearing venetian_post_settle_hold (None) removes it from options."""
-        opts = dict(VERTICAL_OPTIONS)
-        opts[CONF_VENETIAN_POST_SETTLE_HOLD] = 5.0
-        await _setup(hass, entry_id="ven_clear_01", options=opts)
-        with (
-            patch.object(hass.config_entries, "async_update_entry") as mock_update,
-            patch.object(hass.config_entries, "async_reload", new_callable=AsyncMock),
-        ):
-            await _call(
-                hass,
-                "set_venetian",
-                {CONF_VENETIAN_POST_SETTLE_HOLD: None},
-            )
-
-        mock_update.assert_called_once()
-        new_opts = mock_update.call_args[1]["options"]
-        # Key removed (None = clear); coordinator will use DEFAULT_VENETIAN_POST_SETTLE_HOLD_SECONDS
-        assert CONF_VENETIAN_POST_SETTLE_HOLD not in new_opts
-
-    def test_section_venetian_has_four_keys(self):
-        """_SECTION_VENETIAN must contain all four venetian option keys.
-
-        Grew to four with issue #33 Phase 5: ``CONF_VENETIAN_BACKROTATE_PUBLISH_LAG``
-        joined the existing three (post-settle hold, tilt-skip-above, venetian
-        mode). The section is the allow-list for ``set_venetian`` so the new
-        publish-lag option becomes settable via that service automatically
-        once it lives here.
-        """
-        from custom_components.adaptive_pergola.const import (
-            CONF_VENETIAN_BACKROTATE_PUBLISH_LAG,
-        )
-        from custom_components.adaptive_pergola.services.options_service import (
-            _SECTION_VENETIAN,
-        )
-
-        assert CONF_VENETIAN_POST_SETTLE_HOLD in _SECTION_VENETIAN
-        assert CONF_VENETIAN_MODE in _SECTION_VENETIAN
-        assert CONF_VENETIAN_BACKROTATE_PUBLISH_LAG in _SECTION_VENETIAN
-        # Skip CONF_VENETIAN_TILT_SKIP_ABOVE import — use length check
-        assert len(_SECTION_VENETIAN) == 4
 
 
 # ---------------------------------------------------------------------------

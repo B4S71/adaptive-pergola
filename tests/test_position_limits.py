@@ -163,7 +163,7 @@ def test_issue_24_sunset_position_with_conditional_min_pos(mock_sun_data, mock_l
         snapshot = PipelineSnapshot(
             cover=cover,
             config=cover.config,
-            cover_type="cover_blind",
+            cover_type="cover_louvered_roof",
             default_position=0,  # sunset_pos via compute_effective_default
             is_sunset_active=True,
             climate_readings=None,
@@ -174,8 +174,6 @@ def test_issue_24_sunset_position_with_conditional_min_pos(mock_sun_data, mock_l
             weather_override_active=False,
             weather_override_position=0,
             weather_bypass_auto_control=True,
-            glare_zones=None,
-            active_zone_names=frozenset(),
         )
 
         result = PipelineRegistry([DefaultHandler()]).evaluate(snapshot)
@@ -247,7 +245,7 @@ def test_sunset_position_with_always_min_pos(mock_sun_data, mock_logger):
         snapshot = PipelineSnapshot(
             cover=cover,
             config=cover.config,
-            cover_type="cover_blind",
+            cover_type="cover_louvered_roof",
             default_position=0,  # sunset_pos via compute_effective_default
             is_sunset_active=True,
             climate_readings=None,
@@ -258,8 +256,6 @@ def test_sunset_position_with_always_min_pos(mock_sun_data, mock_logger):
             weather_override_active=False,
             weather_override_position=0,
             weather_bypass_auto_control=True,
-            glare_zones=None,
-            active_zone_names=frozenset(),
         )
 
         result = PipelineRegistry([DefaultHandler()]).evaluate(snapshot)

@@ -1975,28 +1975,6 @@
         }
       }
     },
-    "set_venetian": {
-      "name": "Définir les options store vénitien",
-      "description": "Mettre à jour les options spécifiques au store vénitien : mode de fonctionnement, seuil d'inclinaison et délai post-arrêt.",
-      "fields": {
-        "venetian_mode": {
-          "name": "Mode store vénitien",
-          "description": "Mode de fonctionnement : 'position_and_tilt' (déplacer le mécanisme puis incliner) ou 'tilt_only' (incliner uniquement, sans déplacement)."
-        },
-        "venetian_tilt_skip_above": {
-          "name": "Ignorer inclinaison au-dessus de (%)",
-          "description": "Ignorer les commandes d'inclinaison lorsque la position du mécanisme dépasse cette valeur (0–100 %). Régler à 100 pour toujours incliner."
-        },
-        "venetian_post_settle_hold": {
-          "name": "Délai post-arrêt (s)",
-          "description": "Secondes d'attente après l'arrêt du mécanisme avant l'envoi de la commande d'inclinaison (0,0–10,0 s). Augmenter à 4–6 s pour le firmware KNX FGR223."
-        },
-        "venetian_backrotate_publish_lag": {
-          "description": "Secondes pendant lesquelles l'intégration tolère une publication tardive de l'état de position/inclinaison de l'actionneur avant de la traiter comme un geste utilisateur (15–180 s). 45 s par défaut. Augmentez à 60–120 s pour un bus KNX lent ou Fibaro/Shelly republish ; resserrez uniquement pour les actionneurs inhabituellement rapides.",
-          "name": "Fenêtre de latence de publication (s)"
-        }
-      }
-    },
     "set_position": {
       "fields": {
         "position": {

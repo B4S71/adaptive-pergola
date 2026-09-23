@@ -21,7 +21,6 @@ integration registers only the pergola types.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from typing import TYPE_CHECKING, ClassVar
 
 import voluptuous as vol
@@ -61,7 +60,7 @@ from custom_components.adaptive_pergola.cover_types.base import (
     CoverAxis,
     CoverTypePolicy,
 )
-from custom_components.adaptive_pergola.engine.covers import (
+from tests.compat_engines import (
     AdaptiveHorizontalCover,
     AdaptiveTiltCover,
     AdaptiveVerticalCover,
@@ -216,7 +215,7 @@ class CompatBlindPolicy(CoverTypePolicy, register=True):
 
     def glare_zones_config(self, config_service, options: dict):
         """Return the glare-zones config for this cover (vertical-only feature)."""
-        return config_service.get_glare_zones_config(options)
+        return None
 
     def lift_travel_metres(self, config_service, options: dict) -> float | None:
         """Vertical blinds travel the configured window height."""
@@ -233,11 +232,8 @@ class CompatBlindPolicy(CoverTypePolicy, register=True):
         config_service,
         options: dict,
     ) -> AdaptiveGeneralCover:
-        """Build an ``AdaptiveVerticalCover``, threading glare zones if any."""
+        """Build a test-only compat vertical engine for shared-policy coverage."""
         vert_config = config_service.get_vertical_data(options)
-        glare_zones_cfg = config_service.get_glare_zones_config(options)
-        if glare_zones_cfg is not None:
-            vert_config = replace(vert_config, glare_zones=glare_zones_cfg)
         return AdaptiveVerticalCover(
             logger=logger,
             sol_azi=sol_azi,

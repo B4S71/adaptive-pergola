@@ -20,7 +20,8 @@
   "issue_tracker": "https://github.com/B4S71/adaptive-pergola/issues",
   "requirements": [
     "astral==2.2",
+    "numpy==2.3.2",
     "pandas==2.3.3"
   ],
-  "version": "0.6.3-beta3"
+  "version": "0.7.0-beta1"
 }

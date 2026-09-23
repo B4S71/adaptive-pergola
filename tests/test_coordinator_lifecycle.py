@@ -111,6 +111,20 @@ async def test_unload_removes_coordinator(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.integration
+async def test_unload_runs_full_coordinator_shutdown(hass: HomeAssistant) -> None:
+    """Unloading an entry cancels every coordinator-owned timer and task."""
+    entry = await _setup(hass, entry_id="unload_shutdown_01")
+    coordinator = entry.runtime_data
+    coordinator.async_shutdown = AsyncMock(wraps=coordinator.async_shutdown)
+
+    result = await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert result is True
+    coordinator.async_shutdown.assert_awaited_once()
+
+
+@pytest.mark.integration
 async def test_unload_one_entry_preserves_other(hass: HomeAssistant) -> None:
     """Unloading entry A leaves entry B's coordinator intact."""
     entry_a = await _setup(hass, entry_id="unload_a_01", name="Cover A")

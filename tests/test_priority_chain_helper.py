@@ -12,7 +12,6 @@ from custom_components.adaptive_pergola.pipeline.handlers import (
     ClimateHandler,
     CloudSuppressionHandler,
     DefaultHandler,
-    GlareZoneHandler,
     ManualOverrideHandler,
     MotionTimeoutHandler,
     SolarHandler,
@@ -31,8 +30,6 @@ def _kwargs(**overrides):
         "has_cloud": False,
         "has_climate": False,
         "sun_tracking_enabled": True,
-        "has_glare": False,
-        "supports_glare": False,
         "custom_slots": [],
     }
     base.update(overrides)
@@ -56,18 +53,6 @@ def test_entries_sorted_highest_priority_first():
     chain = build_priority_chain(**_kwargs())
     priorities = [e.priority for e in chain]
     assert priorities == sorted(priorities, reverse=True)
-
-
-def test_glare_absent_when_policy_does_not_support_it():
-    chain = build_priority_chain(**_kwargs(supports_glare=False, has_glare=False))
-    assert all(e.label != "Glare" for e in chain)
-
-
-def test_glare_present_at_handler_priority_when_supported():
-    chain = build_priority_chain(**_kwargs(supports_glare=True, has_glare=True))
-    glare = next(e for e in chain if e.label == "Glare")
-    assert glare.priority == GlareZoneHandler.priority
-    assert glare.active is True
 
 
 def test_active_flags_propagate():
@@ -119,7 +104,7 @@ def _blind_policy():
     from custom_components.adaptive_pergola.const import CoverType
     from custom_components.adaptive_pergola.cover_types import get_policy
 
-    return get_policy(CoverType.BLIND)
+    return get_policy(CoverType.LOUVERED_ROOF)
 
 
 def test_priority_scale_lists_fixed_anchors():

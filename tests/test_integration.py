@@ -44,8 +44,6 @@ from custom_components.adaptive_pergola.state.climate_provider import ClimateRea
 from custom_components.adaptive_pergola.sun import SunData
 
 from .cover_helpers import (
-    build_horizontal_cover,
-    build_tilt_cover,
     build_vertical_cover,
 )
 
@@ -154,7 +152,7 @@ def _build_pipeline_snapshot(
     manual_override_active: bool = False,
     weather_override_active: bool = False,
     weather_override_position: int = 0,
-    cover_type: str = "cover_blind",
+    cover_type: str = "cover_louvered_roof",
 ) -> PipelineSnapshot:
     """Build a PipelineSnapshot from a real cover instance."""
     return PipelineSnapshot(
@@ -171,8 +169,6 @@ def _build_pipeline_snapshot(
         motion_timeout_active=motion_timeout_active,
         weather_override_active=weather_override_active,
         weather_override_position=weather_override_position,
-        glare_zones=None,
-        active_zone_names=set(),
     )
 
 
@@ -236,7 +232,7 @@ class TestEndToEndIntegration:
             assert cover.direct_sun_valid is True
 
             pipeline = _make_pipeline()
-            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_blind")
+            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_louvered_roof")
             result = pipeline.evaluate(snapshot)
 
             assert result.control_method == ControlMethod.SOLAR
@@ -283,7 +279,7 @@ class TestEndToEndIntegration:
             assert cover.direct_sun_valid is False
 
             pipeline = _make_pipeline()
-            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_blind")
+            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_louvered_roof")
             result = pipeline.evaluate(snapshot)
 
             assert result.control_method == ControlMethod.DEFAULT
@@ -490,7 +486,7 @@ class TestEndToEndIntegration:
             pipeline = _make_pipeline(safety_position=75)
             snapshot = _build_pipeline_snapshot(
                 cover,
-                cover_type="cover_blind",
+                cover_type="cover_louvered_roof",
                 custom_position_sensors=[_safety_slot_state(True, position=75)],
             )
             result = pipeline.evaluate(snapshot)
@@ -539,7 +535,9 @@ class TestEndToEndIntegration:
 
             pipeline = _make_pipeline()
             snapshot = _build_pipeline_snapshot(
-                cover, cover_type="cover_blind", manual_override_active=True
+                cover,
+                cover_type="cover_louvered_roof",
+                manual_override_active=True,
             )
             result = pipeline.evaluate(snapshot)
 
@@ -581,7 +579,9 @@ class TestEndToEndIntegration:
 
             pipeline = _make_pipeline()
             snapshot = _build_pipeline_snapshot(
-                cover, cover_type="cover_blind", motion_timeout_active=True
+                cover,
+                cover_type="cover_louvered_roof",
+                motion_timeout_active=True,
             )
             result = pipeline.evaluate(snapshot)
 
@@ -595,98 +595,6 @@ class TestEndToEndIntegration:
 
             assert diag_dict["control_status"] == "motion_timeout"
             assert "motion" in explanation.lower()
-
-    def test_horizontal_awning_sun_tracking(self):
-        """Horizontal awning with sun in FOV → SolarHandler wins."""
-        logger = _make_logger()
-        sun_data = _make_sun_data()
-
-        with patch(_DATETIME_PATCH) as mock_dt:
-            mock_dt.now.return_value = _NOON
-
-            cover = build_horizontal_cover(
-                logger=logger,
-                sol_azi=180.0,
-                sol_elev=45.0,
-                sun_data=sun_data,
-                win_azi=180,
-                fov_left=45,
-                fov_right=45,
-                h_def=100,
-                distance=0.5,
-                h_win=2.0,
-                awn_length=2.0,
-                awn_angle=0,
-                sunset_pos=0,
-                sunset_off=0,
-                sunrise_off=0,
-                max_pos=100,
-                min_pos=0,
-            )
-
-            assert cover.direct_sun_valid is True
-
-            pipeline = _make_pipeline()
-            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_awning")
-            result = pipeline.evaluate(snapshot)
-
-            assert result.control_method == ControlMethod.SOLAR
-
-            diag_ctx = _build_diagnostic_context(cover, result)
-            diag_dict, explanation = DiagnosticsBuilder().build(diag_ctx)
-
-            assert diag_dict["sun_azimuth"] == 180.0
-            assert diag_dict["sun_elevation"] == 45.0
-            assert "gamma" in diag_dict
-            assert "sun" in explanation.lower() and "position" in explanation.lower()
-
-    def test_tilt_cover_sun_tracking(self):
-        """Tilt (venetian) cover with sun in FOV → SolarHandler wins.
-
-        Uses sol_elev=70° because the default slat geometry (slat_distance/depth=1.5)
-        produces a negative discriminant at 45° elevation (a known edge case tested in
-        test_adaptive_tilt_cover.py).  70° gives tan²(beta)≈7.5, keeping it positive.
-        """
-        logger = _make_logger()
-        sun_data = _make_sun_data()
-
-        with patch(_DATETIME_PATCH) as mock_dt:
-            mock_dt.now.return_value = _NOON
-
-            cover = build_tilt_cover(
-                logger=logger,
-                sol_azi=180.0,
-                sol_elev=70.0,
-                sun_data=sun_data,
-                win_azi=180,
-                fov_left=45,
-                fov_right=45,
-                h_def=50,
-                slat_distance=0.03,
-                depth=0.02,
-                mode="mode1",
-                sunset_pos=0,
-                sunset_off=0,
-                sunrise_off=0,
-                max_pos=100,
-                min_pos=0,
-            )
-
-            assert cover.direct_sun_valid is True
-
-            pipeline = _make_pipeline()
-            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_tilt")
-            result = pipeline.evaluate(snapshot)
-
-            assert result.control_method == ControlMethod.SOLAR
-
-            diag_ctx = _build_diagnostic_context(cover, result)
-            diag_dict, explanation = DiagnosticsBuilder().build(diag_ctx)
-
-            assert diag_dict["sun_azimuth"] == 180.0
-            assert diag_dict["sun_elevation"] == 70.0
-            assert "gamma" in diag_dict
-            assert "sun" in explanation.lower() and "position" in explanation.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -732,7 +640,7 @@ class TestWeatherOverrideEndToEnd:
             )
             snapshot = _build_pipeline_snapshot(
                 cover,
-                cover_type="cover_blind",
+                cover_type="cover_louvered_roof",
                 weather_override_active=True,
                 weather_override_position=0,
             )
@@ -810,7 +718,7 @@ class TestCloudSuppressionEndToEnd:
             )
             snapshot = _build_pipeline_snapshot(
                 cover,
-                cover_type="cover_blind",
+                cover_type="cover_louvered_roof",
                 climate_readings=climate_readings,
                 climate_options=climate_options,
             )
@@ -875,7 +783,7 @@ class TestCustomPositionEndToEnd:
             snapshot = PipelineSnapshot(
                 cover=cover,
                 config=cover.config,
-                cover_type="cover_blind",
+                cover_type="cover_louvered_roof",
                 default_position=50,
                 is_sunset_active=False,
                 climate_readings=None,
@@ -885,8 +793,6 @@ class TestCustomPositionEndToEnd:
                 motion_timeout_active=False,
                 weather_override_active=False,
                 weather_override_position=0,
-                glare_zones=None,
-                active_zone_names=frozenset(),
                 custom_position_sensors=[
                     CustomPositionSensorState(
                         entity_ids=("binary_sensor.scene",),
@@ -1035,7 +941,7 @@ class TestMultipleOverridesHighestPriorityWins:
             )
             snapshot = _build_pipeline_snapshot(
                 cover,
-                cover_type="cover_blind",
+                cover_type="cover_louvered_roof",
                 custom_position_sensors=[
                     _safety_slot_state(True, entity_id="binary_sensor.wind")
                 ],
@@ -1063,197 +969,3 @@ class TestMultipleOverridesHighestPriorityWins:
             diag_ctx = _build_diagnostic_context(cover, result, final_state=0)
             diag_dict, explanation = DiagnosticsBuilder().build(diag_ctx)
             assert "binary_sensor.wind" in explanation
-
-
-# ---------------------------------------------------------------------------
-# Step 30: Horizontal awning with climate mode
-# ---------------------------------------------------------------------------
-
-
-class TestHorizontalAwningWithClimateMode:
-    """Horizontal awning with climate mode: covers awning-specific calculation."""
-
-    def test_horizontal_awning_winter_heating(self):
-        """Cold temp + sun in FOV → ClimateHandler retracts awning fully (0%) so sun reaches window."""
-        logger = _make_logger()
-        sun_data = _make_sun_data()
-
-        with patch(_DATETIME_PATCH) as mock_dt:
-            mock_dt.now.return_value = _NOON
-
-            cover = build_horizontal_cover(
-                logger=logger,
-                sol_azi=180.0,
-                sol_elev=45.0,
-                sun_data=sun_data,
-                win_azi=180,
-                fov_left=45,
-                fov_right=45,
-                h_def=100,
-                distance=0.5,
-                h_win=2.0,
-                awn_length=2.0,
-                awn_angle=0,
-                sunset_pos=0,
-                sunset_off=0,
-                sunrise_off=0,
-                max_pos=100,
-                min_pos=0,
-            )
-
-            pipeline = _make_pipeline()
-            climate_readings = ClimateReadings(
-                outside_temperature=None,
-                inside_temperature=15.0,  # below temp_low=20 → winter
-                is_presence=True,
-                is_sunny=True,
-                lux_below_threshold=False,
-                irradiance_below_threshold=False,
-                cloud_coverage_above_threshold=False,
-            )
-            from custom_components.adaptive_pergola.pipeline.types import (
-                ClimateOptions,
-            )
-
-            climate_options = ClimateOptions(
-                temp_low=20.0,
-                temp_high=25.0,
-                temp_switch=False,
-                transparent_blind=False,
-                temp_summer_outside=None,
-                cloud_suppression_enabled=False,
-                winter_close_insulation=False,
-            )
-            snapshot = _build_pipeline_snapshot(
-                cover,
-                cover_type="cover_awning",
-                climate_mode_enabled=True,
-                climate_readings=climate_readings,
-                climate_options=climate_options,
-            )
-            result = pipeline.evaluate(snapshot)
-
-            assert result.control_method == ControlMethod.WINTER
-            assert result.position == 0, (
-                "Horizontal awning winter heating must retract (0%) so sun reaches the "
-                "window for solar gain — extending (100%) blocks the heating sun. (#337)"
-            )
-
-            diag_ctx = _build_diagnostic_context(cover, result, climate_mode=True)
-            diag_dict, _ = DiagnosticsBuilder().build(diag_ctx)
-
-            assert diag_dict["sun_azimuth"] == 180.0
-            assert diag_dict["control_status"] == "active"
-
-    def test_horizontal_awning_solar_tracking(self):
-        """Awning with sun in FOV but comfortable temp → solar tracking."""
-        logger = _make_logger()
-        sun_data = _make_sun_data()
-
-        with patch(_DATETIME_PATCH) as mock_dt:
-            mock_dt.now.return_value = _NOON
-
-            cover = build_horizontal_cover(
-                logger=logger,
-                sol_azi=180.0,
-                sol_elev=45.0,
-                sun_data=sun_data,
-                win_azi=180,
-                fov_left=45,
-                fov_right=45,
-                h_def=100,
-                distance=0.5,
-                h_win=2.0,
-                awn_length=2.0,
-                awn_angle=0,
-                sunset_pos=0,
-                sunset_off=0,
-                sunrise_off=0,
-                max_pos=100,
-                min_pos=0,
-            )
-
-            assert cover.direct_sun_valid is True
-            pipeline = _make_pipeline()
-            snapshot = _build_pipeline_snapshot(cover, cover_type="cover_awning")
-            result = pipeline.evaluate(snapshot)
-
-            assert result.control_method == ControlMethod.SOLAR
-            assert 0 <= result.position <= 100
-
-
-# ---------------------------------------------------------------------------
-# Step 31: Tilt cover with climate mode
-# ---------------------------------------------------------------------------
-
-
-class TestTiltCoverWithClimateMode:
-    """Tilt (venetian) cover with climate mode active."""
-
-    def test_tilt_cover_winter_heating(self):
-        """Cold temp + tilt cover → ClimateHandler opens slats fully."""
-        logger = _make_logger()
-        sun_data = _make_sun_data()
-
-        with patch(_DATETIME_PATCH) as mock_dt:
-            mock_dt.now.return_value = _NOON
-
-            cover = build_tilt_cover(
-                logger=logger,
-                sol_azi=180.0,
-                sol_elev=70.0,
-                sun_data=sun_data,
-                win_azi=180,
-                fov_left=45,
-                fov_right=45,
-                h_def=50,
-                slat_distance=0.03,
-                depth=0.02,
-                mode="mode1",
-                sunset_pos=0,
-                sunset_off=0,
-                sunrise_off=0,
-                max_pos=100,
-                min_pos=0,
-            )
-
-            pipeline = _make_pipeline()
-            climate_readings = ClimateReadings(
-                outside_temperature=None,
-                inside_temperature=10.0,  # very cold → winter
-                is_presence=True,
-                is_sunny=True,
-                lux_below_threshold=False,
-                irradiance_below_threshold=False,
-                cloud_coverage_above_threshold=False,
-            )
-            from custom_components.adaptive_pergola.pipeline.types import (
-                ClimateOptions,
-            )
-
-            climate_options = ClimateOptions(
-                temp_low=18.0,
-                temp_high=26.0,
-                temp_switch=False,
-                transparent_blind=False,
-                temp_summer_outside=None,
-                cloud_suppression_enabled=False,
-                winter_close_insulation=False,
-            )
-            snapshot = _build_pipeline_snapshot(
-                cover,
-                cover_type="cover_tilt",
-                climate_mode_enabled=True,
-                climate_readings=climate_readings,
-                climate_options=climate_options,
-            )
-            result = pipeline.evaluate(snapshot)
-
-            assert result.control_method == ControlMethod.WINTER
-            assert result.position == 100
-
-            diag_ctx = _build_diagnostic_context(cover, result, climate_mode=True)
-            diag_dict, _ = DiagnosticsBuilder().build(diag_ctx)
-
-            assert diag_dict["sun_azimuth"] == 180.0
-            assert diag_dict["control_status"] == "active"

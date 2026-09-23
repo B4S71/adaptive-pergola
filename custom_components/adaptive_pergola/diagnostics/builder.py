@@ -69,10 +69,8 @@ class DiagnosticContext:
     # raw template alongside its resolved value in diagnostics.
     resolved_options: dict = field(default_factory=dict)
 
-    # HA core handle — the sole boundary the builder uses to resolve live entity
-    # states and to read a linked Building Profile's options for the sensor
-    # source/state subsections (issue #693, Q3). Optional: when absent the
-    # profile lookup is skipped and configured entities classify as unavailable.
+    # HA core handle used to resolve live entity states for diagnostics.
+    # Optional: when absent, configured entities classify as unavailable.
     hass: Any = None
 
     # Motion manager state
@@ -150,7 +148,6 @@ _METHOD_TO_STATUS: dict[ControlMethod, str] = {
     ControlMethod.WINTER: ControlStatus.ACTIVE,
     ControlMethod.SOLAR: ControlStatus.ACTIVE,
     ControlMethod.DEFAULT: ControlStatus.ACTIVE,
-    ControlMethod.GLARE_ZONE: ControlStatus.ACTIVE,
 }
 
 

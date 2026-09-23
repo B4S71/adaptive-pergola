@@ -82,7 +82,7 @@ class TestGetPolicyAcceptsBothForms:
 
 @pytest.mark.unit
 class TestSupportsGlareZones:
-    """``supports_glare_zones`` is the single seam for the blind-only feature."""
+    """Glare-zone capability seam was removed with glare-zone feature removal."""
 
     def test_louvered_roof_does_not_support(self):
-        assert LouveredRoofPolicy.supports_glare_zones is False
+        assert not hasattr(LouveredRoofPolicy, "supports_glare_zones")

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from ..const import ClimateStrategy, ControlMethod
 
 if TYPE_CHECKING:
-    from ..config_types import CoverConfig, GlareZonesConfig
+    from ..config_types import CoverConfig
     from ..cover_types.base import CoverTypePolicy
     from ..engine.covers.base import AdaptiveGeneralCover
     from ..state.climate_provider import ClimateReadings
@@ -125,10 +125,6 @@ class PipelineSnapshot:
     weather_override_active: bool
     weather_override_position: int
 
-    # Glare zones (vertical covers only — None for awning/tilt)
-    glare_zones: GlareZonesConfig | None
-    active_zone_names: frozenset[str]
-
     # When True (default), weather override sends commands even if automatic_control is OFF.
     # Users can disable this if they want weather override to respect the auto-control toggle.
     weather_bypass_auto_control: bool = True
@@ -145,8 +141,8 @@ class PipelineSnapshot:
     weather_override_min_mode: bool = False
 
     # True when current time is within the configured start/end operational window.
-    # Handlers that should only run during the active window (e.g. SolarHandler,
-    # GlareZoneHandler) check this field and return None when it is False.
+    # Handlers that should only run during the active window (e.g. SolarHandler)
+    # check this field and return None when it is False.
     # Defaults to True so that handlers which don't check it are unaffected and
     # existing tests that construct PipelineSnapshot without this field continue
     # to pass.

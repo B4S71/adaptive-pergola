@@ -11,6 +11,11 @@ from custom_components.adaptive_pergola.config_types import (
     TiltConfig,
     VerticalConfig,
 )
+from tests.compat_engines import (
+    AdaptiveHorizontalCover,
+    AdaptiveTiltCover,
+    AdaptiveVerticalCover,
+)
 
 
 def make_cover_config(**overrides) -> CoverConfig:
@@ -45,9 +50,9 @@ def make_vertical_config(**overrides) -> VerticalConfig:
         "h_win": 2.0,
         "window_depth": 0.0,
         "sill_height": 0.0,
-        "glare_zones": None,
     }
     defaults.update(overrides)
+    defaults.pop("glare_zones", None)
     return VerticalConfig(**defaults)
 
 
@@ -125,8 +130,6 @@ def build_vertical_cover(**kwargs):
     Accepts the same flat kwargs as the old constructor and routes them
     to the correct typed config dataclasses.
     """
-    from custom_components.adaptive_pergola.calculation import AdaptiveVerticalCover
-
     cover_kwargs = {}
     vert_kwargs = {}
     direct_kwargs = {}
@@ -150,8 +153,6 @@ def build_vertical_cover(**kwargs):
 
 def build_horizontal_cover(**kwargs):
     """Build an AdaptiveHorizontalCover from flat kwargs (old-style API)."""
-    from custom_components.adaptive_pergola.calculation import AdaptiveHorizontalCover
-
     cover_kwargs = {}
     vert_kwargs = {}
     horiz_kwargs = {}
@@ -179,8 +180,6 @@ def build_horizontal_cover(**kwargs):
 
 def build_tilt_cover(**kwargs):
     """Build an AdaptiveTiltCover from flat kwargs (old-style API)."""
-    from custom_components.adaptive_pergola.calculation import AdaptiveTiltCover
-
     cover_kwargs = {}
     tilt_kwargs = {}
     direct_kwargs = {}

@@ -112,12 +112,6 @@ def make_snapshot(
         weather_override_position=weather_override_position,
         weather_override_min_mode=weather_override_min_mode,
         weather_bypass_auto_control=weather_bypass_auto_control,
-        glare_zones=glare_zones,
-        active_zone_names=(
-            frozenset(active_zone_names)
-            if active_zone_names is not None
-            else frozenset()
-        ),
         in_time_window=in_time_window,
         motion_control_enabled=motion_control_enabled,
         custom_position_sensors=(

@@ -17,7 +17,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_CLOUD_SUPPRESSION,
     CONF_CUSTOM_POSITION_1,
     CONF_CUSTOM_POSITION_SENSOR_1,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_SUN_TRACKING,
     CONF_FORCE_OVERRIDE_SENSORS,
     CONF_IRRADIANCE_ENTITY,
@@ -161,16 +160,6 @@ def test_weather_enabled_when_weather_entity_set():
     assert "weather" in enabled
 
 
-def test_glare_zone_disabled_by_default():
-    enabled = _enabled({})
-    assert "glare_zone" not in enabled
-
-
-def test_glare_zone_enabled_when_flag_on():
-    enabled = _enabled({CONF_ENABLE_GLARE_ZONES: True})
-    assert "glare_zone" in enabled
-
-
 def test_cloud_disabled_when_only_flag_on():
     """Cloud requires BOTH suppression flag AND coverage entity."""
     enabled = _enabled({CONF_CLOUD_SUPPRESSION: True})
@@ -236,7 +225,6 @@ def test_full_configuration_enables_everything():
             CONF_MOTION_SENSORS: ["binary_sensor.m"],
             CONF_CLIMATE_MODE: True,
             CONF_WEATHER_ENTITY: "weather.home",
-            CONF_ENABLE_GLARE_ZONES: True,
             CONF_CLOUD_SUPPRESSION: True,
             CONF_CLOUD_COVERAGE_ENTITY: "sensor.cloud",
             CONF_CUSTOM_POSITION_SENSOR_1: "binary_sensor.cp1",
@@ -251,7 +239,6 @@ def test_full_configuration_enables_everything():
         "motion",
         "cloud",
         "climate",
-        "glare_zone",
         "solar",
         "default",
     }

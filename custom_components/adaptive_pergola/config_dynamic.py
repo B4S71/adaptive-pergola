@@ -92,7 +92,6 @@ from .const import (
     DEFAULT_ENABLE_POSITION_MATCHING,
     DEFAULT_FOV_LEFT,
     DEFAULT_FOV_RIGHT,
-    DEFAULT_GLARE_ZONE_Z,
     DEFAULT_WEATHER_RAIN_THRESHOLD,
     DEFAULT_WEATHER_TIMEOUT,
     DEFAULT_WEATHER_WIND_DIRECTION_TOLERANCE,
@@ -101,7 +100,6 @@ from .const import (
     DEFAULT_WINDOW_AZIMUTH,
     TemplateCombineMode,
 )
-from .unit_system import length_default, length_selector
 
 # Weather condition states offered by the weather-state multi-select. Kept in
 # the documented HA order (sort=False preserves it).
@@ -533,70 +531,3 @@ def behavior_schema(options: dict | None = None) -> vol.Schema:
         # on old entries stay readable; runtime keeps its default.
     }
     return vol.Schema(schema)
-
-
-def glare_zones_schema(
-    options: dict | None = None, hass: HomeAssistant | None = None
-) -> vol.Schema:
-    """Glare-zones schema: name + x/y/radius/z for 4 zone slots (locale-aware)."""
-    opts = options or {}
-
-    def _default(key: str, canonical_fallback: float) -> float:
-        canonical = float(opts.get(key, canonical_fallback))
-        return length_default(canonical, hass)
-
-    schema_dict: dict = {}
-    for i in range(1, 5):
-        prefix = f"glare_zone_{i}"
-        schema_dict[
-            vol.Optional(f"{prefix}_name", default=opts.get(f"{prefix}_name", ""))
-        ] = selector.TextSelector()
-        schema_dict[
-            vol.Optional(f"{prefix}_x", default=_default(f"{prefix}_x", 0.0))
-        ] = length_selector(
-            hass,
-            min_m=-5.0,
-            max_m=5.0,
-            metric_step=0.05,
-            mode=selector.NumberSelectorMode.SLIDER,
-        )
-        schema_dict[
-            vol.Optional(f"{prefix}_y", default=_default(f"{prefix}_y", 1.0))
-        ] = length_selector(
-            hass,
-            min_m=0.0,
-            max_m=10.0,
-            metric_step=0.05,
-            mode=selector.NumberSelectorMode.SLIDER,
-        )
-        schema_dict[
-            vol.Optional(f"{prefix}_radius", default=_default(f"{prefix}_radius", 0.3))
-        ] = length_selector(
-            hass,
-            min_m=0.1,
-            max_m=2.0,
-            metric_step=0.05,
-            mode=selector.NumberSelectorMode.SLIDER,
-        )
-        schema_dict[
-            vol.Optional(
-                f"{prefix}_z",
-                default=_default(f"{prefix}_z", DEFAULT_GLARE_ZONE_Z),
-            )
-        ] = length_selector(
-            hass,
-            min_m=0.0,
-            max_m=3.0,
-            metric_step=0.05,
-            mode=selector.NumberSelectorMode.SLIDER,
-        )
-    return vol.Schema(schema_dict)
-
-
-def glare_zone_length_keys() -> tuple[str, ...]:
-    """Return the 16 metres-stored option keys for the 4 glare-zone slots."""
-    return tuple(
-        f"glare_zone_{i}_{axis}"
-        for i in range(1, 5)
-        for axis in ("x", "y", "radius", "z")
-    )

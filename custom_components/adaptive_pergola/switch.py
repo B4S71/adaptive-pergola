@@ -17,7 +17,6 @@ from .const import (
     CONF_CLIMATE_MODE,
     CONF_CLOUD_SUPPRESSION,
     CONF_DEFAULT_HEIGHT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_SUN_TRACKING,
     CONF_IRRADIANCE_ENTITY,
     CONF_LR_SHADE_AIRFLOW,
@@ -184,42 +183,6 @@ _SWITCH_SPECS: tuple[_SwitchSpec, ...] = (
 )
 
 
-def _glare_zone_specs(entry: ConfigEntry) -> list[_SwitchSpec]:
-    """Build dynamic glare-zone switch specs from configured zone names.
-
-    Vertical-cover-only feature. The compact 0-based key (`glare_zone_0`,
-    `glare_zone_1`, …) advances only for *named* zones, matching the index
-    that ConfigurationService uses. The unique_id suffix
-    `f"Glare Zone: {zone_name}"` carries the user-provided text and **must
-    stay byte-identical** — that user text is the registry key.
-    """
-    from .cover_types import POLICY_REGISTRY, get_policy
-
-    sensor_type = entry.data.get(CONF_SENSOR_TYPE)
-    if sensor_type not in POLICY_REGISTRY:
-        return []
-    if not get_policy(sensor_type).supports_glare_zones:
-        return []
-    if not entry.options.get(CONF_ENABLE_GLARE_ZONES):
-        return []
-
-    specs: list[_SwitchSpec] = []
-    zone_counter = 0
-    for idx in range(1, 5):  # idx is 1-based (matches config option keys)
-        zone_name = entry.options.get(f"glare_zone_{idx}_name", "")
-        if not zone_name:
-            continue
-        specs.append(
-            _SwitchSpec(
-                switch_name=f"Glare Zone: {zone_name}",
-                key=f"glare_zone_{zone_counter}",
-                initial_state=True,
-            )
-        )
-        zone_counter += 1
-    return specs
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: AdaptiveConfigEntry,
@@ -231,7 +194,6 @@ async def async_setup_entry(
     specs: list[_SwitchSpec] = [
         spec for spec in _SWITCH_SPECS if spec.enabled_when(config_entry)
     ]
-    specs.extend(_glare_zone_specs(config_entry))
 
     async_add_entities(
         AdaptivePergolaSwitch(

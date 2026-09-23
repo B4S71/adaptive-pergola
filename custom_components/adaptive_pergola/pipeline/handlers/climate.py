@@ -14,7 +14,6 @@ import numpy as np
 
 from ...cover_types import get_policy
 from ...cover_types.base import AXIS_NAME_TILT, CoverTypePolicy
-from ...engine.covers import AdaptiveTiltCover
 from ...const import ClimateInactiveReason, ClimateStrategy, ControlMethod
 from ..handler import OverrideHandler
 from ..helpers import (
@@ -196,10 +195,11 @@ class ClimateCoverState:
         gamma_deg = 0.0
         beta_deg = 0.0
         if tilt:
-            tilt_cover = cast(AdaptiveTiltCover, self.cover)
-            # SunGeometry.gamma is already in degrees; pass it through unconverted.
-            gamma_deg = float(tilt_cover.gamma)
-            beta_deg = float(np.rad2deg(tilt_cover.beta))
+            # Keep this branch engine-agnostic: any tilt-like engine exposing
+            # gamma (deg) and beta (rad) is supported without importing a
+            # specific legacy class.
+            gamma_deg = float(getattr(self.cover, "gamma", 0.0))
+            beta_deg = float(np.rad2deg(float(getattr(self.cover, "beta", 0.0))))
         return ClimateContext(
             data=self.climate_data,
             cover=self.cover,
@@ -219,7 +219,7 @@ class ClimateCoverState:
         """Climate strategy for normal covers with occupants present.
 
         Returns None for the GLARE_CONTROL case — the pipeline falls through
-        to GlareZoneHandler (priority 45) then SolarHandler (priority 40).
+        to SolarHandler (priority 40).
         """
         return self._run(NORMAL_WITH_PRESENCE, tilt=False)
 
@@ -258,7 +258,7 @@ _SLUG_TO_PROSE: dict[str, str] = {
     ClimateInactiveReason.MODE_OFF: "climate mode not enabled",
     ClimateInactiveReason.OUTSIDE_TIME_WINDOW: "outside time window",
     ClimateInactiveReason.READINGS_UNAVAILABLE: "climate readings or options unavailable",
-    ClimateInactiveReason.THRESHOLDS_NOT_MET: "deferred glare-control to solar/glare handlers",
+    ClimateInactiveReason.THRESHOLDS_NOT_MET: "deferred glare-control to lower-priority handlers",
     # ACTIVE and OTHER_MODE_ACTIVE have no describe_skip prose (handler wins / outprioritized)
 }
 
@@ -448,7 +448,7 @@ class ClimateHandler(OverrideHandler):
 
         Called by the registry after evaluation so that GLARE_CONTROL defers
         (evaluate() returns None) still populate climate diagnostics on the
-        winning SolarHandler/GlareZoneHandler result.
+        winning lower-priority handler result.
         """
         climate_data = self._build_climate_data(snapshot)
         if climate_data is None:

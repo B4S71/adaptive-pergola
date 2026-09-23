@@ -1979,28 +1979,6 @@
         }
       }
     },
-    "set_venetian": {
-      "name": "Set venetian options",
-      "description": "Update venetian-blind specific options: operating mode, tilt skip threshold, and post-settle hold.",
-      "fields": {
-        "venetian_mode": {
-          "name": "Venetian mode",
-          "description": "Operating mode: 'position_and_tilt' (move carriage then tilt) or 'tilt_only' (tilt only, no carriage movement)."
-        },
-        "venetian_tilt_skip_above": {
-          "name": "Tilt skip above (%)",
-          "description": "Skip tilt commands when carriage position exceeds this value (0–100%). Set to 100 to always tilt."
-        },
-        "venetian_post_settle_hold": {
-          "name": "Post-settle hold (s)",
-          "description": "Seconds to wait after carriage stops before sending the tilt command (0.0–10.0 s). Raise to 4–6 s for KNX FGR223 firmware."
-        },
-        "venetian_backrotate_publish_lag": {
-          "name": "Publish-lag window (s)",
-          "description": "Seconds the integration tolerates a late position/tilt-state publish from the actuator before treating it as a user touch (15–180 s). Default 45 s. Raise to 60–120 s for slow KNX bus or Fibaro/Shelly republish; tighten only for unusually fast actuators."
-        }
-      }
-    },
     "set_position": {
       "name": "Set position (floor-enforced)",
       "description": "Moves the cover to the requested position, clamping to the highest active custom-position minimum-mode floor. By default the call engages manual override and respects the priority pipeline (force_override / weather still win); set force=true to bypass the pipeline check and skip manual-override engagement. Tilt is not affected.",

@@ -1249,6 +1249,48 @@ async def test_force_endpoint_within_tolerance_skips_command_gate(
 
 
 @pytest.mark.asyncio
+async def test_static_target_within_convergence_tolerance_skips_force_command(
+    mock_hass, logger, grace_mgr
+):
+    """A settled static target is not re-sent for a small reporting offset."""
+    svc = _make_svc_with_tolerance(mock_hass, logger, grace_mgr, tolerance=0)
+    _stub_state(mock_hass, current_position=74)
+    ctx = _ctx_with_special()
+    ctx.force = True
+    ctx.target_tolerance = 2
+
+    with patch.object(svc, "_get_current_position", return_value=74):
+        outcome, reason = await svc.apply_position(
+            "cover.test", 75, "custom_position", ctx
+        )
+
+    assert outcome == "skipped"
+    assert reason == "same_position"
+    mock_hass.services.async_call.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_dynamic_target_does_not_use_static_convergence_tolerance(
+    mock_hass, logger, grace_mgr
+):
+    """Solar tracking retains exact/delta semantics for one-percent moves."""
+    svc = _make_svc_with_tolerance(mock_hass, logger, grace_mgr, tolerance=0)
+    _stub_state(mock_hass, current_position=74)
+    ctx = _ctx_with_special()
+    ctx.min_change = 1
+    ctx.target_tolerance = 0
+
+    with (
+        patch.object(svc, "_get_current_position", return_value=74),
+        patch.object(svc, "_check_time_delta", return_value=True),
+    ):
+        outcome, _ = await svc.apply_position("cover.test", 75, "solar", ctx)
+
+    assert outcome == "sent"
+    mock_hass.services.async_call.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_apply_position_exact_equality_still_skips(mock_hass, logger, grace_mgr):
     """The same-position SEND gate suppresses true no-ops (exact equality).
 

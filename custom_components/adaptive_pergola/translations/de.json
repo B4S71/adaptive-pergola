@@ -1975,28 +1975,6 @@
         }
       }
     },
-    "set_venetian": {
-      "name": "Jalousie-Optionen setzen",
-      "description": "Jalousie-spezifische Optionen aktualisieren: Betriebsmodus, Neigungsschwellenwert und Wartezeit nach Fahrt.",
-      "fields": {
-        "venetian_mode": {
-          "name": "Jalousie-Modus",
-          "description": "Betriebsmodus: 'position_and_tilt' (Antrieb fahren, dann neigen) oder 'tilt_only' (nur neigen, kein Fahren)."
-        },
-        "venetian_tilt_skip_above": {
-          "name": "Neigung überspringen ab (%)",
-          "description": "Neigungsbefehle überspringen, wenn die Position des Antriebs diesen Wert überschreitet (0–100 %). Auf 100 setzen, um immer zu neigen."
-        },
-        "venetian_post_settle_hold": {
-          "name": "Wartezeit nach Fahrt (s)",
-          "description": "Wartezeit in Sekunden nach dem Anhalten des Antriebs, bevor der Neigungsbefehl gesendet wird (0,0–10,0 s). Auf 4–6 s erhöhen für KNX FGR223-Firmware."
-        },
-        "venetian_backrotate_publish_lag": {
-          "description": "Sekunden, die die Integration eine verspätete Status-/Neigungsmeldung des Aktors toleriert, bevor sie als Benutzerberührung behandelt wird (15–180 s). Standard 45 s. Erhöhen Sie auf 60–120 s für langsame KNX-Busse oder Fibaro/Shelly-Neuveröffentlichung; straffen Sie nur für ungewöhnlich schnelle Aktoren.",
-          "name": "Verzögerungsfenster für Statusmeldung (s)"
-        }
-      }
-    },
     "set_position": {
       "fields": {
         "position": {

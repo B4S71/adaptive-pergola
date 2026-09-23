@@ -9,10 +9,6 @@ from homeassistant.helpers import selector
 from homeassistant.util.unit_system import METRIC_SYSTEM, US_CUSTOMARY_SYSTEM
 
 from custom_components.adaptive_pergola import unit_system
-from custom_components.adaptive_pergola.config_dynamic import (
-    glare_zones_schema as _build_glare_zones_schema,
-    glare_zone_length_keys as _glare_zone_length_keys,
-)
 from custom_components.adaptive_pergola.config_flow import (
     light_cloud_schema,
     sun_tracking_schema,
@@ -134,30 +130,6 @@ class TestSunTrackingSchemaHasNoLengthFields:
                 str(m) for m in sun_tracking_schema(_hass(imperial=imperial)).schema
             }
             assert CONF_DISTANCE not in keys
-
-
-@pytest.mark.unit
-class TestGlareZoneSchema:
-    """Glare-zone x/y/radius selectors follow the length-unit locale."""
-
-    def test_metric(self):
-        schema = _build_glare_zones_schema(options=None, hass=_hass(imperial=False))
-        cfg = _selector_for(schema, "glare_zone_1_x")
-        assert cfg["unit_of_measurement"] == "m"
-
-    def test_imperial(self):
-        schema = _build_glare_zones_schema(options=None, hass=_hass(imperial=True))
-        for axis in ("x", "y", "radius"):
-            cfg = _selector_for(schema, f"glare_zone_1_{axis}")
-            assert cfg["unit_of_measurement"] == "in"
-
-    def test_length_keys_exhaustive(self):
-        keys = _glare_zone_length_keys()
-        assert len(keys) == 16  # 4 slots × 4 axes (x, y, radius, z)
-        assert "glare_zone_1_x" in keys
-        assert "glare_zone_4_radius" in keys
-        assert "glare_zone_1_z" in keys
-        assert "glare_zone_4_z" in keys
 
 
 # --- Templatable thresholds: TemplateSelector, no unit/range (#577) ------- #

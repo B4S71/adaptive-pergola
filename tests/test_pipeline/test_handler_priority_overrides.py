@@ -126,8 +126,6 @@ _CHAIN_KW = {
     "has_cloud": True,
     "has_climate": True,
     "sun_tracking_enabled": True,
-    "has_glare": True,
-    "supports_glare": True,
 }
 
 

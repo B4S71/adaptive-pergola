@@ -841,7 +841,6 @@ def test_policy_registered():
     """The policy auto-registers and drives the tilt axis."""
     assert "cover_louvered_roof" in POLICY_REGISTRY
     policy = get_policy("cover_louvered_roof")
-    assert policy.controls_cover is True
     assert [a.name for a in policy.axes] == ["tilt"]
     assert "lr_shade_airflow" in policy.live_option_keys()
 

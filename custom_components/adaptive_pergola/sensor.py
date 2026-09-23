@@ -24,7 +24,6 @@ from .const import (
     CONF_CLIMATE_MODE,
     CONF_CLOUD_COVERAGE_ENTITY,
     CONF_CLOUD_SUPPRESSION,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_SUN_TRACKING,
     CONF_IRRADIANCE_ENTITY,
     CONF_IS_SUNNY_SENSOR,
@@ -95,9 +94,8 @@ class _SensorSpec:
 def _exposes_dual_axis_sensor(entry: ConfigEntry) -> bool:
     """Gate the dual-axis Target Tilt sensor on the cover-type policy.
 
-    Modelled on ``binary_sensor._glare_zones_enabled_for_blind`` so a new
-    cover type opts in by flipping ``CoverTypePolicy.exposes_dual_axis_sensor``
-    on its subclass — not by editing sensor.py.
+    A future cover type opts in through
+    ``CoverTypePolicy.exposes_dual_axis_sensor``.
     """
     from .cover_types import POLICY_REGISTRY, get_policy
 
@@ -901,8 +899,6 @@ def _configured_handlers(opts: Mapping[str, Any]) -> list[str]:
         enabled.append("cloud")
     if opts.get(CONF_CLIMATE_MODE):
         enabled.append("climate")
-    if opts.get(CONF_ENABLE_GLARE_ZONES):
-        enabled.append("glare_zone")
     if opts.get(CONF_ENABLE_SUN_TRACKING, True):
         enabled.append("solar")
     return enabled

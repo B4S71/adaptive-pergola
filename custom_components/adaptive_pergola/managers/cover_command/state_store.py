@@ -78,6 +78,9 @@ class PositionContext:
     min_change: int
     time_threshold: int
     special_positions: list[int]
+    # Arrival band for fixed poses. Dynamic tracking passes 0 so only exact
+    # equality and the normal movement-delta gate govern solar adjustments.
+    target_tolerance: int = 0
     # Accumulated-travel end-stop re-sync threshold (percent of travel);
     # None/0 = feature disabled. See CONF_RESYNC_TRAVEL_THRESHOLD.
     resync_travel_threshold: int | None = None

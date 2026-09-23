@@ -155,15 +155,6 @@ class CoverTypePolicy(ABC):
 
     cover_type: ClassVar[str]
 
-    # Whether this policy drives a physical cover (registers platforms, has at
-    # least one controllable axis). The default is ``True`` so every real
-    # cover-type policy is treated as a cover. Virtual entry types — the
-    # building profile, which only stores shared building-level sensor IDs and
-    # registers no platforms — set this ``False`` so cover-contract suites,
-    # cover-only menus, and the setup path can filter them out by capability
-    # rather than by branching on the cover-type string.
-    controls_cover: ClassVar[bool] = True
-
     def __init_subclass__(cls, *, register: bool = False, **kwargs: Any) -> None:
         """Auto-register a concrete policy by its ``cover_type``.
 
@@ -178,12 +169,6 @@ class CoverTypePolicy(ABC):
     # consults this when picking which HA service to call. Single-axis covers
     # (blind, awning, tilt) declare one entry; venetian declares two.
     axes: ClassVar[tuple[CoverAxis, ...]] = ()
-
-    # Whether this cover type can shield specific floor zones from direct sun
-    # (the "glare zones" feature). Only meaningful for vertical blinds today,
-    # but a future cover type that gains the same capability flips this on
-    # without touching every gate site.
-    supports_glare_zones: ClassVar[bool] = False
 
     # Whether the runtime "Shade Airflow" switch is exposed for this cover type.
     # Only the louvered roof has a shade-pose flavor (airflow vs closed) to flip
@@ -580,8 +565,6 @@ class CoverTypePolicy(ABC):
             base = cd.sun_tracking_schema(hass)
         elif name == cf.SECTION_BLIND_SPOT:
             base = cd.blind_spot_schema(opts)
-        elif name == cf.SECTION_GLARE_ZONES:
-            base = cd.glare_zones_schema(opts, hass)
         elif name == cf.SECTION_WEATHER_OVERRIDE:
             base = cd.weather_override_schema(hass, opts)
         elif name == cf.SECTION_LIGHT_CLOUD:
@@ -642,15 +625,6 @@ class CoverTypePolicy(ABC):
         overrides to express its dual-axis capability requirement.
         """
         return []
-
-    def glare_zones_config(self, config_service, options: dict) -> Any | None:
-        """Return a ``GlareZonesConfig`` for this cover, or ``None``.
-
-        Default ``None`` — only ``BlindPolicy`` reads its glare-zone config
-        from options. Lets the coordinator populate the snapshot without
-        branching on cover type.
-        """
-        return None
 
     def lift_travel_metres(
         self,

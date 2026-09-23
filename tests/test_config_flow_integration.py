@@ -27,7 +27,6 @@ from custom_components.adaptive_pergola.const import (
     CONF_DELTA_TIME,
     CONF_DEVICE_ID,
     CONF_ENABLE_BLIND_SPOT,
-    CONF_ENABLE_GLARE_ZONES,
     CONF_ENABLE_PROXY_COVER,
     CONF_ENTITIES,
     CONF_FOV_COMPUTE,
@@ -417,34 +416,6 @@ def test_get_geometry_schema_unknown_type_returns_louvered():
 
 
 @pytest.mark.unit
-def test_build_glare_zones_schema_with_no_options():
-    """_build_glare_zones_schema with options=None uses default values."""
-    from custom_components.adaptive_pergola.config_dynamic import (
-        glare_zones_schema as _build_glare_zones_schema,
-    )
-    import voluptuous as vol
-
-    schema = _build_glare_zones_schema(options=None)
-    assert isinstance(schema, vol.Schema)
-    # Should have 4 zones * 5 fields (name, x, y, radius, z) = 20 keys
-    assert len(schema.schema) == 20
-
-
-@pytest.mark.unit
-def test_build_glare_zones_schema_with_existing_options():
-    """_build_glare_zones_schema uses existing option values as defaults."""
-    from custom_components.adaptive_pergola.config_dynamic import (
-        glare_zones_schema as _build_glare_zones_schema,
-    )
-    import voluptuous as vol
-
-    options = {"glare_zone_1_name": "My Zone", "glare_zone_1_x": 1.0}
-    schema = _build_glare_zones_schema(options=options)
-    assert isinstance(schema, vol.Schema)
-    assert len(schema.schema) == 20
-
-
-@pytest.mark.unit
 def test_optional_entities_sets_missing_keys_to_none():
     """optional_entities sets keys not in user_input to None."""
     from custom_components.adaptive_pergola.config_flow import OptionsFlowHandler
@@ -492,34 +463,6 @@ async def test_options_flow_menu_includes_blind_spot_when_enabled(
 
 
 @pytest.mark.integration
-async def test_options_flow_menu_includes_glare_zones_for_blind_cover(
-    hass: HomeAssistant,
-) -> None:
-    """OptionsFlow init menu includes glare_zones for cover_blind with CONF_ENABLE_GLARE_ZONES."""
-    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
-
-    options = dict(VERTICAL_OPTIONS)
-    options[CONF_ENABLE_GLARE_ZONES] = True
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "GZ Test", CONF_SENSOR_TYPE: CoverType.BLIND},
-        options=options,
-        entry_id="gz_menu_01",
-        title="GZ Test",
-    )
-    entry.add_to_hass(hass)
-    with _patch_coordinator_refresh():
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] == "menu"
-    # Condensed flow: glare zones are heritage — never offered.
-    assert "glare_zones" not in result.get("menu_options", [])
-
-
-@pytest.mark.integration
 async def test_options_flow_menu_returns_list_not_dict(
     hass: HomeAssistant,
 ) -> None:
@@ -561,7 +504,6 @@ async def test_options_menu_order_follows_pipeline_layers(
 
     options = dict(VERTICAL_OPTIONS)
     options[CONF_ENABLE_BLIND_SPOT] = True
-    options[CONF_ENABLE_GLARE_ZONES] = True
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -653,7 +595,6 @@ async def test_options_menu_every_entry_has_a_label(
 
     options = dict(VERTICAL_OPTIONS)
     options[CONF_ENABLE_BLIND_SPOT] = True
-    options[CONF_ENABLE_GLARE_ZONES] = True
     options[CONF_INTERP] = True
 
     entry = MockConfigEntry(
@@ -955,33 +896,6 @@ async def test_options_flow_done_step_saves_entry(hass: HomeAssistant) -> None:
         )
 
     assert result["type"] == "create_entry"
-
-
-@pytest.mark.integration
-async def test_options_flow_glare_zones_step_saves(hass: HomeAssistant) -> None:
-    """OptionsFlow glare_zones step accepts input and returns to init."""
-    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
-
-    options = dict(VERTICAL_OPTIONS)
-    options[CONF_ENABLE_GLARE_ZONES] = True
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "GZ Step Test", CONF_SENSOR_TYPE: CoverType.BLIND},
-        options=options,
-        entry_id="gz_step_01",
-        title="GZ Step Test",
-    )
-    entry.add_to_hass(hass)
-    with _patch_coordinator_refresh():
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] == "menu"
-    # Condensed flow: glare zones are heritage — the step is unreachable from
-    # the menu even with the legacy enable flag set.
-    assert "glare_zones" not in result.get("menu_options", [])
 
 
 # ---------------------------------------------------------------------------

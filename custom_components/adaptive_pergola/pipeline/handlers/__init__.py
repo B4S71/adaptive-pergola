@@ -15,7 +15,6 @@ from ...const import (
     CONF_CLIMATE_PRIORITY,
     CONF_CLOUD_SUPPRESSION_PRIORITY,
     CONF_ENABLE_SUN_TRACKING,
-    CONF_GLARE_ZONE_PRIORITY,
     CONF_MANUAL_OVERRIDE_PRIORITY,
     CONF_MOTION_TIMEOUT_PRIORITY,
     CONF_SOLAR_PRIORITY,
@@ -33,7 +32,6 @@ from .climate import ClimateHandler
 from .cloud_suppression import CloudSuppressionHandler
 from .custom_position import CustomPositionHandler
 from .default import DefaultHandler
-from .glare_zone import GlareZoneHandler
 from .manual_override import ManualOverrideHandler
 from .morning_position import MorningPositionHandler
 from .motion_timeout import MotionTimeoutHandler
@@ -55,7 +53,6 @@ HANDLER_PRIORITY_CONF: dict[str, str] = {
     MotionTimeoutHandler.name: CONF_MOTION_TIMEOUT_PRIORITY,
     CloudSuppressionHandler.name: CONF_CLOUD_SUPPRESSION_PRIORITY,
     ClimateHandler.name: CONF_CLIMATE_PRIORITY,
-    GlareZoneHandler.name: CONF_GLARE_ZONE_PRIORITY,
     SolarHandler.name: CONF_SOLAR_PRIORITY,
 }
 
@@ -69,7 +66,6 @@ HANDLER_PRIORITY_DEFAULTS: dict[str, int] = {
         MotionTimeoutHandler,
         CloudSuppressionHandler,
         ClimateHandler,
-        GlareZoneHandler,
         SolarHandler,
     )
 }
@@ -142,7 +138,6 @@ HANDLER_FACTORIES: tuple[HandlerFactory, ...] = (
     _single(MotionTimeoutHandler),
     _single(CloudSuppressionHandler),
     _single(ClimateHandler),
-    _single(GlareZoneHandler),
     _single(MorningPositionHandler),
     _solar_handler,
     _single(DefaultHandler),
@@ -176,7 +171,6 @@ __all__ = [
     "CloudSuppressionHandler",
     "CustomPositionHandler",
     "DefaultHandler",
-    "GlareZoneHandler",
     "HandlerFactory",
     "ManualOverrideHandler",
     "MorningPositionHandler",

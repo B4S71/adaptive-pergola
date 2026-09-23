@@ -488,7 +488,6 @@ def test_build_recomputes_effective_default_when_omitted():
         weather_override_active=False,
         in_time_window=True,
         current_cover_position=None,
-        is_glare_zone_enabled=lambda idx: True,
     )
     assert snapshot.default_position == 55
     assert snapshot.is_sunset_active is False
@@ -516,7 +515,6 @@ def test_build_forwards_explicit_effective_default():
         weather_override_active=True,
         in_time_window=False,
         current_cover_position=37,
-        is_glare_zone_enabled=lambda idx: False,
         effective_default=10,
         is_sunset_active=True,
     )
@@ -533,40 +531,6 @@ def test_build_forwards_explicit_effective_default():
     assert snapshot.motion_control_enabled is True
     assert snapshot.default_tilt == 50
     assert snapshot.cover_type == "cover_tilt"
-
-
-@pytest.mark.unit
-def test_build_consults_is_glare_zone_enabled_callable():
-    """Per-zone master switch is read via the callable, not via getattr on coord."""
-    builder, _, _ = _make_builder()
-
-    zone_a = MagicMock()
-    zone_a.name = "zone_a"
-    zone_b = MagicMock()
-    zone_b.name = "zone_b"
-    glare_cfg = MagicMock()
-    glare_cfg.zones = [zone_a, zone_b]
-    builder._policy.glare_zones_config.return_value = glare_cfg
-
-    cover_data = MagicMock()
-    cover_data.config = MagicMock()
-    cover_data.sun_data = MagicMock()
-
-    snapshot = builder.build(
-        {},
-        cover_data=cover_data,
-        cover_type="cover_blind",
-        climate_readings=None,
-        manual_override_active=False,
-        motion_timeout_active=False,
-        weather_override_active=False,
-        in_time_window=True,
-        current_cover_position=None,
-        is_glare_zone_enabled=lambda idx: idx == 0,
-        effective_default=0,
-        is_sunset_active=False,
-    )
-    assert snapshot.active_zone_names == frozenset({"zone_a"})
 
 
 # ---------------------------------------------------------------------------
@@ -605,7 +569,6 @@ def _build_with_caps(builder, caps_map):
         weather_override_active=False,
         in_time_window=True,
         current_cover_position=None,
-        is_glare_zone_enabled=lambda idx: False,
         effective_default=0,
         is_sunset_active=False,
         cover_capabilities=caps_map,

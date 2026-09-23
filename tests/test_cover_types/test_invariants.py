@@ -17,10 +17,9 @@ Two flavours of stub are exercised:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 import voluptuous as vol
+from unittest.mock import MagicMock
 
 from custom_components.adaptive_pergola.cover_types import get_policy
 from custom_components.adaptive_pergola.cover_types.base import (
@@ -65,8 +64,11 @@ def test_disallowed_geometry_fields_returns_list(policy: CoverTypePolicy) -> Non
 
 
 @pytest.mark.unit
-def test_glare_zones_config_safe_default(policy: CoverTypePolicy) -> None:
-    """Default returns None; only BlindPolicy may return a GlareZonesConfig."""
+def test_glare_zones_hook_removed(policy: CoverTypePolicy) -> None:
+    """Policies either removed glare hook or keep compat behavior safely."""
+    if not hasattr(policy, "glare_zones_config"):
+        return
+
     result = policy.glare_zones_config(MagicMock(), {})
     assert result is None or hasattr(result, "zones")
 
@@ -153,28 +155,6 @@ def test_register_stub_policy_round_trip(policy_cls) -> None:
     # After the context exits, the stub is gone — the registry was restored.
     with pytest.raises(ValueError, match="Unsupported cover type"):
         get_policy(policy_cls.cover_type)
-
-
-@pytest.mark.unit
-def test_controls_cover_default_true() -> None:
-    """``controls_cover`` defaults True and every registered policy keeps it.
-
-    The building-profile virtual entry type — the only policy that ever
-    reported ``False`` — was deleted with its subsystem
-    (docs/CONFIG_FLOW_REWORK.md, stage 4). The flag remains as the
-    discriminator the shared-infra suites filter on, so a future virtual
-    entry type slots back in without string branching.
-    """
-    from custom_components.adaptive_pergola.cover_types.base import CoverTypePolicy
-
-    assert CoverTypePolicy.controls_cover is True
-
-    from custom_components.adaptive_pergola.cover_types import POLICY_REGISTRY
-
-    for cover_type, policy_cls in POLICY_REGISTRY.items():
-        assert policy_cls.controls_cover is True, (
-            f"{cover_type} must declare controls_cover=True"
-        )
 
 
 @pytest.mark.unit

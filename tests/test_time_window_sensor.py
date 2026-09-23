@@ -91,7 +91,7 @@ def _make_snapshot(
     return PipelineSnapshot(
         cover=cover,
         config=cover.config,
-        cover_type="cover_blind",
+        cover_type="cover_louvered_roof",
         default_position=default_position,
         is_sunset_active=is_sunset_active,
         climate_readings=None,
@@ -102,8 +102,6 @@ def _make_snapshot(
         weather_override_active=False,
         weather_override_position=0,
         weather_bypass_auto_control=True,
-        glare_zones=None,
-        active_zone_names=frozenset(),
         custom_position_sensors=custom_position_sensors or [],
     )
 

@@ -5,15 +5,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.adaptive_pergola.binary_sensor import (
     AdaptivePergolaPositionMismatchSensor,
 )
 from custom_components.adaptive_pergola.const import (
-    CONF_ENABLE_GLARE_ZONES,
     CONF_SENSOR_TYPE,
-    DOMAIN,
     CoverType,
 )
 
@@ -35,83 +32,6 @@ def _make_coordinator(mock_hass=None):
     coord._cmd_svc._position_tolerance = 5
     coord._cmd_svc.get_target = MagicMock(return_value=None)
     return coord
-
-
-# ---------------------------------------------------------------------------
-# Glare active binary sensor creation
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-async def test_glare_active_binary_sensor_created_when_enabled(hass) -> None:
-    """async_setup_entry creates a glare_active binary sensor when glare zones are enabled."""
-    from tests.ha_helpers import VERTICAL_OPTIONS, _patch_coordinator_refresh
-
-    options = dict(VERTICAL_OPTIONS)
-    options[CONF_ENABLE_GLARE_ZONES] = True
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "Glare Test", CONF_SENSOR_TYPE: CoverType.BLIND},
-        options=options,
-        entry_id="glare_bs_01",
-        title="Glare Test",
-    )
-    entry.add_to_hass(hass)
-    with _patch_coordinator_refresh():
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    from homeassistant.helpers import entity_registry as er
-
-    reg = er.async_get(hass)
-    binary_sensor_entities = [
-        e
-        for e in reg.entities.values()
-        if e.config_entry_id == entry.entry_id and e.domain == "binary_sensor"
-    ]
-    entity_unique_ids = [e.unique_id for e in binary_sensor_entities]
-    assert any("glare_active" in uid for uid in entity_unique_ids), (
-        f"Expected glare_active binary sensor, got unique_ids: {entity_unique_ids}"
-    )
-
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
-
-
-@pytest.mark.integration
-async def test_glare_active_binary_sensor_not_created_when_awning(hass) -> None:
-    """async_setup_entry does NOT create a glare_active sensor for awning type."""
-    from tests.ha_helpers import HORIZONTAL_OPTIONS, _patch_coordinator_refresh
-
-    options = dict(HORIZONTAL_OPTIONS)
-    options[CONF_ENABLE_GLARE_ZONES] = True  # ignored for awning
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={"name": "Awning Test", CONF_SENSOR_TYPE: CoverType.AWNING},
-        options=options,
-        entry_id="glare_bs_awning_01",
-        title="Awning Test",
-    )
-    entry.add_to_hass(hass)
-    with _patch_coordinator_refresh():
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    from homeassistant.helpers import entity_registry as er
-
-    reg = er.async_get(hass)
-    binary_sensor_entities = [
-        e
-        for e in reg.entities.values()
-        if e.config_entry_id == entry.entry_id and e.domain == "binary_sensor"
-    ]
-    entity_unique_ids = [e.unique_id for e in binary_sensor_entities]
-    assert not any("glare_active" in uid for uid in entity_unique_ids)
-
-    await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
 
 
 # ---------------------------------------------------------------------------

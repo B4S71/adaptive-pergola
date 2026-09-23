@@ -17,7 +17,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from custom_components.adaptive_pergola.const import ControlMethod
+from custom_components.adaptive_pergola.const import (
+    STATIC_TARGET_TOLERANCE_PERCENT,
+    ControlMethod,
+)
 from custom_components.adaptive_pergola.pipeline.types import PipelineResult
 
 # ---------------------------------------------------------------------------
@@ -105,6 +108,74 @@ def _make_coordinator(
     coordinator.manager.is_cover_manual.return_value = False
 
     return coordinator
+
+
+def _position_context_coordinator(control_method: ControlMethod):
+    """Build the minimal owner needed to exercise _build_position_context."""
+    coordinator = MagicMock()
+    coordinator._pipeline_result = _make_pipeline_result(control_method=control_method)
+    coordinator.automatic_control = True
+    coordinator._pipeline_bypasses_auto_control = False
+    coordinator.manager.is_cover_manual.return_value = False
+    coordinator.min_change = 1
+    coordinator.time_threshold = 2
+    coordinator.resync_travel_threshold = None
+    coordinator.resync_movement_threshold = None
+    coordinator.resync_combine_mode = "and"
+    coordinator.resync_endstop_mode = "nearest"
+    coordinator._inverse_state = False
+    coordinator._policy.position_context_overrides.return_value = {}
+    return coordinator
+
+
+@pytest.mark.parametrize(
+    "control_method",
+    [
+        ControlMethod.DEFAULT,
+        ControlMethod.MORNING,
+        ControlMethod.MANUAL,
+        ControlMethod.CUSTOM_POSITION,
+        ControlMethod.MOTION,
+        ControlMethod.FORCE,
+        ControlMethod.WEATHER,
+        ControlMethod.CLOUD,
+    ],
+)
+def test_static_control_methods_receive_target_tolerance(control_method) -> None:
+    """Fixed poses tolerate normal one- or two-percent actuator rounding."""
+    from custom_components.adaptive_pergola.coordinator import (
+        AdaptiveDataUpdateCoordinator,
+    )
+
+    coordinator = _position_context_coordinator(control_method)
+    context = AdaptiveDataUpdateCoordinator._build_position_context(
+        coordinator, "cover.test", {}
+    )
+
+    assert context.target_tolerance == STATIC_TARGET_TOLERANCE_PERCENT
+
+
+@pytest.mark.parametrize(
+    "control_method",
+    [
+        ControlMethod.SOLAR,
+        ControlMethod.GLARE_ZONE,
+        ControlMethod.SUMMER,
+        ControlMethod.WINTER,
+    ],
+)
+def test_dynamic_control_methods_keep_exact_target_semantics(control_method) -> None:
+    """Sun-derived poses remain governed only by movement delta settings."""
+    from custom_components.adaptive_pergola.coordinator import (
+        AdaptiveDataUpdateCoordinator,
+    )
+
+    coordinator = _position_context_coordinator(control_method)
+    context = AdaptiveDataUpdateCoordinator._build_position_context(
+        coordinator, "cover.test", {}
+    )
+
+    assert context.target_tolerance == 0
 
 
 # ---------------------------------------------------------------------------
