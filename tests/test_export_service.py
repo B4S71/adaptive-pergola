@@ -242,3 +242,47 @@ async def test_export_all_three_cover_types():
         assert result["cover_type"] == cover_type
         assert "location" in result
         assert "common" in result
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {
+            "lr_axis_azimuth": 270,
+            "lr_theta_min": -45,
+            "lr_theta_max": 140,
+            "lr_tilt_vertical_pct": 61,
+            "lr_shade_ext_azimuth_1": 210,
+            "lr_shade_ext_distance_1": 4.5,
+            "lr_shade_ext_azimuth_2": 15,
+            "lr_shade_ext_distance_2": 2,
+            "lr_shade_margin_cm": 3,
+            "lr_past_axis_safety_deg": 20,
+            "lr_max_light_position": 42,
+            "lr_low_sun_position": 8,
+            "lr_shade_airflow": False,
+        },
+        {
+            "lr_axis_azimuth": None,
+            "lr_shade_margin_cm": 0,
+            "lr_past_axis_safety_deg": 0,
+            "lr_tilt_vertical_pct": None,
+        },
+    ],
+)
+async def test_louvered_export_recreates_effective_geometry(options):
+    """A JSON round trip preserves defaults, calibration, arms and shade margins."""
+    import json
+    from custom_components.adaptive_pergola.config_types import LouveredRoofConfig
+
+    entry = make_entry(cover_type="cover_louvered_roof")
+    entry.options = options
+    result = await async_handle_export(make_call(hass=make_hass(entry)))
+    exported = json.loads(json.dumps(result))["louvered_roof"]
+    assert LouveredRoofConfig.from_options(exported) == LouveredRoofConfig.from_options(
+        options
+    )
+    assert exported["lr_roof_height"] == 3
+    assert "lr_tilt_vertical_pct" in exported
+    assert "lr_airflow_by_temp" in exported

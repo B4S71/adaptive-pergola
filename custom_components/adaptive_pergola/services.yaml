@@ -1,7 +1,8 @@
 stop:
   name: Stop cover
   description: >-
-    Sends stop_cover to the targeted covers via the ACP proxy so the command
+    Sends the supported stop service for the primary axis (stop_cover_tilt for
+    pergolas, otherwise stop_cover) via the ACP proxy so the command
     is recognised as ACP-originated. Engages manual override so the next
     automatic cycle does not immediately counter-command the cover. Compatible
     with manual_ignore_external mode — the Lovelace card stop button should
@@ -23,7 +24,7 @@ integration_disable:
   name: Disable integration
   description: >-
     Disables Adaptive Pergola on the targeted instances. Any ACP-in-flight cover
-    moves are stopped immediately (cover.stop_cover). Deferred motion and weather
+    moves are stopped immediately using the supported stop axis. Deferred motion and weather
     timers are cancelled and reconciliation state is cleared.
   target:
     entity:
@@ -32,9 +33,10 @@ integration_disable:
 emergency_stop:
   name: Emergency stop
   description: >-
-    Panic button — sends stop_cover to every configured cover on the targeted
-    instances (capability-checked), regardless of whether the cover is currently
-    moving, then disables the integration. With no target, acts on all ACP
+    Panic button — immediately disables commands and stops the supported primary
+    axis of every configured cover on the targeted instances. Tilt stops also run
+    when the cover reports open/closed. Position-axis stops require reported motion
+    to avoid triggering a stationary motor's favourite position. With no target, acts on all ACP
     instances and all their covers.
   target:
     entity:
@@ -555,6 +557,15 @@ set_light_cloud:
     entity:
       integration: adaptive_pergola
   fields:
+    cloudy_position:
+      name: Cloudy position
+      description: "Target position when sunlight is suppressed by clouds. Null = use the default position."
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
     weather_entity:
       name: Weather entity
       description: "Weather entity used to read conditions (domain: weather). Null = none."
@@ -729,6 +740,11 @@ set_weather_safety:
     entity:
       integration: adaptive_pergola
   fields:
+    weather_enabled:
+      name: Weather protection enabled
+      description: "Enable wind, rain, and severe-weather protection."
+      selector:
+        boolean:
     weather_bypass_auto_control:
       name: Bypass automatic control
       description: "If true, weather override ignores the Automatic Control toggle."

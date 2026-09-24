@@ -245,7 +245,7 @@ class TestControlStatus:
 
     def test_sun_not_visible(self, builder: DiagnosticsBuilder):
         """Returns SUN_NOT_VISIBLE when cover is not valid."""
-        cover = _make_cover(valid=False)
+        cover = _make_cover(valid=False, direct_sun_valid=False)
         pr = _make_pr(control_method=ControlMethod.DEFAULT)
         diag, _ = builder.build(_base_ctx(cover=cover, pipeline_result=pr))
         assert diag["control_status"] == ControlStatus.SUN_NOT_VISIBLE
@@ -1703,3 +1703,14 @@ class TestCalculationDetailsAllCoverTypes:
         assert "beta_rad" in details["tilt"]
         # Top-level position axis present.
         assert "position_pct" in details
+
+
+def test_roof_solar_diagnostics_ignore_window_fov():
+    """Roof sunlight remains valid on the back side of a window-oriented FOV."""
+    builder = DiagnosticsBuilder()
+    cover = _make_cover(valid=False, in_fov=False, direct_sun_valid=True)
+    diag, _ = builder.build(_base_ctx(cover=cover))
+    assert diag["control_status"] == ControlStatus.ACTIVE
+    assert diag["sun_validity"]["valid"] is True
+    assert diag["sun_validity"]["direct_sun_valid"] is True
+    assert diag["sun_validity"]["in_fov"] is False

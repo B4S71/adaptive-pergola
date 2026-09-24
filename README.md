@@ -45,10 +45,10 @@ It is designed for pergolas exposed via a Home Assistant `cover` entity that sup
 - **Sun-tracking louvre angle** — minimal-block pose and occupancy-shading geometry keep direct sun off the protected area as the sun moves; optional directional terrace extensions bias shading toward a chosen bearing.
 - **Max-light mode** — an edge-on / profile-angle pose that maximises daylight when no shading is needed, with a two-regime (near/far sun) model that is axis-relative to your roof.
 - **Shade-airflow pose** — a venting pose for hot conditions, optionally driven by inside-vs-outside temperature (`lr_airflow_by_temp`).
-- **Climate mode** — summer/winter behaviour mapped onto roof-correct poses (winter → follow-sun for solar gain, summer → max-shade with airflow).
+- **Climate diagnostics** — reports summer/winter conditions while roof geometry determines the slat position. With climate mode off, airflow can optionally follow the inside/outside temperature difference.
 - **Morning position** — hold a low pose before and just after sunrise (condensation run-off / dawn gap), with an optional post-sunrise hold.
 - **Weather protection** — wind, rain and lockout sensors, cloud suppression, and solar-forecast gating over the active window.
-- **Manual override** — automatic detection of user commands, a configurable hold window, a reset button, and status sensors so automation resumes cleanly.
+- **Manual override** — automatic detection of user commands, a configurable hold window, a reset button, and status sensors so automation resumes cleanly. Hold expiration is evaluated on the next coordinator update after the configured duration.
 - **Fully UI-configured** — geometry, kinematics calibration, climate, weather and behaviour are all set up through the config flow; no YAML required.
 - **Optional managed proxy cover** — presents the pergola as a clean **tilt** cover and ships **position-driven slat icons** that visually track the current louvre angle (0 % flat → 100 % vertical).
 
@@ -70,7 +70,7 @@ Python dependencies (`astral`, `pandas`) are installed automatically by Home Ass
 4. Search for **Adaptive Pergola**, download it, and **restart Home Assistant**.
 5. Go to **Settings → Devices & Services → Add Integration** and choose **Adaptive Pergola**.
 
-> Beta releases: enable *"show beta versions"* on the Adaptive Pergola entry in HACS to receive `0.4.0-betaN` pre-releases.
+> Beta releases: enable *"show beta versions"* on the Adaptive Pergola entry in HACS to receive pre-release versions.
 
 ### Manual
 

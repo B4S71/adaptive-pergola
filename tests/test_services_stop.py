@@ -124,14 +124,15 @@ async def test_apply_user_stop_public_method_wraps_stop_tracker() -> None:
 
     cmd_svc = MagicMock(spec=CoverCommandService)
     cmd_svc._stop_tracker = MagicMock()
-    cmd_svc._stop_tracker.call_stop_cover = AsyncMock()
+    cmd_svc._hass = MagicMock()
+    cmd_svc._stop_tracker.stop_user = AsyncMock(return_value="stop_cover")
 
     # Bind the real method
     cmd_svc.apply_user_stop = CoverCommandService.apply_user_stop.__get__(cmd_svc)
 
     await cmd_svc.apply_user_stop("cover.test_blind")
 
-    cmd_svc._stop_tracker.call_stop_cover.assert_awaited_once_with("cover.test_blind")
+    assert cmd_svc._stop_tracker.stop_user.await_args.args[0] == "cover.test_blind"
 
 
 # ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 import voluptuous as vol
@@ -11,6 +12,7 @@ from homeassistant.exceptions import ServiceValidationError
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall
 
+from ..config_types import LouveredRoofConfig
 from ..const import (
     CONF_AWNING_ANGLE,
     CONF_AZIMUTH,
@@ -27,6 +29,12 @@ from ..const import (
     CONF_FOV_RIGHT,
     CONF_HEIGHT_WIN,
     CONF_LENGTH_AWNING,
+    CONF_LR_AIRFLOW_BY_TEMP,
+    CONF_LR_SHADE_EXT_AZIMUTH_1,
+    CONF_LR_SHADE_EXT_AZIMUTH_2,
+    CONF_LR_SHADE_EXT_DISTANCE_1,
+    CONF_LR_SHADE_EXT_DISTANCE_2,
+    CONF_LR_TILT_VERTICAL_PCT,
     CONF_MAX_ELEVATION,
     CONF_MAX_POSITION,
     CONF_MIN_ELEVATION,
@@ -42,6 +50,7 @@ from ..const import (
     CONF_TILT_MODE,
     CONF_WINDOW_DEPTH,
     DEFAULT_BLIND_SPOT_ELEVATION_MODE,
+    DEFAULT_LR_AIRFLOW_BY_TEMP,
     CoverType,
     DOMAIN,
 )
@@ -53,6 +62,30 @@ EXPORT_CONFIG_SCHEMA = vol.Schema(
         vol.Required("config_entry_id"): str,
     }
 )
+
+
+def _export_louvered_roof(options: dict) -> dict:
+    """Export effective geometry using the canonical config-entry option keys.
+
+    Calibration and extension tuples are derived by the engine; export their
+    input fields so ``LouveredRoofConfig.from_options`` can reproduce them.
+    """
+    geometry = asdict(LouveredRoofConfig.from_options(options))
+    geometry.pop("tilt_calibration")
+    geometry.pop("shade_extensions")
+    result = {f"lr_{key}": value for key, value in geometry.items()}
+    result[CONF_LR_TILT_VERTICAL_PCT] = options.get(CONF_LR_TILT_VERTICAL_PCT)
+    result[CONF_LR_AIRFLOW_BY_TEMP] = options.get(
+        CONF_LR_AIRFLOW_BY_TEMP, DEFAULT_LR_AIRFLOW_BY_TEMP
+    )
+    for key in (
+        CONF_LR_SHADE_EXT_AZIMUTH_1,
+        CONF_LR_SHADE_EXT_DISTANCE_1,
+        CONF_LR_SHADE_EXT_AZIMUTH_2,
+        CONF_LR_SHADE_EXT_DISTANCE_2,
+    ):
+        result[key] = options.get(key) or 0.0
+    return result
 
 
 async def async_handle_export(call: ServiceCall) -> dict:
@@ -76,6 +109,7 @@ async def async_handle_export(call: ServiceCall) -> dict:
         "export_version": 1,
         "name": name,
         "cover_type": cover_type,
+        "louvered_roof": _export_louvered_roof(options),
         "location": {
             "latitude": hass.config.latitude,
             "longitude": hass.config.longitude,

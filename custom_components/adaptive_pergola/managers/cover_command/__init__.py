@@ -29,6 +29,7 @@ from ...const import (
     RESYNC_ENDSTOP_MODE_OPEN,
 )
 from ...cover_types.base import (
+    AXIS_NAME_TILT,
     CAP_HAS_STOP,
     caps_get,
 )
@@ -227,6 +228,7 @@ class CoverCommandService:
             hass,
             logger,
             dry_run_fn=lambda: self._dry_run,
+            prefer_tilt=self._policy.axes[0].name == AXIS_NAME_TILT,
             is_in_transit_fn=self._is_cover_in_transit,
         )
 
@@ -261,6 +263,7 @@ class CoverCommandService:
         # including safety handlers (force override, weather) and reconciliation.
         # Synced by the coordinator each update cycle from the Integration Enabled switch.
         self._enabled: bool = True
+        self._disable_generation = 0
 
         # When True, the reconciliation pass resends on a position mismatch until
         # the cover reaches the target. When False (the default), the cover is
@@ -509,6 +512,11 @@ class CoverCommandService:
         self._in_time_window = value
 
     @property
+    def disable_generation(self) -> int:
+        """Shutdown counter for invalidating multi-step commands across awaits."""
+        return self._disable_generation
+
+    @property
     def enabled(self) -> bool:
         """Whether the integration is enabled (master kill switch)."""
         return self._enabled
@@ -521,6 +529,8 @@ class CoverCommandService:
         handlers (force override, weather) and reconciliation.  Synced by the
         coordinator each update cycle from the Integration Enabled switch.
         """
+        if self._enabled and not value:
+            self._disable_generation += 1
         self._enabled = value
 
     @property
@@ -690,8 +700,10 @@ class CoverCommandService:
         EVENT_CALL_SERVICE is recognised as ACP-originated and ignored by
         the coordinator's service-call listener.
         """
-        await self._stop_tracker.call_stop_cover(entity_id)
-        return "sent", "stop_cover"
+        service = await self._stop_tracker.stop_user(
+            entity_id, check_cover_features(self._hass, entity_id)
+        )
+        return "sent", service
 
     def was_acp_stop_context(self, context_id: str) -> bool:
         """Whether ``context_id`` belongs to an ACP-originated cover.stop_cover call.
@@ -731,10 +743,10 @@ class CoverCommandService:
     # ------------------------------------------------------------------ #
 
     async def stop_in_flight(self, entities: set[str] | None = None) -> list[str]:
-        """Send stop_cover to every ACP-in-flight entity that supports STOP.
+        """Stop the supported primary axis of every ACP-in-flight entity.
 
         Intentionally bypasses the ``_enabled`` gate — this IS the shutdown path
-        and must fire before the gate closes.
+        and must work after the gate closes.
 
         Args:
             entities: Optional subset of entity_ids to consider.  None = all
@@ -745,6 +757,7 @@ class CoverCommandService:
 
         """
         stopped: list[str] = []
+        failures: list[str] = []
         candidates = {
             eid
             for eid, s in self._state.items()
@@ -753,9 +766,14 @@ class CoverCommandService:
         for eid in candidates:
             s = self.state(eid)
             caps = check_cover_features(self._hass, eid)
-            sent = await self._stop_tracker.try_stop_one(
-                eid, caps, label="stop_in_flight"
-            )
+            try:
+                sent = await self._stop_tracker.try_stop_one(
+                    eid, caps, label="stop_in_flight"
+                )
+            except HomeAssistantError as err:
+                failures.append(eid)
+                self._logger.error("Failed to stop %s: %s", eid, err)
+                sent = False
             # Whether we sent the stop or only logged "not in motion", the
             # entity is no longer in flight from ACP's perspective — clear
             # the waiting flag so the next reconciliation cycle does not
@@ -764,10 +782,12 @@ class CoverCommandService:
             s.sent_at = None
             if sent:
                 stopped.append(eid)
+        if failures:
+            raise HomeAssistantError(f"Failed to stop covers: {', '.join(failures)}")
         return stopped
 
     async def stop_all(self, entity_ids: list[str]) -> list[str]:
-        """Send stop_cover to every entity in entity_ids that supports STOP.
+        """Stop the supported primary axis of each configured entity.
 
         Used by emergency_stop — does NOT check wait_for_target (blanket stop).
         Intentionally bypasses the ``_enabled`` gate.
@@ -780,10 +800,17 @@ class CoverCommandService:
 
         """
         stopped: list[str] = []
+        failures: list[str] = []
         for eid in entity_ids:
             caps = check_cover_features(self._hass, eid)
-            if await self._stop_tracker.try_stop_one(eid, caps, label="stop_all"):
-                stopped.append(eid)
+            try:
+                if await self._stop_tracker.try_stop_one(eid, caps, label="stop_all"):
+                    stopped.append(eid)
+            except HomeAssistantError as err:
+                failures.append(eid)
+                self._logger.error("Failed to stop %s: %s", eid, err)
+        if failures:
+            raise HomeAssistantError(f"Failed to stop covers: {', '.join(failures)}")
         return stopped
 
     # ------------------------------------------------------------------ #
@@ -1052,6 +1079,7 @@ class CoverCommandService:
             )
 
         _current = self._get_current_position(entity_id)
+        disable_generation = self._disable_generation
 
         # Hard kill switch — blocks ALL commands, including safety overrides and
         # force=True calls.  Must be checked before any bypass branch.
@@ -1250,6 +1278,18 @@ class CoverCommandService:
                 reason=reason,
             )
 
+        # A shutdown during an awaited detour/hook invalidates this command,
+        # even if the integration has already been re-enabled in the meantime.
+        if not self._enabled or disable_generation != self._disable_generation:
+            return self._skip(
+                entity_id,
+                "integration_disabled",
+                position,
+                trigger=_trigger,
+                inverse_state=_inverse,
+                current_position=_current,
+            )
+
         # Cover-type policy hook: dual-axis covers (venetian) pre-send tilt
         # on opening transitions so the actuator's slats are at the target
         # angle before the carriage starts moving (issue #33). Default
@@ -1262,6 +1302,18 @@ class CoverCommandService:
                 position=position,
                 context=context,
                 reason=reason,
+            )
+
+        # A shutdown during an awaited detour/hook invalidates this command,
+        # even if the integration has already been re-enabled in the meantime.
+        if not self._enabled or disable_generation != self._disable_generation:
+            return self._skip(
+                entity_id,
+                "integration_disabled",
+                position,
+                trigger=_trigger,
+                inverse_state=_inverse,
+                current_position=_current,
             )
 
         ctx = Context()
@@ -1318,6 +1370,18 @@ class CoverCommandService:
                 _st.travel_since_resync += abs(position - _origin)
                 _st.movements_since_resync += 1
 
+        # A shutdown during an awaited detour/hook invalidates this command,
+        # even if the integration has already been re-enabled in the meantime.
+        if not self._enabled or disable_generation != self._disable_generation:
+            return self._skip(
+                entity_id,
+                "integration_disabled",
+                position,
+                trigger=_trigger,
+                inverse_state=_inverse,
+                current_position=_current,
+            )
+
         # Cover-type policy hook: dual-axis covers (venetian) run their
         # settle+tilt sequence here. Default policies are no-ops, so vertical /
         # awning / tilt covers carry zero overhead.
@@ -1365,6 +1429,7 @@ class CoverCommandService:
         target inside ``service_data`` decides which end stop is nearest, so
         inverse-state covers detour correctly.
         """
+        disable_generation = self._disable_generation
         st = self.state(entity_id)
         target_val = next(
             (v for k, v in service_data.items() if k != ATTR_ENTITY_ID), None
@@ -1437,7 +1502,10 @@ class CoverCommandService:
         st.movements_since_resync = 0
         st.last_resync_at = dt.datetime.now(dt.UTC)
 
-        if not await self.wait_for_position(entity_id, endstop):
+        reached = await self.wait_for_position(entity_id, endstop)
+        if not self._enabled or disable_generation != self._disable_generation:
+            return None
+        if not reached:
             self._logger.warning(
                 "End-stop re-sync: %s did not report %s%% within %ss — sending "
                 "the target move anyway",
@@ -1476,8 +1544,11 @@ class CoverCommandService:
         deadline = monotonic() + (
             timeout if timeout is not None else max(self.transit_timeout_seconds, 5)
         )
+        disable_generation = self._disable_generation
         while monotonic() < deadline:
             await asyncio.sleep(2)
+            if not self._enabled or disable_generation != self._disable_generation:
+                return False
             cur = self._get_current_position(entity_id)
             if cur is not None and self._at_target(cur, target):
                 return True
@@ -2029,6 +2100,9 @@ class CoverCommandService:
                 target,
             )
             return
+        if not self._enabled:
+            return
+
         ctx = Context()
         self._position_context_tracker.record(ctx.id)
         try:

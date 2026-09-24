@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import ServiceCall, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -78,9 +79,8 @@ def _resolve_targets(
     if area_ids:
         dev_reg = dr.async_get(hass)
         for area_id in area_ids:
-            for device in dev_reg.devices.values():
-                if device.area_id == area_id:
-                    device_ids.append(device.id)
+            for device in dr.async_entries_for_area(dev_reg, area_id):
+                device_ids.append(device.id)
 
     # No target at all → all coordinators, no filter
     if not entity_ids and not device_ids and not area_ids:
@@ -168,38 +168,30 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         await async_require_admin(call)
         targets = _resolve_targets(hass, call)
         for coord in targets:
-            coord.enabled_toggle = True
-            coord.logger.debug("integration_enable service: enabled")
+            await coord.async_set_integration_enabled(True)
+
+    async def _shutdown(call: ServiceCall, *, emergency: bool) -> None:
+        await async_require_admin(call)
+        targets = _resolve_targets(hass, call)
+        # Close every gate before the first motor stop can yield or fail.
+        for coord in targets:
+            coord.enabled_toggle = False
+        errors: list[HomeAssistantError] = []
+        for coord, entity_filter in targets.items():
+            try:
+                await coord.async_set_integration_enabled(
+                    False, emergency=emergency, entities=entity_filter
+                )
+            except HomeAssistantError as err:
+                errors.append(err)
+        if errors:
+            raise HomeAssistantError("; ".join(str(err) for err in errors))
 
     async def handle_integration_disable(call: ServiceCall) -> None:
-        await async_require_admin(call)
-        targets = _resolve_targets(hass, call)
-        for coord, entity_filter in targets.items():
-            # Stop in-flight moves first (before gate closes)
-            await coord._cmd_svc.stop_in_flight(entities=entity_filter)  # noqa: SLF001
-            coord._cancel_motion_timeout()  # noqa: SLF001
-            coord._cancel_weather_timeout()  # noqa: SLF001
-            coord._cmd_svc.clear_non_safety_targets()  # noqa: SLF001
-            coord._cmd_svc.clear_safety_targets()  # noqa: SLF001
-            coord.enabled_toggle = False
-            coord.logger.debug("integration_disable service: disabled")
+        await _shutdown(call, emergency=False)
 
     async def handle_emergency_stop(call: ServiceCall) -> None:
-        await async_require_admin(call)
-        targets = _resolve_targets(hass, call)
-        for coord, entity_filter in targets.items():
-            # Blanket stop: all configured covers (not just wait_for_target)
-            entity_ids = (
-                list(entity_filter) if entity_filter is not None else coord.entities
-            )
-            await coord._cmd_svc.stop_all(entity_ids)  # noqa: SLF001
-            # Then run full integration_disable cleanup
-            coord._cancel_motion_timeout()  # noqa: SLF001
-            coord._cancel_weather_timeout()  # noqa: SLF001
-            coord._cmd_svc.clear_non_safety_targets()  # noqa: SLF001
-            coord._cmd_svc.clear_safety_targets()  # noqa: SLF001
-            coord.enabled_toggle = False
-            coord.logger.debug("emergency_stop service: stopped and disabled")
+        await _shutdown(call, emergency=True)
 
     hass.services.async_register(
         DOMAIN, "integration_enable", handle_integration_enable

@@ -103,7 +103,11 @@ class TestSendMyPosition:
 
         assert result is True
         mock_hass.services.async_call.assert_called_once_with(
-            "cover", "stop_cover", {"entity_id": "cover.somfy"}, context=ANY
+            "cover",
+            "stop_cover",
+            {"entity_id": "cover.somfy"},
+            context=ANY,
+            blocking=True,
         )
 
     @pytest.mark.asyncio
@@ -190,7 +194,11 @@ class TestSendMyPosition:
         # Must succeed and must have sent the stop_cover command
         assert result is True
         mock_hass.services.async_call.assert_called_once_with(
-            "cover", "stop_cover", {"entity_id": "cover.somfy"}, context=ANY
+            "cover",
+            "stop_cover",
+            {"entity_id": "cover.somfy"},
+            context=ANY,
+            blocking=True,
         )
 
 
@@ -488,7 +496,11 @@ class TestStationaryCoverRegression:
         assert result is True
         # stop_cover was sent even though the cover is stationary
         mock_hass.services.async_call.assert_called_once_with(
-            "cover", "stop_cover", {"entity_id": "cover.awning"}, context=ANY
+            "cover",
+            "stop_cover",
+            {"entity_id": "cover.awning"},
+            context=ANY,
+            blocking=True,
         )
 
     @pytest.mark.asyncio
@@ -522,7 +534,11 @@ class TestStationaryCoverRegression:
             result = await svc.send_my_position("cover.awning", 35)
         assert result is True
         mock_hass.services.async_call.assert_called_once_with(
-            "cover", "stop_cover", {"entity_id": "cover.awning"}, context=ANY
+            "cover",
+            "stop_cover",
+            {"entity_id": "cover.awning"},
+            context=ANY,
+            blocking=True,
         )
 
 

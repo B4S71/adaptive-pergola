@@ -717,3 +717,44 @@ async def test_note_manual_movement_then_acp_move_detours(svc, mock_hass):
         )
     assert outcome == "sent"
     assert mock_hass.services.async_call.await_count == 2
+
+
+@pytest.mark.parametrize("reenable", [False, True])
+async def test_disable_during_resync_cancels_final_leg(svc, mock_hass, reenable):
+    """An emergency during the end-stop wait must not replay the pending target."""
+
+    async def interrupted_wait(*args, **kwargs):
+        svc.enabled = False
+        svc.clear_non_safety_targets()
+        svc.clear_safety_targets()
+        if reenable:
+            svc.enabled = True
+        return False
+
+    svc.wait_for_position = AsyncMock(side_effect=interrupted_wait)
+    result = await _apply(svc, mock_hass, current=40, target=60, threshold=10)
+    assert result == ("skipped", "integration_disabled")
+    assert mock_hass.services.async_call.await_count == 1  # only the initial end stop
+    assert svc.state("cover.test").target is None
+
+
+@pytest.mark.parametrize("reenable", [False, True])
+async def test_manual_resync_shutdown_cancels_return_and_remaining_covers(
+    svc, mock_hass, reenable
+):
+    """A button cycle cannot replay after a disable/re-enable during its wait."""
+    coord = _make_cycle_coordinator(current_position=40)
+    coord._cmd_svc = svc
+    coord.entities = ["cover.test", "cover.other"]
+    svc.get_current_position = MagicMock(return_value=40)
+    svc.apply_position = AsyncMock(return_value=("sent", "set_cover_tilt_position"))
+
+    async def interrupt(*args, **kwargs):
+        svc.enabled = False
+        if reenable:
+            svc.enabled = True
+        return False
+
+    svc.wait_for_position = AsyncMock(side_effect=interrupt)
+    assert await coord.async_run_resync_cycle() == []
+    assert svc.apply_position.await_count == 1

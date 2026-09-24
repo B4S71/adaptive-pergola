@@ -64,6 +64,7 @@ CAP_HAS_SET_TILT_POSITION = "has_set_tilt_position"
 CAP_HAS_OPEN = "has_open"
 CAP_HAS_CLOSE = "has_close"
 CAP_HAS_STOP = "has_stop"
+CAP_HAS_STOP_TILT = "has_stop_tilt"
 
 AXIS_NAME_POSITION = "position"
 AXIS_NAME_TILT = "tilt"

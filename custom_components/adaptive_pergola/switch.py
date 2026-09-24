@@ -269,6 +269,8 @@ class AdaptivePergolaSwitch(AdaptivePergolaBaseEntity, SwitchEntity, RestoreEnti
                     self._initial_state,
                 )
             )
+        if self._key == "enabled_toggle":
+            return self.coordinator.enabled_toggle
         return self._attr_is_on
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -276,6 +278,9 @@ class AdaptivePergolaSwitch(AdaptivePergolaBaseEntity, SwitchEntity, RestoreEnti
         self.coordinator.logger.debug("Turning on")
         if self._option_key is not None:
             await self._async_set_option(True)
+            return
+        if self._key == "enabled_toggle" and kwargs.get("added") is not True:
+            await self.coordinator.async_set_integration_enabled(True)
             return
         self._attr_is_on = True
         setattr(self.coordinator, self._key, True)
@@ -307,17 +312,11 @@ class AdaptivePergolaSwitch(AdaptivePergolaBaseEntity, SwitchEntity, RestoreEnti
         if self._option_key is not None:
             await self._async_set_option(False)
             return
+        if self._key == "enabled_toggle" and kwargs.get("added") is not True:
+            await self.coordinator.async_set_integration_enabled(False)
+            return
         self._attr_is_on = False
         setattr(self.coordinator, self._key, False)
-        if self._key == "enabled_toggle" and kwargs.get("added") is not True:
-            # Stop any ACP-in-flight cover moves FIRST (before the gate closes),
-            # then cancel deferred tasks and clear all reconciliation state so
-            # nothing is resent automatically when re-enabling.
-            await self.coordinator._cmd_svc.stop_in_flight()  # noqa: SLF001
-            self.coordinator._cancel_motion_timeout()  # noqa: SLF001
-            self.coordinator._cancel_weather_timeout()  # noqa: SLF001
-            self.coordinator._cmd_svc.clear_non_safety_targets()  # noqa: SLF001
-            self.coordinator._cmd_svc.clear_safety_targets()  # noqa: SLF001
 
         if self._key == "automatic_control" and kwargs.get("added") is not True:
             for entity in self.coordinator.manager.manual_controlled:

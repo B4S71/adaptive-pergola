@@ -298,6 +298,7 @@ def check_cover_features(hass: HomeAssistant, entity_id: str) -> dict[str, bool]
             "has_open": True,
             "has_close": True,
             "has_stop": True,
+            "has_stop_tilt": False,
         }
 
     supported_features = state.attributes.get("supported_features", 0)
@@ -317,6 +318,7 @@ def check_cover_features(hass: HomeAssistant, entity_id: str) -> dict[str, bool]
         "has_open": bool(supported_features & CoverEntityFeature.OPEN),
         "has_close": bool(supported_features & CoverEntityFeature.CLOSE),
         "has_stop": bool(supported_features & CoverEntityFeature.STOP),
+        "has_stop_tilt": bool(supported_features & CoverEntityFeature.STOP_TILT),
     }
 
 

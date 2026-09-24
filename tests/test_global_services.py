@@ -32,6 +32,13 @@ from custom_components.adaptive_pergola.services import (
 
 def _make_coordinator(entities: list[str]) -> MagicMock:
     coord = MagicMock()
+    from custom_components.adaptive_pergola.coordinator import (
+        AdaptiveDataUpdateCoordinator,
+    )
+
+    coord.async_set_integration_enabled = (
+        AdaptiveDataUpdateCoordinator.async_set_integration_enabled.__get__(coord)
+    )
     coord.entities = entities
     coord.enabled_toggle = True
     coord.logger = MagicMock()
@@ -286,9 +293,7 @@ def test_resolve_string_area_id_normalized():
     config_device.area_id = None
 
     dev_reg_mock = MagicMock()
-    # devices.values() used for area expansion
-    dev_reg_mock.devices = MagicMock()
-    dev_reg_mock.devices.values = MagicMock(return_value=[area_device])
+    dev_reg_mock.devices.get_devices_for_area_id.return_value = [area_device]
     # async_get called for device_id resolution
     dev_reg_mock.async_get = MagicMock(return_value=config_device)
     config_device.config_entries = ["entry_abc"]

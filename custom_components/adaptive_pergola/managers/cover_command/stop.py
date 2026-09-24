@@ -1,6 +1,6 @@
 """Stop / in-flight tracking for cover_command.
 
-Owns the cover.stop_cover service path plus the deque of ACP-originated
+Owns the cover.stop_cover / stop_cover_tilt service paths plus the deque of ACP-originated
 stop context ids. The orchestrator's ``stop_in_flight`` / ``stop_all``
 emergency-shutdown paths and ``send_my_position`` route through this
 tracker so the EVENT_CALL_SERVICE listener in the coordinator can
@@ -18,8 +18,9 @@ from collections import deque
 from collections.abc import Callable
 
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 
-from ...cover_types.base import CAP_HAS_STOP, caps_get
+from ...cover_types.base import CAP_HAS_STOP, CAP_HAS_STOP_TILT, caps_get
 
 
 class StopTracker:
@@ -37,6 +38,7 @@ class StopTracker:
         logger,
         *,
         dry_run_fn: Callable[[], bool],
+        prefer_tilt: bool = False,
         is_in_transit_fn: Callable[[str], bool] | None = None,
     ) -> None:
         """Initialize the StopTracker.
@@ -57,6 +59,7 @@ class StopTracker:
         self._hass = hass
         self._logger = logger
         self._dry_run_fn = dry_run_fn
+        self._prefer_tilt = prefer_tilt
         self._is_in_transit_fn: Callable[[str], bool] = (
             is_in_transit_fn
             if is_in_transit_fn is not None
@@ -108,8 +111,31 @@ class StopTracker:
         """
         return self._is_in_transit_fn(entity_id)
 
-    async def call_stop_cover(self, entity_id: str) -> None:
-        """Issue cover.stop_cover and record the call context as ACP-originated.
+    def stop_service(self, caps: dict[str, bool] | None) -> str | None:
+        """Select the controlled axis, retaining legacy STOP-only actuators."""
+        if self._prefer_tilt and caps_get(caps, CAP_HAS_STOP_TILT):
+            return "stop_cover_tilt"
+        if caps_get(caps, CAP_HAS_STOP):
+            return "stop_cover"
+        return None
+
+    async def stop_user(self, entity_id: str, caps: dict[str, bool] | None) -> str:
+        """Stop the supported axis and propagate actuator failures to the caller."""
+        service = self.stop_service(caps)
+        if service is None:
+            raise ServiceValidationError(
+                f"Cover {entity_id} has no supported stop action"
+            )
+        if self._dry_run_fn():
+            self._logger.info("[dry_run] would %s %s", service, entity_id)
+        else:
+            await self.call_stop_cover(entity_id, service=service)
+        return service
+
+    async def call_stop_cover(
+        self, entity_id: str, *, service: str = "stop_cover"
+    ) -> None:
+        """Issue the selected stop and record its context as ACP-originated.
 
         All ACP-initiated stop_cover calls must go through this helper so that
         the EVENT_CALL_SERVICE listener can identify and ignore them, avoiding
@@ -118,13 +144,13 @@ class StopTracker:
         ctx = Context()
         self._acp_stop_contexts.append(ctx.id)
         await self._hass.services.async_call(
-            "cover", "stop_cover", {"entity_id": entity_id}, context=ctx
+            "cover", service, {"entity_id": entity_id}, context=ctx, blocking=True
         )
 
     async def try_stop_one(
         self, entity_id: str, caps: dict[str, bool], *, label: str
     ) -> bool:
-        """Attempt a stop_cover on a single entity, honouring caps + dry-run.
+        """Attempt the supported axis stop, honouring caps + dry-run.
 
         Returns ``True`` when a stop was actually sent (or would have been
         sent under dry-run), ``False`` when caps or motion state caused the
@@ -136,9 +162,10 @@ class StopTracker:
         keeps ownership of capability lookups (and tests can patch
         ``check_cover_features`` at the package's __init__ module path).
         """
-        if not caps_get(caps, CAP_HAS_STOP):
+        service = self.stop_service(caps)
+        if service is None:
             return False
-        if not self.is_cover_in_motion(entity_id):
+        if service == "stop_cover" and not self.is_cover_in_motion(entity_id):
             state_val = getattr(self._hass.states.get(entity_id), "state", None)
             self._logger.debug(
                 "%s: skipping %s — not in motion (state=%s)",
@@ -148,8 +175,8 @@ class StopTracker:
             )
             return False
         if self._dry_run_fn():
-            self._logger.info("[dry_run] would stop_cover %s", entity_id)
+            self._logger.info("[dry_run] would %s %s", service, entity_id)
         else:
-            await self.call_stop_cover(entity_id)
+            await self.call_stop_cover(entity_id, service=service)
         self._logger.debug("%s: stopped %s", label, entity_id)
         return True

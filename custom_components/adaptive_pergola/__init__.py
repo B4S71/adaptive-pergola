@@ -360,7 +360,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
     else:
         # No device association — remove our config entry from any physical device that
         # still has it (left over from a previous association that was cleared).
-        for device in list(device_reg.devices.values()):
+        for device in dr.async_entries_for_config_entry(device_reg, entry.entry_id):
             if (
                 entry.entry_id in device.config_entries
                 and (DOMAIN, entry.entry_id) not in device.identifiers

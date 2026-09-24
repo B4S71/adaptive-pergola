@@ -774,7 +774,10 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         a new position — the normal state-change detection is blind to it.
         """
         data = event.data
-        if data.get("domain") != "cover" or data.get("service") != "stop_cover":
+        if data.get("domain") != "cover" or data.get("service") not in (
+            "stop_cover",
+            "stop_cover_tilt",
+        ):
             return
 
         service_data = data.get("service_data") or {}
@@ -2379,9 +2382,12 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         Returns the covers that were actually cycled.
         """
         cycled: list[str] = []
+        disable_generation = self._cmd_svc.disable_generation
         options = self.config_entry.options
         mode = getattr(self, "resync_endstop_mode", RESYNC_ENDSTOP_MODE_NEAREST)
         for entity in self.entities:
+            if disable_generation != self._cmd_svc.disable_generation:
+                break
             return_to = self._cmd_svc.get_current_position(entity)
             if return_to is None:
                 _LOGGER.warning(
@@ -2407,6 +2413,8 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
                     continue
             else:
                 await self._cmd_svc.wait_for_position(entity, endstop)
+            if disable_generation != self._cmd_svc.disable_generation:
+                break
             if return_to == endstop:
                 cycled.append(entity)
                 continue
@@ -2815,6 +2823,37 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
     def enabled_toggle(self, value):
         """Set integration enabled toggle."""
         self._toggles.enabled_toggle = value
+        # Close the command/reconciliation gate synchronously, before any await.
+        self._cmd_svc.enabled = value if value is not None else True
+
+    async def async_set_integration_enabled(
+        self,
+        enabled: bool,
+        *,
+        emergency: bool = False,
+        entities: set[str] | None = None,
+    ) -> None:
+        """Apply the master switch through the same path for UI and services."""
+        self.enabled_toggle = enabled
+        try:
+            if not enabled:
+                if emergency:
+                    await self._cmd_svc.stop_all(
+                        list(entities) if entities is not None else self.entities
+                    )
+                else:
+                    await self._cmd_svc.stop_in_flight(entities=entities)
+        finally:
+            # A failed motor stop must never leave positioning enabled or retain
+            # deferred commands that can replay when the integration is enabled.
+            if not enabled:
+                self._cancel_motion_timeout()
+                self._cancel_weather_timeout()
+                self._cmd_svc.clear_non_safety_targets()
+                self._cmd_svc.clear_safety_targets()
+            if self.data is not None:
+                self.data.diagnostics = self.build_diagnostic_data()
+            self.async_update_listeners()
 
     async def _check_time_window_transition(self, now: dt.datetime) -> None:
         """Check time window transitions — delegates to TimeWindowManager.

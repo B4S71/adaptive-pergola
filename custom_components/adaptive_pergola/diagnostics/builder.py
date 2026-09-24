@@ -299,7 +299,7 @@ class DiagnosticsBuilder:
         if not ctx.check_adaptive_time:
             return ControlStatus.OUTSIDE_TIME_WINDOW
 
-        if ctx.cover and not ctx.cover.valid:
+        if ctx.cover and not ctx.cover.direct_sun_valid:
             return ControlStatus.SUN_NOT_VISIBLE
 
         return ControlStatus.ACTIVE
@@ -495,7 +495,7 @@ class DiagnosticsBuilder:
             sun_state = SunState.OUTSIDE_FOV
         return {
             "sun_validity": {
-                "valid": cover.valid,
+                "valid": direct_sv,
                 "valid_elevation": cover.valid_elevation,
                 "in_blind_spot": getattr(cover, "is_sun_in_blind_spot", None),
                 # True when current time is within the astronomical sunset window
