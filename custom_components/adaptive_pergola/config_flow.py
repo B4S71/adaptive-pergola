@@ -655,7 +655,7 @@ CUSTOM_POSITION_SCHEMA = vol.Schema(_build_custom_position_schema_dict())
 _CUSTOM_POSITION_OPTIONAL_KEYS: list[str] = [
     slot[field]
     for slot in CUSTOM_POSITION_SLOTS.values()
-    for field in ("template", "position", "priority", "tilt")
+    for field in ("template", "release_template", "position", "priority", "tilt")
 ] + [CONF_DEFAULT_TILT, CONF_SUNSET_TILT]
 
 # Built-in handler priority sliders: clearing one omits it from user_input, so

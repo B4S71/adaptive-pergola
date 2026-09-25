@@ -375,6 +375,9 @@ async def test_async_shutdown_cancels_gate_fallback_handle():
     coord._forecast_unsub = None
     cancel = MagicMock()
     coord._gate_fallback_unsub = cancel
+    coord.custom_position_hysteresis = MagicMock()
+    coord.custom_position_hysteresis.async_save = AsyncMock()
     await coord.async_shutdown()
+    coord.custom_position_hysteresis.async_save.assert_awaited_once()
     cancel.assert_called_once()
     assert coord._gate_fallback_unsub is None

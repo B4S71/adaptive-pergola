@@ -78,6 +78,8 @@ class CustomPositionHandler(OverrideHandler):
         Active sensors are joined like the old force-override reason; a
         template-only activation reads ``template``.
         """
+        if state.hysteresis_held:
+            return "hysteresis hold"
         parts = list(state.active_entity_ids)
         if state.template_active:
             parts.append("template")

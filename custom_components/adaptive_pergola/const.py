@@ -597,6 +597,7 @@ def _custom_position_slot_keys(n: int) -> dict[str, str]:
         # Optional Jinja2 condition template; folded with the sensors via
         # `template_mode` (TemplateCombineMode, default OR).
         "template": f"custom_position_template_{n}",
+        "release_template": f"custom_position_release_template_{n}",
         "template_mode": f"custom_position_template_mode_{n}",
         "position": f"custom_position_{n}",
         "priority": f"custom_position_priority_{n}",

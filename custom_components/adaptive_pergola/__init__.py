@@ -147,6 +147,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
     await async_register_frontend(hass)
 
     coordinator = AdaptiveDataUpdateCoordinator(hass)
+    await coordinator.custom_position_hysteresis.async_load()
     # Detect reload vs. cold HA boot so first-refresh can suppress non-safety
     # positioning commands when the user just saved options mid-day.
     coordinator._is_reload = hass.is_running
@@ -254,13 +255,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: AdaptiveConfigEntry) -> 
     # #563). Same pattern as the occupancy template above: tracking the
     # rendered result gives sensor-grade immediacy when a template flips.
     for _slot_keys in CUSTOM_POSITION_SLOTS.values():
-        _register_template_tracker(
-            hass,
-            entry,
-            entry.options.get(_slot_keys["template"]),
-            coordinator.async_check_custom_position_template_change,
-            "Custom position template",
-        )
+        for template_key in ("template", "release_template"):
+            _register_template_tracker(
+                hass,
+                entry,
+                entry.options.get(_slot_keys[template_key]),
+                coordinator.async_check_custom_position_template_change,
+                "Custom position template",
+            )
 
     # Register weather sensor listeners separately (need custom handler for clear-delay)
     _weather_sensor_ids: list[str] = []
@@ -398,6 +400,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     (written each update cycle, kept across reloads) so it does not leak.
     """
     hass.data.get(DIAG_CACHE_KEY, {}).pop(entry.entry_id, None)
+    from .managers.custom_position_hysteresis import CustomPositionHysteresis
+
+    await CustomPositionHysteresis(hass, entry.entry_id).async_remove()
 
 
 # Fields that moved from centimetres to metres in config-entry version 2.

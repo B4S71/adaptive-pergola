@@ -325,7 +325,17 @@
           "custom_position_min_mode_10": "Minimummodus für Slot 10",
           "custom_position_use_my_10": "Slot 10: Meine Position verwenden",
           "custom_position_tilt_10": "Neigung für Slot 10",
-          "custom_position_tilt_only_10": "Slot 10: nur Neigung"
+          "custom_position_tilt_only_10": "Slot 10: nur Neigung",
+          "custom_position_release_template_1": "Ausschalt-Template 1 (Hysterese)",
+          "custom_position_release_template_2": "Ausschalt-Template 2 (Hysterese)",
+          "custom_position_release_template_3": "Ausschalt-Template 3 (Hysterese)",
+          "custom_position_release_template_4": "Ausschalt-Template 4 (Hysterese)",
+          "custom_position_release_template_5": "Ausschalt-Template 5 (Hysterese)",
+          "custom_position_release_template_6": "Ausschalt-Template 6 (Hysterese)",
+          "custom_position_release_template_7": "Ausschalt-Template 7 (Hysterese)",
+          "custom_position_release_template_8": "Ausschalt-Template 8 (Hysterese)",
+          "custom_position_release_template_9": "Ausschalt-Template 9 (Hysterese)",
+          "custom_position_release_template_10": "Ausschalt-Template 10 (Hysterese)"
         },
         "data_description": {
           "custom_position_sensors_1": "Binärsensoren, die bei aktivem Status die Beschattung auf ihre konfigurierte Position bewegen (ODER-Logik). Leer lassen, um nur ein Template zu verwenden – oder um diesen Slot zu überspringen.",
@@ -419,7 +429,17 @@
           "custom_position_min_mode_10": "Slot 10s Position als Minimumschwelle behandeln.",
           "custom_position_use_my_10": "Verwenden Sie die Meine-Position-Voreinstellung für Slot 10 statt seiner numerischen Position.",
           "custom_position_tilt_10": "Expliziter Lamellenwinkel (0–100%) für Slot 10 auf Jalousien.",
-          "custom_position_tilt_only_10": "Slot 10 fixiert nur den Lamellenwinkel; die Sonnenverfolgung treibt die Position."
+          "custom_position_tilt_only_10": "Slot 10 fixiert nur den Lamellenwinkel; die Sonnenverfolgung treibt die Position.",
+          "custom_position_release_template_1": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_2": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_3": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_4": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_5": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_6": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_7": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_8": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_9": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_10": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten."
         }
       },
       "motion_override": {
@@ -949,7 +969,17 @@
           "custom_position_min_mode_10": "Minimummodus für Slot 10",
           "custom_position_use_my_10": "Slot 10: Meine Position verwenden",
           "custom_position_tilt_10": "Neigung für Slot 10",
-          "custom_position_tilt_only_10": "Slot 10: nur Neigung"
+          "custom_position_tilt_only_10": "Slot 10: nur Neigung",
+          "custom_position_release_template_1": "Ausschalt-Template 1 (Hysterese)",
+          "custom_position_release_template_2": "Ausschalt-Template 2 (Hysterese)",
+          "custom_position_release_template_3": "Ausschalt-Template 3 (Hysterese)",
+          "custom_position_release_template_4": "Ausschalt-Template 4 (Hysterese)",
+          "custom_position_release_template_5": "Ausschalt-Template 5 (Hysterese)",
+          "custom_position_release_template_6": "Ausschalt-Template 6 (Hysterese)",
+          "custom_position_release_template_7": "Ausschalt-Template 7 (Hysterese)",
+          "custom_position_release_template_8": "Ausschalt-Template 8 (Hysterese)",
+          "custom_position_release_template_9": "Ausschalt-Template 9 (Hysterese)",
+          "custom_position_release_template_10": "Ausschalt-Template 10 (Hysterese)"
         },
         "data_description": {
           "custom_position_sensors_1": "Binärsensoren, die bei aktivem Status die Beschattung auf ihre konfigurierte Position bewegen (ODER-Logik). Leer lassen, um nur ein Template zu verwenden – oder um diesen Slot zu überspringen.",
@@ -1043,7 +1073,17 @@
           "custom_position_min_mode_10": "Slot 10s Position als Minimumschwelle behandeln.",
           "custom_position_use_my_10": "Verwenden Sie die Meine-Position-Voreinstellung für Slot 10 statt seiner numerischen Position.",
           "custom_position_tilt_10": "Expliziter Lamellenwinkel (0–100%) für Slot 10 auf Jalousien.",
-          "custom_position_tilt_only_10": "Slot 10 fixiert nur den Lamellenwinkel; die Sonnenverfolgung treibt die Position."
+          "custom_position_tilt_only_10": "Slot 10 fixiert nur den Lamellenwinkel; die Sonnenverfolgung treibt die Position.",
+          "custom_position_release_template_1": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_2": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_3": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_4": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_5": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_6": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_7": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_8": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_9": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten.",
+          "custom_position_release_template_10": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten."
         }
       },
       "motion_override": {
@@ -1571,11 +1611,11 @@
     },
     "set_custom_position": {
       "name": "Custom-Position-Slot einstellen",
-      "description": "Einen Custom-Position-Slot (1–5) aktualisieren. Ein Slot ist aktiv, wenn er einen Auslöser (Sensoren und/oder Template) und eine Position hat. Priorität 100 erteilt dem Slot Sicherheitssemantik (wirkt außerhalb des Zeitfensters, umgeht Delta-Gatter).",
+      "description": "Einen Custom-Position-Slot (1–10) aktualisieren. Ein Slot ist aktiv, wenn er einen Auslöser (Sensoren und/oder Template) und eine Position hat. Priorität 100 erteilt dem Slot Sicherheitssemantik (wirkt außerhalb des Zeitfensters, umgeht Delta-Gatter).",
       "fields": {
         "slot": {
           "name": "Slot",
-          "description": "Welcher Custom-Position-Slot aktualisiert werden soll (1–5)."
+          "description": "Welcher Custom-Position-Slot aktualisiert werden soll (1–10)."
         },
         "sensors": {
           "name": "Auslösesensoren",
@@ -1608,6 +1648,10 @@
         "use_my": {
           "name": "Somfy My verwenden",
           "description": "Wenn wahr, my_position_value statt Position verwenden."
+        },
+        "release_template": {
+          "name": "Ausschalt-Template (Hysterese)",
+          "description": "Optional: Ein aktivierter Slot bleibt aktiv, bis dieses Template wahr wird. Die Einschaltbedingung hat Vorrang. Der Zustand bleibt bei Neustarts erhalten. Beispiel: Einschalten unter 4 °C, Ausschalten ab 5 °C. Leer lassen für sofortiges Ausschalten."
         }
       }
     },

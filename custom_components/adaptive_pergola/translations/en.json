@@ -353,7 +353,17 @@
           "custom_position_tilt_10": "Slot 10: tilt",
           "custom_position_tilt_only_10": "Slot 10: tilt only",
           "default_tilt": "Default Tilt",
-          "sunset_tilt": "Sunset Tilt"
+          "sunset_tilt": "Sunset Tilt",
+          "custom_position_release_template_1": "Release template 1 (hysteresis)",
+          "custom_position_release_template_2": "Release template 2 (hysteresis)",
+          "custom_position_release_template_3": "Release template 3 (hysteresis)",
+          "custom_position_release_template_4": "Release template 4 (hysteresis)",
+          "custom_position_release_template_5": "Release template 5 (hysteresis)",
+          "custom_position_release_template_6": "Release template 6 (hysteresis)",
+          "custom_position_release_template_7": "Release template 7 (hysteresis)",
+          "custom_position_release_template_8": "Release template 8 (hysteresis)",
+          "custom_position_release_template_9": "Release template 9 (hysteresis)",
+          "custom_position_release_template_10": "Release template 10 (hysteresis)"
         },
         "data_description": {
           "custom_position_sensors_1": "Binary sensors that, when any is 'on', move the cover to its configured position (OR logic). Leave empty to use only a template — or to skip this slot.",
@@ -447,7 +457,17 @@
           "custom_position_tilt_10": "Explicit slat angle (0-100%) for slot 10 on venetian covers.",
           "custom_position_tilt_only_10": "Slot 10 fixes only the slat angle; sun tracking drives the position.",
           "default_tilt": "Default tilt angle (0-100%) for venetian covers when no other handler overrides tilt. Applied whenever the default position handler is active. Leave unset to let the engine calculate tilt from sun geometry.",
-          "sunset_tilt": "Tilt angle (0-100%) for venetian covers during the sunset window. Overrides default_tilt when the sunset time window is active. Leave unset to fall back to default_tilt."
+          "sunset_tilt": "Tilt angle (0-100%) for venetian covers during the sunset window. Overrides default_tilt when the sunset time window is active. Leave unset to fall back to default_tilt.",
+          "custom_position_release_template_1": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_2": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_3": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_4": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_5": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_6": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_7": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_8": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_9": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_10": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation."
         }
       },
       "motion_override": {
@@ -999,7 +1019,17 @@
           "custom_position_tilt_10": "Slot 10: tilt",
           "custom_position_tilt_only_10": "Slot 10: tilt only",
           "default_tilt": "Default Tilt",
-          "sunset_tilt": "Sunset Tilt"
+          "sunset_tilt": "Sunset Tilt",
+          "custom_position_release_template_1": "Release template 1 (hysteresis)",
+          "custom_position_release_template_2": "Release template 2 (hysteresis)",
+          "custom_position_release_template_3": "Release template 3 (hysteresis)",
+          "custom_position_release_template_4": "Release template 4 (hysteresis)",
+          "custom_position_release_template_5": "Release template 5 (hysteresis)",
+          "custom_position_release_template_6": "Release template 6 (hysteresis)",
+          "custom_position_release_template_7": "Release template 7 (hysteresis)",
+          "custom_position_release_template_8": "Release template 8 (hysteresis)",
+          "custom_position_release_template_9": "Release template 9 (hysteresis)",
+          "custom_position_release_template_10": "Release template 10 (hysteresis)"
         },
         "data_description": {
           "custom_position_sensors_1": "Binary sensors that, when any is 'on', move the cover to its configured position (OR logic). Leave empty to use only a template — or to skip this slot.",
@@ -1093,7 +1123,17 @@
           "custom_position_tilt_10": "Explicit slat angle (0-100%) for slot 10 on venetian covers.",
           "custom_position_tilt_only_10": "Slot 10 fixes only the slat angle; sun tracking drives the position.",
           "default_tilt": "Default tilt angle (0-100%) for venetian covers when no other handler overrides tilt. Applied whenever the default position handler is active. Leave unset to let the engine calculate tilt from sun geometry.",
-          "sunset_tilt": "Tilt angle (0-100%) for venetian covers during the sunset window. Overrides default_tilt when the sunset time window is active. Leave unset to fall back to default_tilt."
+          "sunset_tilt": "Tilt angle (0-100%) for venetian covers during the sunset window. Overrides default_tilt when the sunset time window is active. Leave unset to fall back to default_tilt.",
+          "custom_position_release_template_1": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_2": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_3": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_4": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_5": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_6": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_7": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_8": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_9": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation.",
+          "custom_position_release_template_10": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation."
         }
       },
       "motion_override": {
@@ -1621,11 +1661,11 @@
     },
     "set_custom_position": {
       "name": "Set custom position slot",
-      "description": "Update one custom position slot (1–5). A slot is active when it has a trigger (sensors and/or template) and a position. Priority 100 gives the slot safety semantics (acts outside the time window, bypasses delta gates).",
+      "description": "Update one custom position slot (1–10). A slot is active when it has a trigger (sensors and/or template) and a position. Priority 100 gives the slot safety semantics (acts outside the time window, bypasses delta gates).",
       "fields": {
         "slot": {
           "name": "Slot",
-          "description": "Which custom position slot to update (1–5)."
+          "description": "Which custom position slot to update (1–10)."
         },
         "sensors": {
           "name": "Trigger sensors",
@@ -1658,6 +1698,10 @@
         "use_my": {
           "name": "Use Somfy My",
           "description": "If true, use my_position_value instead of position."
+        },
+        "release_template": {
+          "name": "Release template (hysteresis)",
+          "description": "Optional: once activated, keep this slot active until this template is true. Activation takes precedence. State survives restarts. Example: activation below 4 °C, release at or above 5 °C. Leave empty for immediate deactivation."
         }
       }
     },

@@ -96,6 +96,25 @@ Everything is configured through the **config flow** (and later editable via the
 
 Sensible defaults are provided throughout; at minimum you need the target cover and the roof geometry.
 
+### Hysteresis for custom positions
+
+Each custom-position slot has an optional **Release template (hysteresis)**. The existing sensors/activation template switch the slot on; it then stays active until the release template becomes true. Activation takes precedence if both conditions are true. Without a release template, behavior is unchanged.
+
+For a cold-weather rule that moves to 75% below 4 °C and releases at 5 °C, configure the slot with:
+
+```jinja
+# Activation template
+{{ is_number(states('sensor.outdoor_temperature'))
+   and states('sensor.outdoor_temperature') | float(99) < 4 }}
+# Release template
+{{ is_number(states('sensor.outdoor_temperature'))
+   and states('sensor.outdoor_temperature') | float(0) >= 5 }}
+```
+
+Between 4 and 5 °C the previous state is retained, including across reloads and Home Assistant restarts. The numeric guards prevent an unavailable temperature from releasing the rule. A release-template rendering error also retains an active slot. Disabling a slot or changing its definition resets its retained state; unrelated settings do not. Normal priority and safety rules still apply, and diagnostics identify a retained rule as `hysteresis hold`.
+
+The same field is available as `release_template` in `adaptive_pergola.set_custom_position`, or as `custom_position_release_template_1` through `_10` in the generic option service. Existing rules need an explicit release condition to enable hysteresis; updating alone does not change their thresholds.
+
 ## Entities
 
 Once configured, the integration creates (names prefixed by your pergola's name):

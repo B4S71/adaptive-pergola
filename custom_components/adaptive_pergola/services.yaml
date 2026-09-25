@@ -481,6 +481,11 @@ set_custom_position:
       description: "Optional Jinja2 template; when truthy it activates the slot (combined with the sensors per template_mode)."
       selector:
         template:
+    release_template:
+      name: Release template (hysteresis)
+      description: "Optional Jinja2 condition. Holds an activated slot until this becomes true. Activation wins if both are true. Empty preserves the existing behavior."
+      selector:
+        template:
     template_mode:
       name: Template combine mode
       description: "'or' (default): template OR sensors activate the slot. 'and': template must be truthy AND a sensor on."

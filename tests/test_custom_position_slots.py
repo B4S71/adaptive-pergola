@@ -18,6 +18,7 @@ _REQUIRED_KEYS = frozenset(
         "sensor",
         "sensors",
         "template",
+        "release_template",
         "template_mode",
         "position",
         "priority",

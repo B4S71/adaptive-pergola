@@ -325,7 +325,17 @@
           "custom_position_min_mode_10": "Mode de minimum pour le slot 10",
           "custom_position_use_my_10": "Slot 10 : utiliser la position Mes présélections",
           "custom_position_tilt_10": "Slot 10 : inclinaison",
-          "custom_position_tilt_only_10": "Slot 10 : inclinaison uniquement"
+          "custom_position_tilt_only_10": "Slot 10 : inclinaison uniquement",
+          "custom_position_release_template_1": "Template de désactivation 1 (hystérésis)",
+          "custom_position_release_template_2": "Template de désactivation 2 (hystérésis)",
+          "custom_position_release_template_3": "Template de désactivation 3 (hystérésis)",
+          "custom_position_release_template_4": "Template de désactivation 4 (hystérésis)",
+          "custom_position_release_template_5": "Template de désactivation 5 (hystérésis)",
+          "custom_position_release_template_6": "Template de désactivation 6 (hystérésis)",
+          "custom_position_release_template_7": "Template de désactivation 7 (hystérésis)",
+          "custom_position_release_template_8": "Template de désactivation 8 (hystérésis)",
+          "custom_position_release_template_9": "Template de désactivation 9 (hystérésis)",
+          "custom_position_release_template_10": "Template de désactivation 10 (hystérésis)"
         },
         "data_description": {
           "custom_position_sensors_1": "Capteurs binaires qui, lorsque l'un est 'on', déplacent le store à sa position configurée (logique OR). Laisser vide pour utiliser uniquement un template — ou pour ignorer ce slot.",
@@ -419,7 +429,17 @@
           "custom_position_min_mode_10": "Traiter la position du slot 10 comme un plancher minimum.",
           "custom_position_use_my_10": "Utiliser la présélection Mes pour le slot 10 au lieu de sa position numérique.",
           "custom_position_tilt_10": "Angle d'inclinaison explicite (0-100%) pour le slot 10 sur les stores vénitiens.",
-          "custom_position_tilt_only_10": "Le slot 10 fixe uniquement l'angle des lamelles ; le suivi du soleil pilote la position."
+          "custom_position_tilt_only_10": "Le slot 10 fixe uniquement l'angle des lamelles ; le suivi du soleil pilote la position.",
+          "custom_position_release_template_1": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_2": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_3": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_4": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_5": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_6": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_7": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_8": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_9": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_10": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate."
         }
       },
       "motion_override": {
@@ -949,7 +969,17 @@
           "custom_position_min_mode_10": "Mode de minimum pour le slot 10",
           "custom_position_use_my_10": "Slot 10 : utiliser la position Mes présélections",
           "custom_position_tilt_10": "Slot 10 : inclinaison",
-          "custom_position_tilt_only_10": "Slot 10 : inclinaison uniquement"
+          "custom_position_tilt_only_10": "Slot 10 : inclinaison uniquement",
+          "custom_position_release_template_1": "Template de désactivation 1 (hystérésis)",
+          "custom_position_release_template_2": "Template de désactivation 2 (hystérésis)",
+          "custom_position_release_template_3": "Template de désactivation 3 (hystérésis)",
+          "custom_position_release_template_4": "Template de désactivation 4 (hystérésis)",
+          "custom_position_release_template_5": "Template de désactivation 5 (hystérésis)",
+          "custom_position_release_template_6": "Template de désactivation 6 (hystérésis)",
+          "custom_position_release_template_7": "Template de désactivation 7 (hystérésis)",
+          "custom_position_release_template_8": "Template de désactivation 8 (hystérésis)",
+          "custom_position_release_template_9": "Template de désactivation 9 (hystérésis)",
+          "custom_position_release_template_10": "Template de désactivation 10 (hystérésis)"
         },
         "data_description": {
           "custom_position_sensors_1": "Capteurs binaires qui, lorsque l'un est 'on', déplacent le store à sa position configurée (logique OR). Laisser vide pour utiliser uniquement un template — ou pour ignorer ce slot.",
@@ -1043,7 +1073,17 @@
           "custom_position_min_mode_10": "Traiter la position du slot 10 comme un plancher minimum.",
           "custom_position_use_my_10": "Utiliser la présélection Mes pour le slot 10 au lieu de sa position numérique.",
           "custom_position_tilt_10": "Angle d'inclinaison explicite (0-100%) pour le slot 10 sur les stores vénitiens.",
-          "custom_position_tilt_only_10": "Le slot 10 fixe uniquement l'angle des lamelles ; le suivi du soleil pilote la position."
+          "custom_position_tilt_only_10": "Le slot 10 fixe uniquement l'angle des lamelles ; le suivi du soleil pilote la position.",
+          "custom_position_release_template_1": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_2": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_3": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_4": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_5": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_6": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_7": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_8": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_9": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate.",
+          "custom_position_release_template_10": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate."
         }
       },
       "motion_override": {
@@ -1571,11 +1611,11 @@
     },
     "set_custom_position": {
       "name": "Définir le slot de position personnalisée",
-      "description": "Mettre à jour un slot de position personnalisée (1–5). Un slot est actif lorsqu'il a un déclencheur (capteurs et/ou template) et une position. La priorité 100 donne au slot une sémantique de sécurité (agit en dehors de la fenêtre de temps, contourne les portes delta).",
+      "description": "Mettre à jour un slot de position personnalisée (1–10). Un slot est actif lorsqu'il a un déclencheur (capteurs et/ou template) et une position. La priorité 100 donne au slot une sémantique de sécurité (agit en dehors de la fenêtre de temps, contourne les portes delta).",
       "fields": {
         "slot": {
           "name": "Emplacement",
-          "description": "Quel slot de position personnalisée mettre à jour (1–5)."
+          "description": "Quel slot de position personnalisée mettre à jour (1–10)."
         },
         "sensors": {
           "name": "Capteurs de déclenchement",
@@ -1608,6 +1648,10 @@
         "use_my": {
           "name": "Utiliser Somfy My",
           "description": "Si vrai, utiliser my_position_value au lieu de position."
+        },
+        "release_template": {
+          "name": "Template de désactivation (hystérésis)",
+          "description": "Facultatif : le slot reste actif jusqu’à ce que ce template soit vrai. L’activation est prioritaire. L’état est conservé au redémarrage. Exemple : activation sous 4 °C, désactivation à partir de 5 °C. Laisser vide pour une désactivation immédiate."
         }
       }
     },

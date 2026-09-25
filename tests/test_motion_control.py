@@ -715,7 +715,9 @@ async def test_async_shutdown_cancels_motion_timeout():
     coordinator._cmd_svc.stop = Mock()
 
     # Call shutdown
+    coordinator.custom_position_hysteresis.async_save = AsyncMock()
     await AdaptiveDataUpdateCoordinator.async_shutdown(coordinator)
+    coordinator.custom_position_hysteresis.async_save.assert_awaited_once()
 
     # Verify motion timeout was canceled
     coordinator._cancel_motion_timeout.assert_called_once()

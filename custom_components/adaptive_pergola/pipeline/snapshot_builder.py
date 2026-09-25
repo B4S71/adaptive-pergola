@@ -88,7 +88,13 @@ from ..helpers import (
     is_morning_preopen_active,
     resolve_window_start,
 )
-from ..templates import combine_with_mode, is_template_string, render_condition
+from ..managers.custom_position_hysteresis import CustomPositionHysteresis
+from ..templates import (
+    combine_with_mode,
+    is_template_string,
+    render_condition,
+    render_condition_or_none,
+)
 from .types import (
     ClimateOptions,
     CustomPositionSensorState,
@@ -118,6 +124,7 @@ class PipelineSnapshotBuilder:
         toggles: ToggleManager,
         policy: CoverTypePolicy,
         config_service: ConfigurationService,
+        hysteresis: CustomPositionHysteresis | None = None,
     ) -> None:
         """Bind the builder to its long-lived collaborators."""
         self._hass = hass
@@ -126,6 +133,9 @@ class PipelineSnapshotBuilder:
         self._toggles = toggles
         self._policy = policy
         self._config_service = config_service
+        self._hysteresis = (
+            hysteresis if hysteresis is not None else CustomPositionHysteresis()
+        )
 
     # ---- HA reads ---------------------------------------------------------
 
@@ -198,6 +208,7 @@ class PipelineSnapshotBuilder:
                 options.get(slot_keys["enabled"], DEFAULT_CUSTOM_POSITION_ENABLED)
             )
             if not (custom_position_slot_configured(options, slot_keys) and enabled):
+                self._hysteresis.clear(slot)
                 continue
             sensors = custom_position_slot_sensors(options, slot_keys)
             states = {s: self._hass.states.get(s) for s in sensors}
@@ -222,6 +233,23 @@ class PipelineSnapshotBuilder:
                 has_template=has_template,
                 has_others=bool(sensors),
             )
+
+            activation = is_on
+            release_template = options.get(slot_keys["release_template"])
+            if is_template_string(release_template):
+                # Include the effective slot definition so edits cannot reuse a
+                # latch from an unrelated rule. Unrelated options preserve it.
+                definition = {
+                    key: options.get(value) for key, value in slot_keys.items()
+                }
+                is_on = self._hysteresis.evaluate(
+                    slot,
+                    definition,
+                    activation,
+                    render_condition_or_none(self._hass, release_template),
+                )
+            else:
+                self._hysteresis.clear(slot)
 
             # Friendly name of the first active sensor (else the first sensor)
             # so diagnostics label the slot by what actually triggered it.
@@ -265,6 +293,7 @@ class PipelineSnapshotBuilder:
                     slot=slot,
                     active_entity_ids=active,
                     template_active=template_active,
+                    hysteresis_held=is_on and not activation,
                 )
             )
         return result

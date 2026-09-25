@@ -73,6 +73,7 @@ class CustomPositionSensorState:
     # Sensors currently "on" — drives reason strings (mirrors the old force
     # override's multi-sensor reason format).
     active_entity_ids: tuple[str, ...] = ()
+    hysteresis_held: bool = False
     # Rendered condition-template result. None = no template configured.
     template_active: bool | None = None
 

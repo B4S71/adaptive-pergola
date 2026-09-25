@@ -1092,6 +1092,15 @@ def _custom_position_base_specs() -> list[FieldSpec]:
         )
         specs.append(
             FieldSpec(
+                slot["release_template"],
+                SECTION_CUSTOM_POSITION,
+                ValidatorKind.NONE,
+                clearable=True,
+                make_selector=_const(lambda: selector.TemplateSelector()),
+            )
+        )
+        specs.append(
+            FieldSpec(
                 slot["template_mode"],
                 SECTION_CUSTOM_POSITION,
                 ValidatorKind.SELECT,
@@ -1206,6 +1215,7 @@ def custom_position_schema(*, include_tilt: bool = False) -> vol.Schema:
             multiple=True
         )
         schema[vol.Optional(slot["template"])] = selector.TemplateSelector()
+        schema[vol.Optional(slot["release_template"])] = selector.TemplateSelector()
         schema[
             vol.Optional(slot["template_mode"], default=DEFAULT_TEMPLATE_COMBINE_MODE)
         ] = selector.SelectSelector(

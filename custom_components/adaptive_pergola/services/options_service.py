@@ -587,6 +587,10 @@ FIELD_VALIDATORS: dict[str, Any] = {
         for slot_keys in CUSTOM_POSITION_SLOTS.values()
     },
     **{
+        slot_keys["release_template"]: _template_or_none
+        for slot_keys in CUSTOM_POSITION_SLOTS.values()
+    },
+    **{
         slot_keys["template_mode"]: _select_v(*[m.value for m in TemplateCombineMode])
         for slot_keys in CUSTOM_POSITION_SLOTS.values()
     },
@@ -1225,6 +1229,7 @@ async def _handle_set_custom_position(hass: HomeAssistant, call: ServiceCall) ->
     field_map = {
         "sensors": slot_keys["sensors"],
         "template": slot_keys["template"],
+        "release_template": slot_keys["release_template"],
         "template_mode": slot_keys["template_mode"],
         "position": slot_keys["position"],
         "priority": slot_keys["priority"],

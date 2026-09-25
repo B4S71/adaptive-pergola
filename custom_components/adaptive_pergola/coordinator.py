@@ -121,6 +121,7 @@ from .pipeline.handlers import (
 from .pipeline.floors import effective_floor, gather_active_floors
 from .pipeline.registry import PipelineRegistry
 from .pipeline.snapshot_builder import PipelineSnapshotBuilder
+from .managers.custom_position_hysteresis import CustomPositionHysteresis
 from .pipeline.types import CustomPositionSensorState
 from .templates import TemplateResolver
 from .const import ControlMethod
@@ -377,6 +378,10 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
         # PipelineSnapshot.  Coordinator drives it once per cycle in
         # _calculate_cover_state and again from async_apply_user_position for
         # the preemption check.
+        self.custom_position_hysteresis = CustomPositionHysteresis(
+            self.hass, self.config_entry.entry_id
+        )
+        self._custom_position_hysteresis_ready = False
         self._snapshot_builder = PipelineSnapshotBuilder(
             hass=self.hass,
             logger=self.logger,
@@ -384,6 +389,7 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             toggles=self._toggles,
             policy=self._policy,
             config_service=self._config_service,
+            hysteresis=self.custom_position_hysteresis,
         )
 
         # Current state snapshot (built at start of each update cycle)
@@ -1393,12 +1399,30 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             if prev.is_on
             and not getattr(current_custom_position_states.get(slot), "is_on", False)
         ]
+        # At startup there is no previous coordinator snapshot. The persistent
+        # latch still knows whether a safety rule was released while HA was off.
+        # Switch RestoreEntity hooks refresh the coordinator before the formal
+        # first refresh. Preserve restored release edges until all platforms
+        # have restored their control/manual-override state.
+        if self.first_refresh:
+            self._custom_position_hysteresis_ready = True
+        hysteresis_releases = (
+            self.custom_position_hysteresis.pop_released_slots()
+            if self._custom_position_hysteresis_ready
+            else set()
+        )
+        released_numbers = {s.slot for s in released_slots}
+        for slot in hysteresis_releases:
+            if slot not in released_numbers and slot in current_custom_position_states:
+                released_slots.append(current_custom_position_states[slot])
         custom_position_released_entities = {
             eid for prev in released_slots for eid in prev.entity_ids
         }
         safety_release = any(
             prev.priority >= CUSTOM_POSITION_SAFETY_PRIORITY for prev in released_slots
         )
+        if self.first_refresh and safety_release:
+            self.state_change = True
         template_release = self._custom_position_template_trigger and bool(
             released_slots
         )
@@ -3073,6 +3097,7 @@ class AdaptiveDataUpdateCoordinator(DataUpdateCoordinator[AdaptivePergolaData]):
             self._gate_fallback_unsub()
             self._gate_fallback_unsub = None
 
+        await self.custom_position_hysteresis.async_save()
         self.logger.debug("Coordinator shutdown complete")
 
 
